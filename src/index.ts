@@ -40,6 +40,15 @@ app.use("/demo", demoRouter);
 
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`\n🚀 AgentBridge running on port ${PORT}`);
+    console.log(`   Health:    http://0.0.0.0:${PORT}/health`);
+    console.log(`   Demo:      http://0.0.0.0:${PORT}/demo`);
+    console.log(`   Catalog:   http://0.0.0.0:${PORT}/api/v1/catalog`);
+    console.log(`   WA Hook:   ${process.env.APP_URL}/webhooks/whatsapp`);
+    console.log(`   RZP Hook:  ${process.env.APP_URL}/webhooks/razorpay\n`);
+  });
+
   try {
     // Run schema migration & seed check
     await migrate();
@@ -52,18 +61,8 @@ async function start() {
     // Start async WhatsApp worker
     startWhatsAppWorker();
     console.log("✅ WhatsApp worker started");
-
-    app.listen(PORT, () => {
-      console.log(`\n🚀 AgentBridge running on port ${PORT}`);
-      console.log(`   Health:    http://localhost:${PORT}/health`);
-      console.log(`   Demo:      http://localhost:${PORT}/demo`);
-      console.log(`   Catalog:   http://localhost:${PORT}/api/v1/catalog`);
-      console.log(`   WA Hook:   ${process.env.APP_URL}/webhooks/whatsapp`);
-      console.log(`   RZP Hook:  ${process.env.APP_URL}/webhooks/razorpay\n`);
-    });
   } catch (err) {
-    console.error("❌ Startup failed:", err);
-    process.exit(1);
+    console.error("⚠️ Background initialization error:", err);
   }
 }
 
