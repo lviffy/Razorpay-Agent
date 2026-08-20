@@ -62,9 +62,13 @@ CREATE TABLE IF NOT EXISTS mandates (
 );
 
 -- 5. Agent-to-Agent Negotiation Sessions
-CREATE TYPE IF NOT EXISTS negotiation_status AS ENUM (
-    'ACTIVE', 'AGREED', 'REJECTED', 'EXPIRED', 'LOCKED', 'PAID'
-);
+DO $$ BEGIN
+    CREATE TYPE negotiation_status AS ENUM (
+        'ACTIVE', 'AGREED', 'REJECTED', 'EXPIRED', 'LOCKED', 'PAID'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS negotiation_sessions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -83,9 +87,13 @@ CREATE TABLE IF NOT EXISTS negotiation_sessions (
 );
 
 -- 6. Financial Orders
-CREATE TYPE IF NOT EXISTS payment_status AS ENUM (
-    'CREATED', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED'
-);
+DO $$ BEGIN
+    CREATE TYPE payment_status AS ENUM (
+        'CREATED', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS orders (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),

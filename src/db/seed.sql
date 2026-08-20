@@ -31,7 +31,7 @@ INSERT INTO products (
     inventory_available, inventory_reserved, inventory_state,
     agent_schema
 ) VALUES (
-    'p1000000-0000-0000-0000-000000000001',
+    'c1000000-0000-0000-0000-000000000001',
     'a0000000-0000-0000-0000-000000000001',
     'mock-prod-001', 'mock-var-001',
     'Nike Air Zoom Pegasus 41 (Running Shoes)',
@@ -62,7 +62,7 @@ INSERT INTO products (
     inventory_available, inventory_reserved, inventory_state,
     agent_schema
 ) VALUES (
-    'p1000000-0000-0000-0000-000000000002',
+    'c1000000-0000-0000-0000-000000000002',
     'a0000000-0000-0000-0000-000000000001',
     'mock-prod-002', 'mock-var-002',
     'RunFast Pro Sports Socks (Pack of 3)',
@@ -114,7 +114,7 @@ INSERT INTO products (
     inventory_available, inventory_reserved, inventory_state,
     agent_schema
 ) VALUES (
-    'p2000000-0000-0000-0000-000000000001',
+    'c2000000-0000-0000-0000-000000000001',
     'b0000000-0000-0000-0000-000000000002',
     'mock-prod-003', 'mock-var-003',
     'Nike Air Zoom Pegasus 41 (Running Shoes)',
@@ -145,7 +145,7 @@ INSERT INTO products (
     inventory_available, inventory_reserved, inventory_state,
     agent_schema
 ) VALUES (
-    'p2000000-0000-0000-0000-000000000002',
+    'c2000000-0000-0000-0000-000000000002',
     'b0000000-0000-0000-0000-000000000002',
     'mock-prod-004', 'mock-var-004',
     'SpeedGear DriFit Sports Tee',

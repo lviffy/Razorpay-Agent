@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { db } from "./db/migrate.ts";
+import { db, migrate } from "./db/migrate.ts";
 import { redis } from "./services/redis.ts";
 import { startWhatsAppWorker } from "./workers/whatsapp-worker.ts";
 
@@ -41,9 +41,9 @@ app.use("/demo", demoRouter);
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {
   try {
-    // Verify DB connection
-    await db.query("SELECT 1");
-    console.log("✅ Neon DB connected");
+    // Run schema migration & seed check
+    await migrate();
+    console.log("✅ Neon DB connected & schema verified");
 
     // Verify Redis connection
     await redis.ping();
