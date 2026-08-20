@@ -14,6 +14,8 @@ async function main() {
 
   await db.query("SELECT 1");
   await redis.ping();
+  await db.query("UPDATE products SET inventory_state = 'AVAILABLE', inventory_available = 10, inventory_reserved = 0");
+  await redis.flushdb();
 
   // Get store & product
   const { rows: products } = await db.query(
@@ -107,7 +109,12 @@ async function main() {
   console.log(`\n[Step 5] Audit ledger verification:`);
   const events = await queryAudit({ conversationId });
   for (const ev of events) {
-    console.log(`   [${ev.eventType}] x402: ${ev.x402TransactionId} | Pay: ${ev.razorpayPaymentId || "N/A"} | Order: ${ev.orderId || "N/A"}`);
+    const eventType = ev.event_type ?? ev.eventType;
+    const x402 = ev.x402_transaction_id ?? ev.x402TransactionId;
+    const pay = ev.razorpay_payment_id ?? ev.razorpayPaymentId;
+    const order = ev.order_id ?? ev.orderId;
+
+    console.log(`   [${eventType}] x402: ${x402} | Pay: ${pay || "N/A"} | Order: ${order || "N/A"}`);
   }
 
   console.log("\n=================================================");

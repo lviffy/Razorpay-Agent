@@ -33,7 +33,7 @@ export class SellerAgent {
     if (products.length === 0 || !rules || !store) return null;
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-3.5-flash-lite",
       tools: [
         {
           functionDeclarations: [

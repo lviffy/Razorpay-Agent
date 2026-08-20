@@ -16,6 +16,8 @@ async function main() {
   // Verify DB & Redis
   await db.query("SELECT 1");
   await redis.ping();
+  await db.query("UPDATE products SET inventory_state = 'AVAILABLE', inventory_available = 10, inventory_reserved = 0");
+  await redis.flushdb();
   console.log("✅ DB and Redis connected\n");
 
   const waMessageId = `wamid.SIM_${Date.now()}`;
@@ -135,8 +137,16 @@ async function main() {
   console.log(`   - Total audit records found: ${auditEvents.length}`);
 
   for (const ev of auditEvents) {
-    console.log(`     [${ev.eventType}] WA: ${ev.whatsappMessageId} | Conv: ${ev.conversationId} | x402: ${ev.x402TransactionId} | Pay: ${ev.razorpayPaymentId || "N/A"} | Order: ${ev.orderId || "N/A"}`);
-    console.log(`     Checksum: ${ev.eventChecksum.slice(0, 16)}...`);
+    const eventType = ev.event_type ?? ev.eventType;
+    const wa = ev.whatsapp_message_id ?? ev.whatsappMessageId;
+    const conv = ev.conversation_id ?? ev.conversationId;
+    const x402 = ev.x402_transaction_id ?? ev.x402TransactionId;
+    const pay = ev.razorpay_payment_id ?? ev.razorpayPaymentId;
+    const order = ev.order_id ?? ev.orderId;
+    const checksum = (ev.event_checksum ?? ev.eventChecksum ?? "").slice(0, 16);
+
+    console.log(`     [${eventType}] WA: ${wa} | Conv: ${conv} | x402: ${x402} | Pay: ${pay || "N/A"} | Order: ${order || "N/A"}`);
+    console.log(`     Checksum: ${checksum}...`);
   }
 
   console.log("\n=================================================");
