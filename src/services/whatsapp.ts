@@ -1,0 +1,141 @@
+import axios from "axios";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WhatsApp Business Cloud API Service
+// ─────────────────────────────────────────────────────────────────────────────
+
+const WA_BASE = "https://graph.facebook.com/v19.0";
+
+function getPhoneNumberId(): string {
+  const id = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!id) throw new Error("WHATSAPP_PHONE_NUMBER_ID is required");
+  return id;
+}
+
+function getAccessToken(): string {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!token) throw new Error("WHATSAPP_ACCESS_TOKEN is required");
+  return token;
+}
+
+async function sendRequest(body: Record<string, unknown>): Promise<void> {
+  try {
+    await axios.post(
+      `${WA_BASE}/${getPhoneNumberId()}/messages`,
+      body,
+      {
+        headers: {
+          Authorization: `Bearer ${getAccessToken()}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      console.error("WhatsApp API error:", err.response?.data ?? err.message);
+    }
+    throw err;
+  }
+}
+
+// ── Message types ──────────────────────────────────────────────────────────────
+
+export async function sendText(to: string, text: string): Promise<void> {
+  await sendRequest({
+    messaging_product: "whatsapp",
+    to,
+    type: "text",
+    text: { body: text },
+  });
+}
+
+export async function sendInteractive(
+  to: string,
+  bodyText: string,
+  buttons: Array<{ id: string; title: string }>
+): Promise<void> {
+  await sendRequest({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: bodyText },
+      action: {
+        buttons: buttons.map((b) => ({
+          type: "reply",
+          reply: { id: b.id, title: b.title },
+        })),
+      },
+    },
+  });
+}
+
+export async function sendPaymentLink(
+  to: string,
+  amount: number,
+  link: string,
+  storeName: string
+): Promise<void> {
+  await sendRequest({
+    messaging_product: "whatsapp",
+    to,
+    type: "interactive",
+    interactive: {
+      type: "cta_url",
+      body: {
+        text: `✅ Deal locked!\n\n*₹${amount.toLocaleString("en-IN")}* from ${storeName}\n\nTap below to complete payment via Razorpay (test mode):`,
+      },
+      action: {
+        name: "cta_url",
+        parameters: {
+          display_text: `Pay ₹${amount.toLocaleString("en-IN")}`,
+          url: link,
+        },
+      },
+    },
+  });
+}
+
+export interface ConfirmationIds {
+  whatsappMessageId: string;
+  conversationId: string;
+  x402TransactionId: string;
+  razorpayPaymentId: string;
+  orderId: string;
+  amount: number;
+  storeName: string;
+}
+
+export async function sendConfirmation(
+  to: string,
+  ids: ConfirmationIds
+): Promise<void> {
+  const text =
+    `✅ *Payment Confirmed!*\n\n` +
+    `Amount: ₹${ids.amount.toLocaleString("en-IN")}\n` +
+    `Store: ${ids.storeName}\n\n` +
+    `*Audit Trail:*\n` +
+    `📱 WA Message: \`${ids.whatsappMessageId}\`\n` +
+    `💬 Conversation: \`${ids.conversationId}\`\n` +
+    `🔗 x402 Tx: \`${ids.x402TransactionId}\`\n` +
+    `💳 Razorpay: \`${ids.razorpayPaymentId}\`\n` +
+    `📦 Order: \`${ids.orderId}\``;
+
+  await sendText(to, text);
+}
+
+export async function sendPaymentFailedWithRetry(
+  to: string,
+  amount: number,
+  timeRemainingSeconds: number
+): Promise<void> {
+  await sendInteractive(
+    to,
+    `❌ Payment failed.\n\nInventory held for ${timeRemainingSeconds}s more.\nRetry with a different method?`,
+    [
+      { id: "retry_payment", title: "Retry Payment" },
+      { id: "cancel_order", title: "Cancel" },
+    ]
+  );
+}

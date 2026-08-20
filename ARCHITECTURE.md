@@ -8,7 +8,7 @@
 
 ## 1. Executive Product Architecture
 
-AgentBridge is an enterprise-grade agentic commerce middleware connecting e-commerce platforms (starting with Shopify) to autonomous AI Buyer Agents and conversational surfaces (WhatsApp Business Cloud API). It operates on a **Fiat-Native x402 Protocol** using **Razorpay’s Financial & Settlement Stack** as the core money movement and trust engine.
+AgentBridge is an enterprise-grade agentic commerce middleware connecting e-commerce platforms (two seeded mock merchants for buildathon scope) to autonomous AI Buyer Agents and conversational surfaces (WhatsApp Business Cloud API). It operates on a **Fiat-Native x402 Protocol** using **Razorpay's Financial & Settlement Stack** as the core money movement and trust engine. The buildathon implementation uses **Bun + TypeScript 100%** with **Neon DB** (managed serverless Postgres) hosted on **Railway**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -58,63 +58,75 @@ AgentBridge is an enterprise-grade agentic commerce middleware connecting e-comm
 The production architecture decomposes into 7 decoupled, horizontally scalable services communicating over gRPC internally and REST/WebSockets externally.
 
 ### 2.1 API Gateway & Ingress Layer
-- **Technology:** Envoy / Kong API Gateway
+- **Technology:** Express (Bun runtime) — single service for buildathon
 - **Responsibilities:**
-  - Ingress traffic routing for WhatsApp Webhooks, Buyer Agent HTTP 402 requests, and Merchant Portal APIs.
-  - JWT token verification and API key validation.
-  - Agent rate limiting (Token Bucket algorithm per IP / Buyer Agent ID) to prevent scraping or brute-force price querying.
-  - Mutual TLS (mTLS) for inter-service communication.
+  - Ingress routing for WhatsApp webhooks, Buyer Agent HTTP 402 requests, Razorpay webhooks, and `/demo` SSE dashboard
+  - HMAC-SHA256 verification for both Meta (X-Hub-Signature-256) and Razorpay (X-Razorpay-Signature) webhook payloads
+  - Agent rate limiting per `buyer_agent_id`
 
-### 2.2 Catalog & Schema Transformation Service
+### 2.2 Merchant Catalog & Schema Service (Buildathon: Seeded Mock Data)
+- **Technology:** `src/services/merchant.ts` — thin Postgres wrapper
 - **Responsibilities:**
-  - Pulls raw Shopify product, inventory, and collection data via Shopify GraphQL Admin API.
-  - Employs **Shopify Bulk Operations API** for stores with >50,000 SKUs.
-  - Generates machine-readable **Agent JSON Schemas** (containing variant IDs, pricing tiers, minimum allowed floor prices, and dynamic stock levels).
-  - Generates **WhatsApp Interactive Catalog Payloads** (Multi-Product Messages, List Messages, Quick-Reply Buttons).
+  - Two pre-seeded merchants (**RunFast Sports** + **SpeedGear**) loaded via `migrate.ts` on boot
+  - `getProducts(storeId)`, `getVariant(variantId)`, `getNegotiationRules(storeId)`, `setInventoryState(variantId, state)`
+  - Serves **Agent JSON Schemas** (variant IDs, pricing tiers, floor prices, live inventory counts)
+  - No live Shopify sync, no GraphQL calls, no OAuth
 
 ### 2.3 Dual-Agent Orchestration & A2A Engine
-- **Seller Agent Module:**
-  - Evaluates buyer queries against pre-configured merchant rules stored in PostgreSQL.
-  - Executes multi-turn negotiation logic (discount limits, bundle triggers, shipping rules).
-  - Produces structured negotiation steps (`PROPOSE`, `COUNTER`, `ACCEPT`, `REJECT`).
-- **Buyer Agent Module:**
-  - Evaluates user-specified constraints (budget cap, size, color, delivery timeline).
-  - Executes parallel multi-store querying across multiple Seller Agents.
-  - Submits verifiable cryptographic requests over HTTP.
+- **Runtime:** Google Gemini (AI Studio) via `@google/generative-ai` with structured function calling
+- **Seller Agent (`src/agents/seller-agent.ts`):**
+  - Evaluates buyer queries against per-merchant negotiation rules from Postgres
+  - Executes one counter-offer within `max_discount_percentage` bound
+  - Produces structured steps: `PROPOSE`, `COUNTER`, `ACCEPT`, `REJECT`
+- **Buyer Agent (`src/agents/buyer-agent.ts`):**
+  - Initialized with natural language task + AP2-inspired mandate (`mandate_id`, `spending_limit`, `currency`, `purpose`, `expires_at`, `status`, `signature`)
+  - Queries **both stores in parallel** via `searchCatalogs` tool call
+  - Hard guardrail: cannot call `triggerPayment` if `agreed_price > mandate.spending_limit` — enforced at tool level AND server-side
 
-### 2.4 Distributed Inventory Reservation & Locking Engine
-- **Technology:** Redis Cluster with Redlock Algorithm
+### 2.4 WhatsApp Async Worker
+- **Technology:** Redis queue (`LPUSH` / `BRPOP`) + `src/workers/whatsapp-worker.ts`
+- **Pattern:**
+  - `POST /webhooks/whatsapp` validates Meta signature, persists message, pushes job to Redis, returns **200 immediately**
+  - Worker dequeues job and runs full Buyer Agent → Seller Agent → Razorpay flow asynchronously
+  - Prevents Meta webhook timeouts during Gemini API calls (which may take 5–15s)
+
+### 2.5 Distributed Inventory Reservation & Locking
+- **Technology:** Redis `SET NX EX 120` — atomic, single-key lock
 - **Mechanism:**
-  - On deal acceptance, reserves inventory for a strict Time-To-Live (`TTL = 120 seconds`).
-  - Key format: `lock:inventory:{store_id}:{variant_id}`
-  - Atomic compare-and-set (`SET resource_name my_random_value NX PX 120000`).
-  - If payment succeeds before TTL expiry, lock converts to permanent deduction.
-  - If payment fails or times out, key expires automatically, returning inventory to public pool without orphaned stock.
+  - On deal acceptance, sets `lock:inventory:{store_id}:{variant_id}` with TTL = 120s
+  - Postgres tracks state machine: `AVAILABLE → RESERVED → PAYMENT_PENDING → PAID/SOLD`
+  - DB columns: `inventory_available`, `inventory_reserved`, `reservation_expires_at`
+  - On `payment.captured`: state moves to `PAID`, Redis key deleted
+  - On `payment.failed` or TTL expiry: state returns to `AVAILABLE`, Redis key auto-expires
+  - **Postgres = source of truth. Redis = temporary atomic concurrency lock only.**
 
-### 2.5 Razorpay Payment & Financial State Machine
+### 2.6 Razorpay Payment & Financial State Machine
 - **Responsibilities:**
-  - Translates negotiated cart into Razorpay Orders (`POST /v1/orders`).
-  - Dispatches `HTTP 402` payload to Buyer Agent.
-  - Listens to Razorpay Webhooks (`payment.captured`, `payment.failed`, `settlement.processed`).
-  - Enforces HMAC-SHA256 signature verification on all inbound webhooks.
-  - Calls **Razorpay Instant Settlements API** (`POST /v1/settlements/ondemand`) to trigger real-time bank payout.
-  - Triggers **Razorpay Invoices API** to generate GST-compliant digital invoices.
+  - Translates negotiated cart into Razorpay Orders (`POST /v1/orders`) with idempotency key
+  - Issues HTTP 402 challenge (`X-402-*` headers) per Fiat-Native protocol spec
+  - Creates **Razorpay Standard Payment Link** (not UPI-specific — verified working in test mode)
+  - Listens to Razorpay Webhooks (`payment.captured`, `payment.failed`)
+  - Enforces HMAC-SHA256 signature verification on all inbound webhooks
+  - **Webhook idempotency:** checks `processed_webhook_events` table before any state change — prevents double-deduction on retried webhooks
+  - Updates inventory state machine in Postgres post-capture
 
-### 2.6 Shopify Write-Back & Fulfillment Worker
+### 2.7 Order Write-Back
 - **Responsibilities:**
-  - Asynchronously creates Shopify orders via GraphQL `orderCreate` mutation once `payment.captured` is verified.
-  - Tags order with: `agentic_commerce`, `razorpay_payment_id`, `x402_tx_hash`, `buyer_agent_id`.
-  - Decrements Shopify inventory levels via `inventoryAdjustQuantities`.
-  - Injects shipping updates back into the WhatsApp conversation thread upon fulfillment.
+  - Writes completed order record to `orders` table in Neon DB post-`payment.captured`
+  - Tags order with: `x402_tx_hash`, `buyer_agent_id`, `mandate_id`, `razorpay_payment_id`
+  - Sends WhatsApp confirmation with 5-field audit IDs
+  - Emits SSE event to `/demo` dashboard
 
-### 2.7 Immutable Audit Ledger & Event Store
-- **Technology:** PostgreSQL with TimescaleDB extension / Append-Only Event Tables.
-- **Data Model:** Records the complete 4-way linked transaction history:
-  - `whatsapp_message_id`
-  - `x402_challenge_hash`
-  - `razorpay_payment_id`
-  - `shopify_order_id`
-  - `agent_reasoning_trace`
+### 2.8 Immutable Audit Ledger & Event Store
+- **Technology:** Neon DB (Postgres) append-only table with checksum chaining
+- **5-field linkage per event:**
+  - `whatsapp_message_id` — inbound WA message that triggered the session
+  - `conversation_id` — persistent session identifier
+  - `x402_transaction_id` — Fiat-Native HTTP 402 transaction reference
+  - `razorpay_payment_id` — canonical money-movement proof
+  - `order_id` — AgentBridge order reference
+  - `agent_reasoning_trace` — full Gemini tool call log
+  - `event_checksum` — SHA256(prev_checksum + payload)
 
 ---
 
@@ -258,31 +270,53 @@ CREATE TABLE orders (
     store_id UUID REFERENCES stores(id),
     razorpay_order_id VARCHAR(100) UNIQUE NOT NULL,
     razorpay_payment_id VARCHAR(100) UNIQUE,
-    shopify_order_id VARCHAR(100) UNIQUE,
+    order_id VARCHAR(100) UNIQUE,          -- AgentBridge order reference e.g. ORD-1042
     x402_tx_hash VARCHAR(255) UNIQUE NOT NULL,
+    mandate_id VARCHAR(100),               -- AP2-inspired mandate reference
     amount NUMERIC(12,2) NOT NULL,
     currency VARCHAR(10) DEFAULT 'INR',
     status payment_status DEFAULT 'CREATED',
-    is_settled_instantly BOOLEAN DEFAULT FALSE,
-    instant_settlement_id VARCHAR(100),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 6. Immutable Four-Way Audit Trail
+-- 5b. Webhook Idempotency
+CREATE TABLE processed_webhook_events (
+    payment_event_id VARCHAR(100) PRIMARY KEY,  -- Razorpay event ID
+    event_type       VARCHAR(50) NOT NULL,
+    processed_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5c. AP2-Inspired Spending Mandates
+CREATE TABLE mandates (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    mandate_id      VARCHAR(100) UNIQUE NOT NULL,
+    buyer_agent_id  VARCHAR(100) NOT NULL,
+    spending_limit  NUMERIC(12,2) NOT NULL,
+    spent_amount    NUMERIC(12,2) DEFAULT 0,
+    currency        VARCHAR(10) DEFAULT 'INR',
+    purpose         VARCHAR(255),
+    expires_at      TIMESTAMPTZ NOT NULL,
+    status          VARCHAR(20) DEFAULT 'ACTIVE',
+    signature       VARCHAR(255),
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. Immutable Five-Way Audit Trail
 CREATE TABLE audit_ledger (
     id BIGSERIAL PRIMARY KEY,
     event_type VARCHAR(50) NOT NULL,
     whatsapp_message_id VARCHAR(255),
-    x402_hash VARCHAR(255) NOT NULL,
+    conversation_id VARCHAR(255),
+    x402_transaction_id VARCHAR(255) NOT NULL,
     razorpay_payment_id VARCHAR(100),
-    shopify_order_id VARCHAR(100),
+    order_id VARCHAR(100),
     payload JSONB NOT NULL,
-    signature VARCHAR(255) NOT NULL,
+    event_checksum VARCHAR(255) NOT NULL,     -- SHA256(prev_checksum + payload)
     timestamp TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_audit_lookup ON audit_ledger (x402_hash, razorpay_payment_id, shopify_order_id);
+CREATE INDEX idx_audit_lookup ON audit_ledger (x402_transaction_id, razorpay_payment_id, order_id);
 ```
 
 ---

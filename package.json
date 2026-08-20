@@ -1,0 +1,30 @@
+{
+  "name": "agentbridge",
+  "version": "0.1.0",
+  "description": "Agentic commerce middleware — two-merchant demo with Gemini, Razorpay, WhatsApp & x402",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "migrate": "bun src/db/migrate.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.13.3",
+    "ioredis": "^5.4.2",
+    "razorpay": "^2.9.6",
+    "@google/generative-ai": "^0.21.0",
+    "axios": "^1.7.9",
+    "uuid": "^11.0.5",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/pg": "^8.11.10",
+    "@types/uuid": "^10.0.0",
+    "@types/bun": "latest",
+    "typescript": "^5.7.3"
+  }
+}

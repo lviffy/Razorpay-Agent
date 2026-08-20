@@ -54,16 +54,16 @@ The x402 protocol (HTTP 402 Payment Required) solves the agent-to-agent payment 
 
 AgentBridge is a three-layer intelligent middleware that connects Shopify stores to the agentic commerce economy via WhatsApp, with Razorpay as the settlement and trust backbone.
 
-### Layer 1 — Intelligent Shopify Sync
+### Layer 1 — Merchant Catalog & Inventory Service
 
-The merchant connects their Shopify store via one-click OAuth. AgentBridge immediately begins pulling products, variants, inventory levels, images, pricing, and collections via the Shopify Admin GraphQL API. This is not a one-time import — it is a continuously maintained, near-real-time sync powered by Shopify webhooks (`products/update`, `inventory_levels/update`, `orders/create`).
+For the buildathon scope, two mock merchants (**RunFast Sports** — Bengaluru, and **SpeedGear** — Mumbai) are pre-seeded directly into Neon DB with products, variants, pricing, negotiation rules, and live inventory counts. No live Shopify OAuth or GraphQL sync is required — the merchant data layer is a thin TypeScript service (`src/services/merchant.ts`) that reads and writes structured product data from Postgres.
 
-The raw Shopify data is then transformed into two parallel representations:
+Each merchant record includes:
 
-- **WhatsApp Interactive Catalog** — structured for human browsing via WhatsApp Business Cloud API (lists, buttons, image cards)
-- **Agent-Readable Schema** — a structured JSON schema with product ID, variants, live stock count, pricing tiers, discount rules, and negotiation bounds — designed to be consumed directly by an AI Buyer Agent without any HTML parsing
+- **Agent-Readable Product Schema** — structured JSON with variant IDs, listed price, floor price, live inventory counts, and negotiation bounds — consumed directly by the Seller Agent
+- **Negotiation Rules** — per-merchant discount limits, free shipping thresholds, and bundle triggers stored in the `negotiation_rules` table
 
-This transformation is the foundation that makes every other layer possible. A merchant who connects their store on Monday morning has a fully agent-ready storefront by Monday afternoon, with zero additional developer work.
+Inventory state follows an explicit state machine: `AVAILABLE → RESERVED → PAYMENT_PENDING → PAID/SOLD`. Postgres is the source of truth; Redis holds a temporary atomic lock during the reservation window (TTL = 120s).
 
 ### Layer 2 — Dual AI Agent System
 
@@ -80,9 +80,9 @@ The Seller Agent can answer product queries, suggest alternatives based on buyer
 
 **The Buyer Agent** operates on behalf of the end consumer. It is initialized with a natural language task and a pre-authorized spending limit. It can search across one or many AgentBridge-connected stores simultaneously, compare live offers side by side, conduct multi-turn price negotiations with Seller Agents, and execute a purchase when it finds a deal within budget. The Buyer Agent is bounded — it cannot spend more than the pre-authorized limit, cannot purchase from unverified stores, and produces a full reasoning trace for every decision it makes.
 
-Both agents communicate over a defined Agent-to-Agent (A2A) protocol, meaning their negotiation is structured and auditable, not freeform chat. Every offer, counter-offer, acceptance, and rejection is a signed, logged event.
+Both agents communicate over a defined Agent-to-Agent (A2A) protocol — structured and auditable, not freeform chat. Every offer, counter-offer, acceptance, and rejection is a signed, logged event. The Buyer Agent queries **both stores in parallel**, compares live offers, and selects the best deal within the spending mandate.
 
-**Hybrid human + agent conversations** are supported in the same WhatsApp thread. A human can join mid-negotiation, override the Buyer Agent's decision, or a merchant can pause the Seller Agent and respond manually — all without breaking the conversation state.
+The Buyer Agent is initialized with an **AP2-inspired spending mandate**: `{ mandate_id, spending_limit, currency, purpose, expires_at, status, signature }`. The agent literally cannot authorize a payment exceeding the mandate limit — enforced both in the agent tool layer and independently on the server.
 
 ### Layer 3 — Payment and Settlement
 
@@ -102,20 +102,21 @@ This is where AgentBridge makes money actions real. When the Buyer Agent and Sel
     → UPI (primary, highest success rate for this amount)
     → Auto-fallback to Card or Netbanking if UPI fails
          ↓
-[5] Payment initiated → user receives UPI intent on their device
+[5] Razorpay Standard Payment Link created and sent via WhatsApp (CTA button)
          ↓
-[6] User approves (or Buyer Agent handles pre-authorized UPI mandate)
+[6] User opens link → approves in Razorpay Test Checkout (explicit Success/Failure choice)
          ↓
 [7] Razorpay fires payment.captured webhook to AgentBridge
-    → HMAC-SHA256 signature verified server-side
+    → HMAC-SHA256 signature verified; idempotency key checked against processed_webhook_events
          ↓
-[8] Inventory deducted from Shopify (atomic — only happens post-capture)
-    → Shopify Order created via Admin API
+[8] Inventory state machine: PAYMENT_PENDING → PAID (Postgres)
+    → Redis lock key deleted
+    → Order record written to Neon DB
          ↓
-[9] WhatsApp confirmation sent to buyer
-    → Includes: Razorpay Payment ID, Shopify Order ID, x402 hash, WhatsApp thread ID
+[9] WhatsApp confirmation sent to buyer:
+    → Includes: whatsapp_message_id, conversation_id, x402_transaction_id, razorpay_payment_id, order_id
          ↓
-[10] Merchant receives INR settlement in ~10–15s via Razorpay Instant Settlements (IMPS/UPI)
+[10] /demo dashboard updated via SSE — full timeline visible to judges
 ```
 
 The merchant never touches crypto. The agent never directly handles money. Every step is event-driven and fully logged.
@@ -159,18 +160,24 @@ Every completed agent purchase produces a four-way linked identifier set:
 
 ```
 ┌─────────────────────────┐         ┌─────────────────────────┐
-│   WhatsApp Message ID   │ ◄─────► │   x402 Transaction Hash │
-│  (conversation anchor)  │         │  (agent-to-agent receipt)│
+│  WhatsApp Message ID    │ ◄─────► │  Conversation ID         │
+│  wamid.ABGxxxxxxxx      │         │  conv_xxxxxxxxxxxxxxxx   │
 └────────────┬────────────┘         └────────────┬────────────┘
              │                                   │
              ▼                                   ▼
 ┌─────────────────────────┐         ┌─────────────────────────┐
-│    Shopify Order ID     │ ◄─────► │   Razorpay Payment ID   │
-│  (fulfillment reference)│         │  (money movement proof) │
-└─────────────────────────┘         └─────────────────────────┘
+│  x402 Transaction ID    │ ◄─────► │   Razorpay Payment ID   │
+│  x402_xxxxxxxxxxxxxxxx  │         │   pay_xxxxxxxxxxxxxxxx  │
+└─────────────┬───────────┘         └─────────────────────────┘
+              │
+              ▼
+┌─────────────────────────┐
+│  Order ID               │
+│  ORD-1042               │
+└─────────────────────────┘
 ```
 
-This linkage is stored in an append-only event log. Any party — the merchant, the end consumer, a regulator, or the agent itself — can query any ID and receive the complete transaction history: who negotiated what, when inventory was locked, when payment was captured, when the order was created, and what the final settlement amount was.
+This **5-field linkage** is stored in an append-only audit ledger with checksum chaining. Any party — the merchant, the end consumer, a regulator, or the agent itself — can query any of the five IDs and retrieve the complete transaction history: who negotiated what, when inventory was locked, when payment was captured, and the full agent reasoning trace.
 
 This is not a nice-to-have. In a world where AI agents are making purchasing decisions autonomously on behalf of humans, a complete, tamper-resistant audit trail is the feature that turns AgentBridge from a clever demo into a trustworthy financial system.
 
@@ -358,15 +365,16 @@ The following are real features that will be built in v2 — they are excluded f
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Shopify sync | Admin GraphQL API + REST webhooks | GraphQL for rich product queries; webhooks for real-time inventory delta |
-| Agent runtime | Claude / GPT-4o with structured tool calls | Tool-call interface enforces bounded actions; LLM handles natural language negotiation |
-| Agent-to-agent protocol | x402 (HTTP 402 challenge/response) | Standardized, auditable, protocol-level payment handshake |
-| WhatsApp interface | WhatsApp Business Cloud API | Official API; supports interactive messages, webhooks, persistent threads |
-| Payment infrastructure | Razorpay Orders, Optimizer, Webhooks, Payment Links, Vulcan | Full-stack INR payment handling — see integration table above |
-| Inventory locking | Redis SETNX with TTL | Atomic compare-and-set prevents race conditions; TTL auto-releases stuck locks |
-| Audit log | PostgreSQL append-only table | Immutable event store; queryable by any of the four IDs |
-| Backend | Node.js (Express) | Single service for demo simplicity; easily decomposed post-buildathon |
-| Hosting | Railway / Render (demo) | Zero-config deployment; webhook-friendly public URL |
+| Merchant data | Seeded Neon DB (Postgres) — no live Shopify sync | Two mock merchants pre-loaded with products, inventory, and negotiation rules; reliable with zero external API dependency |
+| Runtime & language | **Bun** + **TypeScript 100%** | Fast startup, native TS execution, built-in test runner; no transpile step |
+| Agent runtime | **Google Gemini** (AI Studio) via `@google/generative-ai` with function calling | Tool-call interface enforces bounded actions; LLM handles natural language negotiation |
+| Agent-to-agent protocol | Fiat-Native HTTP 402 challenge/response (`X-402-*` headers) | Machine-readable payment handshake scoped to Razorpay INR flow (see ARCHITECTURE.md §3) |
+| WhatsApp interface | WhatsApp Business Cloud API — **async worker pattern** | Inbound webhook returns 200 immediately; Redis queue + worker processes Gemini calls asynchronously |
+| Payment infrastructure | Razorpay Orders + **Standard Payment Links** + Webhooks (test mode) | Standard Payment Links are verified working in test mode with explicit Success/Failure choices |
+| Inventory locking | Redis `SET NX EX 120` atomic lock | Simple, correct; Postgres is source of truth for inventory state machine |
+| Audit log | Neon DB (Postgres) append-only table | 5-field immutable event store with checksum chaining |
+| Hosting | **Railway** | Permanent HTTPS URL used directly as Meta + Razorpay webhook endpoint; Redis plugin auto-injected |
+| Database | **Neon DB** — managed serverless Postgres | Connection string in env; `migrate.ts` runs schema + seed on boot |
 
 ---
 
