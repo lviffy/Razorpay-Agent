@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Prevent layout shift when scrollbar appears */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  scrollbar-color: #d4d4d4 transparent;
+  scrollbar-width: thin;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Smooth scrolling & intentional reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transform: none !important;
+  }
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+  background-color: #ffffff;
+  color: #09090b;
+}
+
+/* GPU acceleration for smoother scrolling */
+.gpu-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Optimize images for scroll performance */
+img,
+video {
+  content-visibility: auto;
+}
+
+:root {
+  --color-primary: #195adc;
+  --color-primary-light: #378ffa;
+  --color-primary-lighter: #5db0fd;
+  --color-secondary: #38bdf8;
+  --color-secondary-light: #7dd3fc;
+  --color-black: #09090b;
+  --color-white: #ffffff;
+  --color-text-primary: #09090b;
+  --color-surface: #f8fafc;
+
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 210 40% 98%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 221 78% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 199 92% 60%;
+  --secondary-foreground: 240 10% 3.9%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 240 3.8% 46.1%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 240 10% 3.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 221 78% 48%;
+  --radius: 0.75rem;
+}
+
+/* Keyframe animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes scroll-up {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-33.33%); }
+}
+
+@keyframes scroll-down {
+  0% { transform: translateY(-33.33%); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes orbit-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes counter-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+.animate-fade-in { animation: fade-in 0.8s ease-out; }
+.animate-pulse-slow { animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-scroll-up { animation: scroll-up 20s linear infinite; }
+.animate-scroll-down { animation: scroll-down 20s linear infinite; }
+.animate-orbit-slow { animation: orbit-slow 30s linear infinite; }
+.animate-counter-rotate { animation: counter-rotate 30s linear infinite; }
+
+.transform-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e4e4e7;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
