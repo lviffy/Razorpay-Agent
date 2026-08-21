@@ -252,7 +252,7 @@ export default function BuiltForWhomSection() {
   const IllustrationComponent = current.illustration
 
   return (
-    <section id="mandates" className="py-20 sm:py-28 bg-white text-surface-900 overflow-hidden">
+    <section id="mandates" className="py-20 sm:py-28 overflow-hidden text-surface-900">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -263,7 +263,7 @@ export default function BuiltForWhomSection() {
             </h2>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 p-1 bg-black/[0.03] backdrop-blur-md rounded-full border border-black/[0.05] shadow-2xs">
             {targetSegments.map((segment) => (
               <button
                 key={segment.id}
@@ -271,8 +271,8 @@ export default function BuiltForWhomSection() {
                 className={cn(
                   'px-4 py-2 rounded-full text-xs font-mono font-bold transition-all cursor-pointer',
                   activeTab === segment.id
-                    ? 'bg-brand-500 text-white shadow-xs'
-                    : 'bg-surface-100 text-surface-600 hover:text-surface-900 hover:bg-surface-200'
+                    ? 'bg-white text-brand-600 shadow-2xs border border-black/[0.06]'
+                    : 'text-surface-600 hover:text-surface-900 hover:bg-white/60'
                 )}
               >
                 {segment.tabName}
@@ -281,8 +281,8 @@ export default function BuiltForWhomSection() {
           </div>
         </div>
 
-        {/* 2-Pane Frame */}
-        <div className="bg-[#fafbfc] border border-surface-200 rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center shadow-card">
+        {/* 2-Pane Frame with Apple Card Elevation */}
+        <div className="apple-card-elevated rounded-[2rem] p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Description (6 cols) */}
           <div className="lg:col-span-6 space-y-6">
             <AnimatePresence mode="wait">
@@ -318,7 +318,7 @@ export default function BuiltForWhomSection() {
 
                 <div className="pt-4">
                   <Link href="/onboarding">
-                    <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full text-xs px-6 h-11 gap-2 shadow-xs cursor-pointer">
+                    <Button className="apple-button-primary font-bold rounded-full text-xs px-6 h-11 gap-2 cursor-pointer">
                       <span>Get Started with {current.tabName.replace(/^[0-9]+\s*/, '')}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
@@ -329,7 +329,7 @@ export default function BuiltForWhomSection() {
           </div>
 
           {/* Right Interactive Illustration (6 cols) */}
-          <div className="lg:col-span-6 aspect-[4/3] bg-white border border-surface-200 rounded-2xl p-4 sm:p-6 shadow-sm flex items-center justify-center overflow-hidden">
+          <div className="lg:col-span-6 aspect-[4/3] bg-[#fbfbfd] border border-black/[0.06] rounded-[1.5rem] p-4 sm:p-6 shadow-2xs flex items-center justify-center overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}

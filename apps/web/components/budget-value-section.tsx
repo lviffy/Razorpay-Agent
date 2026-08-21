@@ -60,7 +60,7 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
   const current = cardDetails[activeItem]
 
   return (
-    <section id="mandates-detail" className="py-20 sm:py-28 bg-[#fafbfc] border-t border-surface-200 text-surface-900 overflow-hidden">
+    <section id="mandates-detail" className="py-20 sm:py-28 overflow-hidden text-surface-900">
       <div className="mx-auto max-w-[1240px] space-y-12 px-4 sm:px-6 lg:px-8">
         <div className="relative z-10 max-w-2xl space-y-3">
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
@@ -80,10 +80,10 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
               onValueChange={(value) => value && setActiveItem(value as FeatureKey)}
               className="w-full space-y-3"
             >
-              <AccordionItem value="item-1" className="border border-surface-200 rounded-2xl bg-white px-5 shadow-xs overflow-hidden">
+              <AccordionItem value="item-1" className="apple-card rounded-2xl px-5 shadow-2xs overflow-hidden">
                 <AccordionTrigger className="py-4.5 text-surface-900 hover:no-underline hover:text-brand-600 [&>svg]:text-surface-600">
                   <div className="flex items-center gap-3 text-sm sm:text-base font-bold text-left font-display">
-                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0 shadow-2xs">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                     <span>Deterministic Floor Price Mandates</span>
@@ -96,10 +96,10 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-2" className="border border-surface-200 rounded-2xl bg-white px-5 shadow-xs overflow-hidden">
+              <AccordionItem value="item-2" className="apple-card rounded-2xl px-5 shadow-2xs overflow-hidden">
                 <AccordionTrigger className="py-4.5 text-surface-900 hover:no-underline hover:text-brand-600 [&>svg]:text-surface-600">
                   <div className="flex items-center gap-3 text-sm sm:text-base font-bold text-left font-display">
-                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0 shadow-2xs">
                       <CreditCard className="w-4 h-4" />
                     </div>
                     <span>Zero-Friction WhatsApp Checkout</span>
@@ -111,10 +111,10 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-3" className="border border-surface-200 rounded-2xl bg-white px-5 shadow-xs overflow-hidden">
+              <AccordionItem value="item-3" className="apple-card rounded-2xl px-5 shadow-2xs overflow-hidden">
                 <AccordionTrigger className="py-4.5 text-surface-900 hover:no-underline hover:text-brand-600 [&>svg]:text-surface-600">
                   <div className="flex items-center gap-3 text-sm sm:text-base font-bold text-left font-display">
-                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0 shadow-2xs">
                       <Lock className="w-4 h-4" />
                     </div>
                     <span>Autonomous Inventory Locking</span>
@@ -126,10 +126,10 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 </AccordionContent>
               </AccordionItem>
 
-              <AccordionItem value="item-4" className="border border-surface-200 rounded-2xl bg-white px-5 shadow-xs overflow-hidden">
+              <AccordionItem value="item-4" className="apple-card rounded-2xl px-5 shadow-2xs overflow-hidden">
                 <AccordionTrigger className="py-4.5 text-surface-900 hover:no-underline hover:text-brand-600 [&>svg]:text-surface-600">
                   <div className="flex items-center gap-3 text-sm sm:text-base font-bold text-left font-display">
-                    <div className="w-8 h-8 rounded-lg bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100 text-brand-600 flex items-center justify-center shrink-0 shadow-2xs">
                       <Zap className="w-4 h-4" />
                     </div>
                     <span>Instant Webhook Order Settlement</span>
@@ -144,8 +144,8 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
             </Accordion>
           </div>
 
-          {/* Right Interactive Simulator with BorderBeam (6 cols) */}
-          <div className="lg:col-span-6 relative flex flex-col justify-between overflow-hidden rounded-3xl border border-surface-200 bg-white p-6 sm:p-7 shadow-card min-h-[360px]">
+          {/* Right Interactive Simulator with Apple Card Elevation (6 cols) */}
+          <div className="lg:col-span-6 relative flex flex-col justify-between overflow-hidden rounded-[2rem] apple-card-elevated p-6 sm:p-7 min-h-[360px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeItem}
@@ -155,8 +155,8 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 transition={{ duration: 0.15 }}
                 className="space-y-5"
               >
-                <div className="flex items-center justify-between pb-3 border-b border-surface-200">
-                  <span className="px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-[10.5px] font-mono font-bold text-brand-700 uppercase">
+                <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                  <span className="px-3 py-1 rounded-full bg-brand-50 border border-brand-200/80 text-[10.5px] font-mono font-bold text-brand-700 uppercase">
                     {current.tag}
                   </span>
                   <span className="text-[11px] font-mono text-emerald-700 font-bold flex items-center gap-1.5">
@@ -173,11 +173,11 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3.5 bg-[#f8fafc] border border-surface-200 rounded-2xl space-y-0.5">
+                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
                     <span className="text-[10px] font-mono text-surface-500 font-bold uppercase">PRIMARY RULE</span>
                     <p className="text-base font-bold font-mono text-surface-900">{current.metric}</p>
                   </div>
-                  <div className="p-3.5 bg-[#f8fafc] border border-surface-200 rounded-2xl space-y-0.5">
+                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
                     <span className="text-[10px] font-mono text-surface-500 font-bold uppercase">GUARDRAIL</span>
                     <p className="text-base font-bold font-mono text-brand-600">{current.submetric}</p>
                   </div>

@@ -48,9 +48,10 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        display: ["var(--font-display)", "Plus Jakarta Sans", "Inter", "sans-serif"],
+        sans: ["var(--font-sans)", "Google Sans Flex", "Figtree", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+        display: ["var(--font-display)", "Figtree", "Google Sans Flex", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
         mono: ["var(--font-mono)", "JetBrains Mono", "Menlo", "monospace"],
+        handdrawn: ["var(--font-handdrawn)", "Delicious Handrawn", "cursive"],
       },
       borderRadius: {
         "3xl": "1.5rem",

@@ -37,7 +37,7 @@ export default function IntegrationSection() {
   return (
     <section
       id="integrations"
-      className="py-20 sm:py-28 bg-white text-surface-900 relative overflow-hidden border-t border-surface-200"
+      className="py-20 sm:py-28 overflow-hidden text-surface-900"
     >
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
         <div className="text-center space-y-3 max-w-2xl mx-auto">
@@ -63,7 +63,7 @@ export default function IntegrationSection() {
             {INTEGRATIONS.map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] bg-[#fafbfc] border border-surface-200 rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-brand-300 hover:shadow-subtle"
+                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] apple-card rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-black/[0.12] hover:shadow-card cursor-default"
               >
                 <item.icon
                   className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2.5 transition-transform duration-200 group-hover/item:scale-110`}
@@ -79,7 +79,7 @@ export default function IntegrationSection() {
             {[...INTEGRATIONS].reverse().map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] bg-[#fafbfc] border border-surface-200 rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-brand-300 hover:shadow-subtle"
+                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] apple-card rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-black/[0.12] hover:shadow-card cursor-default"
               >
                 <item.icon
                   className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2.5 transition-transform duration-200 group-hover/item:scale-110`}

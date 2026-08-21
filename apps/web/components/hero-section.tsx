@@ -92,24 +92,24 @@ export default function HeroSection() {
   return (
     <section
       id="architecture"
-      className="relative min-h-[90vh] flex flex-col justify-center pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white text-surface-900 overflow-hidden"
+      className="relative min-h-[92vh] flex flex-col justify-center pt-28 sm:pt-36 pb-16 sm:pb-24 overflow-hidden"
     >
-      {/* Background Subtle Gradient & Grid */}
+      {/* Apple Subtle Ambient Lighting Cones */}
       <div
-        className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"
+        className="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-[radial-gradient(ellipse_at_center,rgba(25,90,220,0.08)_0%,rgba(120,170,255,0.03)_45%,transparent_75%)] blur-3xl -z-10"
         aria-hidden="true"
       />
       <div
-        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-brand-100/50 via-brand-50/20 to-transparent blur-3xl pointer-events-none"
+        className="pointer-events-none absolute bottom-0 right-10 w-[600px] h-[400px] bg-[radial-gradient(circle,rgba(0,82,255,0.035)_0%,transparent_70%)] blur-2xl -z-10"
         aria-hidden="true"
       />
 
       <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-10 items-center">
           {/* Left Column: Authoritative Copy & Conversion Actions (6 cols) */}
           <div className="lg:col-span-6 space-y-6 sm:space-y-8 text-left">
             {/* Headline */}
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-[3.85rem] font-extrabold tracking-tight text-surface-900 leading-[1.08] [text-wrap:balance]">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-[3.9rem] font-extrabold tracking-tight text-surface-900 leading-[1.06] [text-wrap:balance]">
               Turn WhatsApp conversations into{' '}
               <span className="text-brand-600">
                 instant Razorpay sales.
@@ -126,7 +126,7 @@ export default function HeroSection() {
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-3.5 pt-1">
               <Link href="/onboarding">
-                <Button className="group bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full px-7 h-12 text-sm gap-2 shadow-xs hover:shadow-glow-blue transition-all duration-200 cursor-pointer">
+                <Button className="group apple-button-primary font-bold rounded-full px-7 h-12 text-sm gap-2 cursor-pointer">
                   <span>Start Conversational Onboarding</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </Button>
@@ -135,7 +135,7 @@ export default function HeroSection() {
               <Link href="/dashboard">
                 <Button
                   variant="outline"
-                  className="rounded-full text-sm font-bold px-6 h-12 border-surface-200 bg-white text-surface-800 hover:bg-surface-50 hover:border-surface-300 shadow-2xs transition-all cursor-pointer"
+                  className="apple-button-secondary rounded-full text-sm font-bold px-6 h-12 cursor-pointer"
                 >
                   Open Merchant Dashboard
                 </Button>
@@ -143,22 +143,22 @@ export default function HeroSection() {
             </div>
 
             {/* Trust Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-surface-200/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-black/[0.08]">
               <div>
-                <p className="font-display text-2xl font-extrabold text-surface-900 tracking-tight tabular-nums">3.4x</p>
-                <p className="text-xs text-surface-500 font-medium">Conversion Lift</p>
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight tabular-nums">3.4x</p>
+                <p className="text-xs text-surface-500 font-medium mt-0.5">Conversion Lift</p>
               </div>
               <div>
-                <p className="font-display text-2xl font-extrabold text-brand-600 tracking-tight tabular-nums">&lt;45ms</p>
-                <p className="text-xs text-surface-500 font-medium">Intent Recall</p>
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-brand-600 tracking-tight tabular-nums">&lt;45ms</p>
+                <p className="text-xs text-surface-500 font-medium mt-0.5">Intent Recall</p>
               </div>
               <div>
-                <p className="font-display text-2xl font-extrabold text-surface-900 tracking-tight tabular-nums">100%</p>
-                <p className="text-xs text-surface-500 font-medium">Floor Protected</p>
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight tabular-nums">100%</p>
+                <p className="text-xs text-surface-500 font-medium mt-0.5">Floor Protected</p>
               </div>
               <div>
-                <p className="font-display text-2xl font-extrabold text-emerald-600 tracking-tight tabular-nums">1-Tap</p>
-                <p className="text-xs text-surface-500 font-medium">UPI Settlement</p>
+                <p className="font-display text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight tabular-nums">1-Tap</p>
+                <p className="text-xs text-surface-500 font-medium mt-0.5">UPI Settlement</p>
               </div>
             </div>
           </div>
@@ -166,15 +166,15 @@ export default function HeroSection() {
           {/* Right Column: Interactive Live WhatsApp Simulation Card (6 cols) */}
           <div className="lg:col-span-6 flex flex-col">
             {/* Scenario Switcher Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-surface-100/80 rounded-2xl border border-surface-200 mb-3 self-start">
+            <div className="flex items-center gap-1 p-1 bg-black/[0.03] backdrop-blur-md rounded-full border border-black/[0.05] mb-3.5 self-start shadow-2xs">
               {scenarios.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => handleScenarioChange(s)}
                   className={cn(
-                    'px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer',
+                    'px-3.5 py-1.5 rounded-full text-xs font-mono font-bold transition-all cursor-pointer',
                     activeScenario.id === s.id
-                      ? 'bg-white text-brand-600 shadow-xs border border-surface-200/60'
+                      ? 'bg-white text-brand-600 shadow-2xs border border-black/[0.06]'
                       : 'text-surface-600 hover:text-surface-900 hover:bg-white/60'
                   )}
                 >
@@ -183,10 +183,10 @@ export default function HeroSection() {
               ))}
             </div>
 
-            {/* High-Fidelity Phone/Chat Frame */}
-            <div className="relative rounded-3xl bg-white border border-surface-200 shadow-card overflow-hidden transition-all duration-300">
+            {/* High-Fidelity Phone/Chat Frame with Apple Hardware Feel */}
+            <div className="relative rounded-[2rem] apple-card-elevated overflow-hidden transition-all duration-300">
               {/* WhatsApp App Header Bar */}
-              <div className="bg-[#0c2340] text-white px-4 py-3.5 flex items-center justify-between">
+              <div className="bg-[#0c2340] text-white px-5 py-4 flex items-center justify-between border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white shadow-xs">

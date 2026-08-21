@@ -31,29 +31,29 @@ export function HeroHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pt-3 sm:pt-4 transition-all duration-300 pointer-events-none">
       <div
         className={cn(
-          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full border',
+          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass',
           scrolled
-            ? 'max-w-5xl bg-white/90 backdrop-blur-xl border-surface-200 shadow-card py-2.5 px-4 sm:px-6'
-            : 'bg-white/80 backdrop-blur-md border-surface-200/90 shadow-subtle py-3 px-5 sm:px-7'
+            ? 'max-w-5xl py-2.5 px-4 sm:px-6'
+            : 'py-3 px-5 sm:px-7'
         )}
       >
         <div className="flex items-center justify-between">
           {/* Brand Logo with Live Beacon */}
           <div className="flex items-center gap-3">
             <Logo size="sm" />
-            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-[10px] font-mono font-semibold text-emerald-700">
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 text-[10px] font-mono font-semibold text-emerald-700 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Razorpay Rails Active</span>
             </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-black/[0.03] p-1 rounded-full border border-black/[0.04]">
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-xs font-medium text-surface-600 hover:text-surface-900 px-3.5 py-1.5 rounded-full hover:bg-surface-100 transition-all duration-150"
+                className="text-xs font-medium text-surface-600 hover:text-surface-900 px-3.5 py-1.5 rounded-full hover:bg-white hover:shadow-2xs transition-all duration-150"
               >
                 {link.label}
               </a>
@@ -64,14 +64,14 @@ export function HeroHeader() {
           <div className="flex items-center gap-2.5">
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center text-xs font-semibold text-surface-600 hover:text-brand-900 px-4 py-2 min-h-[38px] rounded-full hover:bg-surface-100 transition-all duration-150"
+              className="hidden sm:inline-flex items-center text-xs font-semibold text-surface-700 hover:text-surface-900 px-4 py-2 min-h-[38px] rounded-full hover:bg-black/[0.04] transition-all duration-150"
             >
               Sign In
             </Link>
 
             <Link
               href="/onboarding"
-              className="group inline-flex items-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-5 py-2 min-h-[38px] rounded-full transition-all duration-200 shadow-xs hover:shadow-glow-blue active:scale-[0.98]"
+              className="group inline-flex items-center gap-1.5 apple-button-primary text-xs font-bold px-5 py-2 min-h-[38px] rounded-full cursor-pointer"
             >
               <span>Launch Store</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -80,7 +80,7 @@ export function HeroHeader() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-surface-600 hover:text-brand-900 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full hover:bg-surface-100 transition-colors cursor-pointer"
+              className="lg:hidden p-2 text-surface-600 hover:text-brand-900 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors cursor-pointer"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >

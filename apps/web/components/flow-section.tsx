@@ -104,7 +104,7 @@ export default function FlowSection() {
   return (
     <section
       id="flow-intro"
-      className="relative bg-white py-20 sm:py-28 border-t border-surface-200 overflow-hidden text-surface-900"
+      className="relative py-20 sm:py-28 overflow-hidden text-surface-900"
     >
       <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 space-y-12">
         {/* Section Header */}
@@ -121,7 +121,7 @@ export default function FlowSection() {
         </div>
 
         {/* 3 Step Interactive Selector Pills */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {pipelineStages.map((stage, idx) => {
             const isSelected = idx === activeStep
             const StepIcon = stage.icon
@@ -131,17 +131,17 @@ export default function FlowSection() {
                 key={stage.id}
                 onClick={() => setActiveStep(idx)}
                 className={cn(
-                  'p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer space-y-2',
+                  'p-4 sm:p-5 rounded-2xl text-left transition-all duration-200 cursor-pointer space-y-2',
                   isSelected
-                    ? 'bg-brand-50/50 border-brand-500 ring-2 ring-brand-500/10 shadow-xs'
-                    : 'bg-surface-50 border-surface-200 hover:bg-white hover:border-surface-300'
+                    ? 'apple-card-elevated border-brand-500/40 ring-2 ring-brand-500/10 shadow-card'
+                    : 'apple-glass-subtle hover:bg-white/80 hover:border-black/[0.08]'
                 )}
               >
                 <div className="flex items-center justify-between">
                   <span
                     className={cn(
-                      'font-display text-xs font-bold font-mono px-2 py-0.5 rounded-md',
-                      isSelected ? 'bg-brand-500 text-white' : 'bg-surface-200 text-surface-700'
+                      'font-display text-xs font-bold font-mono px-2 py-0.5 rounded-full',
+                      isSelected ? 'bg-brand-500 text-white shadow-2xs' : 'bg-black/[0.06] text-surface-700'
                     )}
                   >
                     STAGE {stage.step}
@@ -159,7 +159,7 @@ export default function FlowSection() {
         </div>
 
         {/* Detailed Stage Showcase Pane */}
-        <div className="bg-[#fafbfc] border border-surface-200 rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center shadow-card">
+        <div className="apple-card-elevated rounded-[2rem] p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Description (6 cols) */}
           <div className="lg:col-span-6 space-y-6">
             <AnimatePresence mode="wait">
@@ -187,11 +187,11 @@ export default function FlowSection() {
 
                 {/* Telemetry Highlights */}
                 <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 bg-white border border-surface-200 rounded-xl space-y-0.5">
+                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
                     <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Latency</span>
                     <p className="text-xs font-bold font-mono text-brand-600">{current.telemetry.latency}</p>
                   </div>
-                  <div className="p-3 bg-white border border-surface-200 rounded-xl space-y-0.5">
+                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
                     <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Execution Status</span>
                     <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -202,7 +202,7 @@ export default function FlowSection() {
 
                 <div className="pt-3">
                   <Link href="/onboarding">
-                    <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full text-xs px-6 h-11 gap-2 shadow-xs cursor-pointer">
+                    <Button className="apple-button-primary font-bold rounded-full text-xs px-6 h-11 gap-2 cursor-pointer">
                       <span>Test Stage {current.step} in Live Simulator</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Button>
@@ -213,7 +213,7 @@ export default function FlowSection() {
           </div>
 
           {/* Right Code & Execution Pipeline Frame (6 cols) */}
-          <div className="lg:col-span-6 bg-[#0c2340] border border-blue-950/60 rounded-2xl p-5 sm:p-6 shadow-popover text-white space-y-4">
+          <div className="lg:col-span-6 bg-[#0c2340] border border-blue-950/60 rounded-[1.5rem] p-5 sm:p-6 shadow-popover text-white space-y-4">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />

@@ -23,12 +23,12 @@ export default function CTASection() {
   return (
     <section
       id="cta"
-      className="relative py-20 sm:py-28 px-4 sm:px-6 bg-[#fafbfc] text-surface-900 overflow-hidden flex flex-col items-center border-t border-surface-200"
+      className="relative py-20 sm:py-28 px-4 sm:px-6 text-surface-900 overflow-hidden flex flex-col items-center"
     >
       <div className="mx-auto max-w-[1240px] w-full relative z-10 px-4 sm:px-6 lg:px-8 flex flex-col gap-12 sm:gap-16">
         {/* Main CTA Top Banner */}
         <div className="text-center flex flex-col items-center space-y-6">
-          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-surface-900 leading-[1.1] [text-wrap:balance] max-w-3xl">
+          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-surface-900 leading-[1.08] [text-wrap:balance] max-w-3xl">
             Activate autonomous WhatsApp selling for{' '}
             <span className="text-brand-600">your store.</span>
           </h2>
@@ -40,7 +40,7 @@ export default function CTASection() {
 
           <div className="flex flex-col sm:flex-row items-center gap-3.5 pt-2">
             <Link href="/onboarding">
-              <Button className="group bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full px-8 h-12 text-sm gap-2 shadow-xs hover:shadow-glow-blue transition-all duration-200 cursor-pointer">
+              <Button className="group apple-button-primary font-bold rounded-full px-8 h-12 text-sm gap-2 cursor-pointer">
                 <span>Start Conversational Onboarding</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Button>
@@ -49,7 +49,7 @@ export default function CTASection() {
             <Link href="/dashboard">
               <Button
                 variant="outline"
-                className="rounded-full text-sm font-bold px-7 h-12 border-surface-200 bg-white text-surface-800 hover:bg-surface-50 hover:border-surface-300 shadow-2xs transition-all cursor-pointer"
+                className="apple-button-secondary rounded-full text-sm font-bold px-7 h-12 cursor-pointer"
               >
                 Open Merchant Dashboard
               </Button>
@@ -69,8 +69,8 @@ export default function CTASection() {
           </div>
         </div>
 
-        {/* Subscribe / Developer Updates Card */}
-        <div className="bg-white border border-surface-200 rounded-3xl p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10 shadow-card">
+        {/* Subscribe / Developer Updates Card with Apple Card Elevation */}
+        <div className="apple-card-elevated rounded-[2rem] p-6 sm:p-10 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
           <div className="flex-1 text-center md:text-left space-y-1.5">
             <h3 className="font-display text-lg sm:text-xl font-bold text-surface-900">
               AgentBridge Merchant &amp; Developer Updates
@@ -93,11 +93,11 @@ export default function CTASection() {
                 placeholder="merchant@yourbrand.com"
                 autoComplete="email"
                 required
-                className="w-full bg-[#fafbfc] border border-surface-200 text-surface-900 placeholder:text-surface-400 text-xs sm:text-sm rounded-full py-3.5 pl-11 pr-28 focus:outline-none focus:border-brand-500 focus:bg-white transition-all shadow-2xs"
+                className="w-full bg-[#fbfbfd] border border-black/[0.08] text-surface-900 placeholder:text-surface-400 text-xs sm:text-sm rounded-full py-3.5 pl-11 pr-28 focus:outline-none focus:border-brand-500 focus:bg-white transition-all shadow-2xs"
               />
               <button
                 type="submit"
-                className="absolute right-1.5 px-4 py-2 bg-brand-500 text-white text-xs font-bold rounded-full hover:bg-brand-600 transition-colors cursor-pointer"
+                className="absolute right-1.5 px-4 py-2 apple-button-primary text-xs font-bold rounded-full cursor-pointer"
               >
                 {subscribed ? (
                   <span className="flex items-center gap-1">

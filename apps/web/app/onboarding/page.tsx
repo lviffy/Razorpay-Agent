@@ -109,12 +109,12 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] flex flex-col">
-      {/* Onboarding Header */}
-      <header className="h-16 bg-white border-b border-surface-200 px-6 flex items-center justify-between select-none">
+    <div className="min-h-screen apple-canvas flex flex-col relative overflow-x-clip">
+      {/* Onboarding Header with Apple Glass */}
+      <header className="h-16 apple-glass px-6 flex items-center justify-between select-none sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs shadow-glow-blue">
+            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_12px_rgba(25,90,220,0.3)]">
               A
             </div>
             <span className="font-display font-extrabold text-base text-surface-900">
@@ -129,7 +129,7 @@ export default function OnboardingPage() {
           <Badge variant="brand">CONVERSATIONAL SETUP</Badge>
           <button
             onClick={handleReset}
-            className="text-surface-400 hover:text-surface-600 p-2 rounded-lg hover:bg-surface-100 transition-colors"
+            className="text-surface-400 hover:text-surface-600 p-2 rounded-lg hover:bg-black/[0.04] transition-colors"
             title="Reset Session"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -140,9 +140,9 @@ export default function OnboardingPage() {
       {/* Main 2-Panel Area */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Panel: Conversational Assistant (60%) */}
-        <div className="lg:col-span-7 bg-white border border-surface-200 rounded-2xl flex flex-col h-[calc(100vh-7.5rem)] overflow-hidden shadow-card">
+        <div className="lg:col-span-7 apple-card-elevated rounded-[1.75rem] flex flex-col h-[calc(100vh-7.5rem)] overflow-hidden">
           {/* Assistant Sub-Header */}
-          <div className="px-5 py-3.5 border-b border-surface-100 flex items-center justify-between bg-surface-50">
+          <div className="px-5 py-3.5 border-b border-black/[0.06] flex items-center justify-between bg-black/[0.02]">
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
