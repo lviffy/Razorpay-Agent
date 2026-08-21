@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Layers,
@@ -13,228 +13,258 @@ import {
   Lock,
   Sparkles,
   Zap,
-  Check,
+  Clock,
+  Database,
+  Code,
+  Terminal,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const pipelineStages = [
-  {
-    step: '01',
-    id: 'catalog-ingest',
-    title: 'Catalog & Margin Mandate Ingestion',
-    subtitle: 'Unified Inventory & Deterministic Floor Rules',
-    description:
-      'Ingest your native product catalog or connect Shopify with one click. Define SKU-level floor prices (e.g. ₹3,500) and max discount ceilings that the AI mathematically enforces.',
-    icon: Layers,
-    badge: 'STAGE 01 — STORE CONFIGURATION',
-    telemetry: {
-      action: 'catalog.sync() & mandate.lock()',
-      latency: '120ms Initial Sync',
-      status: '18 SKUs Configured with Hard Floors',
-    },
-    codeSnippet: `// 1. Ingest Product & Hard Floor Price
-const product = await catalog.upsert({
-  sku: "NK-PEG-40",
-  title: "Nike Air Zoom Pegasus 40 (UK 9)",
-  price: 4299,
-  minPrice: 3500, // Hard floor: never sell below
-  maxDiscountPct: 15,
-  stockCount: 18,
-});`,
-  },
-  {
-    step: '02',
-    id: 'ai-negotiation',
-    title: 'Autonomous Negotiation & Stock Lock',
-    subtitle: 'Conversational Intent & 15-Minute Concurrency',
-    description:
-      'Gemini 2.5 Flash processes buyer inquiries in natural language, reasons over margin guardrails, makes structured counter-offers, and temporarily reserves stock for 15 minutes.',
-    icon: Bot,
-    badge: 'STAGE 02 — WHATSAPP REASONING',
-    telemetry: {
-      action: 'intent.evaluate() -> counterOffer.issue()',
-      latency: '< 45ms Intent Recall',
-      status: '1 Unit Reserved (Timer: 15m)',
-    },
-    codeSnippet: `// 2. Autonomous Margin Negotiation & Stock Hold
-const { decision, counterPrice } = evaluateMandate({
-  buyerOffer: 3400,
-  skuFloor: product.minPrice, // 3500
-});
-
-if (decision === "COUNTER_OFFER") {
-  await inventory.lockUnit(product.sku, { durationMinutes: 15 });
-  return sendWhatsAppMessage(buyer, "I can do ₹3,699 with Free Express Shipping!");
-}`,
-  },
-  {
-    step: '03',
-    id: 'razorpay-settlement',
-    title: 'Instant 1-Tap Razorpay Settlement',
-    subtitle: 'Payment Links & Webhook Order Fulfillment',
-    description:
-      'The AI issues an authenticated Razorpay Payment Link directly in the chat. HMAC SHA-256 verified webhooks instantly confirm payment, commit inventory, and settle INR directly to merchant bank accounts.',
-    icon: CreditCard,
-    badge: 'STAGE 03 — RAZORPAY SETTLEMENT',
-    telemetry: {
-      action: 'payment.captured -> order.fulfill()',
-      latency: '< 10ms Webhook Verification',
-      status: 'Settled to Merchant Bank in 12s',
-    },
-    codeSnippet: `// 3. Razorpay Payment Link & HMAC Webhook
-const paymentLink = await razorpay.paymentLink.create({
-  amount: 369900, // ₹3,699.00 in paise
-  currency: "INR",
-  description: "Order #AB-1092 • Pegasus 40 UK 9",
-  customer: { contact: "+919876543210" },
-});
-
-// Webhook HMAC Verification & Auto-Fulfillment
-verifyWebhookSignature(body, signature, webhookSecret);
-await orders.fulfill({ orderId: "AB-1092", rzpPaymentId: "pay_Rzp982012" });`,
-  },
-]
-
 export default function FlowSection() {
-  const [activeStep, setActiveStep] = useState<number>(0)
-  const current = pipelineStages[activeStep]
-  const IconComponent = current.icon
+  const [activeCodeTab, setActiveCodeTab] = useState<'guardrail' | 'lock' | 'webhook'>('guardrail')
 
   return (
     <section
       id="flow-intro"
-      className="relative py-20 sm:py-28 overflow-hidden text-surface-900"
+      className="relative py-20 sm:py-28 overflow-hidden bg-[#080c16] text-white border-y border-white/10"
     >
+      {/* Ambient Radial Mesh on Dark Section */}
+      <div
+        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-[radial-gradient(ellipse_at_top,rgba(0,82,255,0.2)_0%,rgba(25,90,220,0.08)_45%,transparent_75%)] blur-3xl -z-10"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 w-[500px] h-[400px] bg-[radial-gradient(circle,rgba(16,185,129,0.08)_0%,transparent_70%)] blur-2xl -z-10"
+        aria-hidden="true"
+      />
+
       <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 space-y-12">
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="max-w-2xl space-y-3">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-400/30 text-[11px] font-mono font-bold text-brand-300 uppercase">
+              <Layers className="w-3.5 h-3.5" />
+              <span>Full-Stack Agentic Commerce Architecture</span>
+            </div>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.12] [text-wrap:balance]">
               How AgentBridge Executes Autonomous Sales
             </h2>
           </div>
 
-          <p className="text-sm sm:text-base text-surface-600 max-w-md leading-relaxed font-normal">
-            From initial product catalog ingestion to WhatsApp AI negotiation and automated Razorpay bank settlement.
+          <p className="text-sm sm:text-base text-gray-300 max-w-md leading-relaxed font-normal">
+            A high-performance pipeline connecting WhatsApp Cloud API messaging, Gemini 2.5
+            intent reasoning, deterministic margin guardrails, and Razorpay bank settlements.
           </p>
         </div>
 
-        {/* 3 Step Interactive Selector Pills */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {pipelineStages.map((stage, idx) => {
-            const isSelected = idx === activeStep
-            const StepIcon = stage.icon
+        {/* 4-Card Architecture Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+          {/* Bento 1: Conversational AI Engine (7 cols) */}
+          <div className="lg:col-span-7 apple-card-dark rounded-[2rem] p-6 sm:p-8 space-y-5 border border-white/10 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-brand-400 uppercase tracking-wider">
+                  STAGE 01 — INTENT RECALL
+                </span>
+                <span className="text-[10px] font-mono bg-brand-500/20 text-brand-300 px-2.5 py-0.5 rounded-full border border-brand-500/30 font-bold">
+                  &lt;45ms LATENCY
+                </span>
+              </div>
 
-            return (
-              <button
-                key={stage.id}
-                onClick={() => setActiveStep(idx)}
-                className={cn(
-                  'p-4 sm:p-5 rounded-2xl text-left transition-all duration-200 cursor-pointer space-y-2',
-                  isSelected
-                    ? 'apple-card-elevated border-brand-500/40 ring-2 ring-brand-500/10 shadow-card'
-                    : 'apple-glass-subtle hover:bg-white/80 hover:border-black/[0.08]'
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <span
-                    className={cn(
-                      'font-display text-xs font-bold font-mono px-2 py-0.5 rounded-full',
-                      isSelected ? 'bg-brand-500 text-white shadow-2xs' : 'bg-black/[0.06] text-surface-700'
-                    )}
-                  >
-                    STAGE {stage.step}
-                  </span>
-                  <StepIcon
-                    className={cn('w-4 h-4', isSelected ? 'text-brand-600' : 'text-surface-400')}
-                  />
-                </div>
-                <h3 className="font-display text-sm font-bold text-surface-900 line-clamp-1">
-                  {stage.title}
-                </h3>
-              </button>
-            )
-          })}
-        </div>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-white">
+                Multi-Turn WhatsApp Intent &amp; Catalog Discovery
+              </h3>
 
-        {/* Detailed Stage Showcase Pane */}
-        <div className="apple-card-elevated rounded-[2rem] p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          {/* Left Description (6 cols) */}
-          <div className="lg:col-span-6 space-y-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={current.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-4"
-              >
-                <div className="space-y-1.5">
-                  <span className="text-xs font-mono font-bold text-brand-600 uppercase">
-                    {current.badge}
-                  </span>
-                  <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight">
-                    {current.title}
-                  </h3>
-                  <p className="text-sm font-semibold text-surface-700">{current.subtitle}</p>
-                </div>
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                Processes buyer inquiries in natural English, Hindi, and Hinglish. Discovers catalog
+                SKUs, answers sizing questions, recommends cross-sell bundles, and detects purchase
+                readiness without scripted trees.
+              </p>
+            </div>
 
-                <p className="text-xs sm:text-sm text-surface-600 leading-relaxed">
-                  {current.description}
-                </p>
-
-                {/* Telemetry Highlights */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
-                    <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Latency</span>
-                    <p className="text-xs font-bold font-mono text-brand-600">{current.telemetry.latency}</p>
-                  </div>
-                  <div className="p-3.5 bg-[#fbfbfd] border border-black/[0.06] rounded-2xl space-y-0.5 shadow-2xs">
-                    <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Execution Status</span>
-                    <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      Active
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-3">
-                  <Link href="/onboarding">
-                    <Button className="apple-button-primary font-bold rounded-full text-xs px-6 h-11 gap-2 cursor-pointer">
-                      <span>Test Stage {current.step} in Live Simulator</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+            {/* Visual Chat Stream Preview */}
+            <div className="p-3.5 rounded-xl bg-black/60 border border-white/10 font-mono text-xs text-gray-300 space-y-2">
+              <div className="flex items-center justify-between text-[10px] text-gray-400 border-b border-white/10 pb-1.5">
+                <span>Buyer (+91 98765 43210): &ldquo;Do you have UK 9 in Pegasus 40?&rdquo;</span>
+                <span className="text-emerald-400">INTENT: PRODUCT_SEARCH</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-blue-300">
+                <span>AgentBridge: &ldquo;Yes! 14 units available in UK 9 at ₹4,299.&rdquo;</span>
+                <span className="text-brand-300 font-bold">100% RECALL</span>
+              </div>
+            </div>
           </div>
 
-          {/* Right Code & Execution Pipeline Frame (6 cols) */}
-          <div className="lg:col-span-6 bg-[#0c2340] border border-blue-950/60 rounded-[1.5rem] p-5 sm:p-6 shadow-popover text-white space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          {/* Bento 2: Deterministic Margin Floor (5 cols) */}
+          <div className="lg:col-span-5 apple-card-dark rounded-[2rem] p-6 sm:p-8 space-y-4 border border-white/10 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">
+                  STAGE 02 — MARGIN MANDATE
+                </span>
+                <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-bold">
+                  ZERO HALLUCINATIONS
+                </span>
+              </div>
+
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-white">
+                Deterministic Floor Rules
+              </h3>
+
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                The LLM never sets prices independently. Every discount is validated by a
+                hard-coded mathematical boundary check before any counter-offer is emitted.
+              </p>
+            </div>
+
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs font-mono">
+              <span className="text-emerald-300">Hard SKU Floor: ₹3,500</span>
+              <span className="text-white font-bold">Max Discount: 18%</span>
+            </div>
+          </div>
+
+          {/* Bento 3: 15-Minute Concurrency Lock (5 cols) */}
+          <div className="lg:col-span-5 apple-card-dark rounded-[2rem] p-6 sm:p-8 space-y-4 border border-white/10 flex flex-col justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+                  STAGE 03 — CONCURRENCY HOLD
+                </span>
+                <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/30 font-bold flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> 15m AUTO-RELEASE
+                </span>
+              </div>
+
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-white">
+                Atomic Inventory Reservation
+              </h3>
+
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                When a payment link is issued, stock is atomically reserved for 15 minutes. If
+                unpaid, units auto-return to live catalog without race conditions or double-selling.
+              </p>
+            </div>
+
+            <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs font-mono">
+              <span className="text-amber-300">Status: 1 Unit Locked</span>
+              <span className="text-white font-bold">Timer: 14:48 Remaining</span>
+            </div>
+          </div>
+
+          {/* Bento 4: Interactive Code & Webhook Pipeline (7 cols) */}
+          <div className="lg:col-span-7 apple-card-dark rounded-[2rem] p-6 sm:p-8 space-y-4 border border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-white/10 pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="text-[11px] font-mono text-gray-400 ml-2">pipeline_execution.ts</span>
+                <span className="text-[11px] font-mono text-gray-400 ml-2">
+                  agentbridge_pipeline.ts
+                </span>
               </div>
-              <span className="text-[10.5px] font-mono bg-brand-500/30 text-brand-200 px-2 py-0.5 rounded font-bold">
-                STAGE {current.step}
-              </span>
+
+              {/* Code Tab Switcher */}
+              <div className="flex items-center gap-1 bg-white/10 p-1 rounded-lg self-start sm:self-auto">
+                <button
+                  onClick={() => setActiveCodeTab('guardrail')}
+                  className={cn(
+                    'px-2.5 py-1 rounded text-[10.5px] font-mono font-bold transition-all cursor-pointer',
+                    activeCodeTab === 'guardrail'
+                      ? 'bg-brand-500 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  )}
+                >
+                  Mandate
+                </button>
+                <button
+                  onClick={() => setActiveCodeTab('lock')}
+                  className={cn(
+                    'px-2.5 py-1 rounded text-[10.5px] font-mono font-bold transition-all cursor-pointer',
+                    activeCodeTab === 'lock'
+                      ? 'bg-brand-500 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  )}
+                >
+                  Lock
+                </button>
+                <button
+                  onClick={() => setActiveCodeTab('webhook')}
+                  className={cn(
+                    'px-2.5 py-1 rounded text-[10.5px] font-mono font-bold transition-all cursor-pointer',
+                    activeCodeTab === 'webhook'
+                      ? 'bg-brand-500 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  )}
+                >
+                  Webhook
+                </button>
+              </div>
             </div>
 
-            <pre className="text-xs font-mono text-blue-100 overflow-x-auto leading-relaxed py-2">
-              <code>{current.codeSnippet}</code>
-            </pre>
+            <div className="font-mono text-xs leading-relaxed py-1 min-h-[140px] overflow-x-auto">
+              {activeCodeTab === 'guardrail' && (
+                <div className="space-y-1">
+                  <p className="text-gray-500">// 1. Enforce Deterministic Margin Floor</p>
+                  <p><span className="text-purple-400">const</span> <span className="text-blue-300">evalDecision</span> = <span className="text-yellow-300">evaluateMandate</span>({'{'}</p>
+                  <p className="pl-4"><span className="text-sky-300">buyerOffer</span>: <span className="text-emerald-400">3400</span>,</p>
+                  <p className="pl-4"><span className="text-sky-300">skuFloor</span>: <span className="text-blue-200">product.minPrice</span>, <span className="text-gray-500">// ₹3,500</span></p>
+                  <p className="pl-4"><span className="text-sky-300">allowSweeteners</span>: <span className="text-amber-400">true</span>,</p>
+                  <p>{'});'}</p>
+                  <p><span className="text-purple-400">if</span> (evalDecision.<span className="text-sky-300">isBelowFloor</span>) {'{'}</p>
+                  <p className="pl-4"><span className="text-purple-400">return</span> <span className="text-yellow-300">generateCounterOffer</span>({'{'}</p>
+                  <p className="pl-8"><span className="text-sky-300">price</span>: <span className="text-blue-200">product.minPrice</span> + <span className="text-emerald-400">199</span>, <span className="text-gray-500">// ₹3,699</span></p>
+                  <p className="pl-8"><span className="text-sky-300">sweetener</span>: <span className="text-emerald-300">&quot;FREE_EXPRESS_SHIPPING&quot;</span>,</p>
+                  <p className="pl-4">{'}'});</p>
+                  <p>{'}'}</p>
+                </div>
+              )}
 
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-gray-400">
-              <span>{current.telemetry.action}</span>
-              <span className="text-emerald-400 font-semibold">Ready</span>
+              {activeCodeTab === 'lock' && (
+                <div className="space-y-1">
+                  <p className="text-gray-500">// 2. Concurrency Stock Lock (15 Minutes)</p>
+                  <p><span className="text-purple-400">const</span> <span className="text-blue-300">lockResult</span> = <span className="text-purple-400">await</span> inventory.<span className="text-yellow-300">lockUnit</span>({'{'}</p>
+                  <p className="pl-4"><span className="text-sky-300">sku</span>: <span className="text-emerald-300">&quot;NK-PEG-40&quot;</span>,</p>
+                  <p className="pl-4"><span className="text-sky-300">buyerId</span>: <span className="text-emerald-300">&quot;+919876543210&quot;</span>,</p>
+                  <p className="pl-4"><span className="text-sky-300">durationMinutes</span>: <span className="text-emerald-400">15</span>,</p>
+                  <p>{'});'}</p>
+                  <p className="text-gray-500 pt-1">// Auto-releases if webhook not received in 15m</p>
+                  <p><span className="text-yellow-300">scheduleAutoRelease</span>(lockResult.<span className="text-sky-300">lockId</span>, <span className="text-emerald-400">15 * 60</span>);</p>
+                </div>
+              )}
+
+              {activeCodeTab === 'webhook' && (
+                <div className="space-y-1">
+                  <p className="text-gray-500">// 3. HMAC SHA-256 Webhook Verification</p>
+                  <p><span className="text-purple-400">const</span> <span className="text-blue-300">isValid</span> = <span className="text-yellow-300">verifyRazorpaySignature</span>(</p>
+                  <p className="pl-4">rawBody, headers[<span className="text-emerald-300">&quot;x-razorpay-signature&quot;</span>], process.env.<span className="text-sky-300">RAZORPAY_WEBHOOK_SECRET</span></p>
+                  <p>);</p>
+                  <p><span className="text-purple-400">if</span> (isValid &amp;&amp; event === <span className="text-emerald-300">&quot;payment.captured&quot;</span>) {'{'}</p>
+                  <p className="pl-4"><span className="text-purple-400">await</span> orders.<span className="text-yellow-300">fulfillAndCommitStock</span>({'{'}</p>
+                  <p className="pl-8"><span className="text-sky-300">orderId</span>: payload.<span className="text-sky-300">order_id</span>,</p>
+                  <p className="pl-8"><span className="text-sky-300">paymentId</span>: payload.<span className="text-sky-300">id</span>,</p>
+                  <p className="pl-4">{'}'});</p>
+                  <p>{'}'}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10.5px] font-mono text-gray-400">
+              <span>Razorpay API v2.9 Compatible</span>
+              <span className="text-emerald-400 font-semibold">HMAC SHA-256 Verified</span>
             </div>
           </div>
+        </div>
+
+        {/* Action Link */}
+        <div className="text-center pt-2">
+          <Link href="/onboarding">
+            <Button className="apple-button-primary font-bold rounded-full text-xs px-7 h-11 gap-2 cursor-pointer">
+              <span>Deploy Your Autonomous Agent Now</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

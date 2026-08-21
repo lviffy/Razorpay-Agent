@@ -36,7 +36,7 @@ export function Logo({
     >
       <div
         className={cn(
-          'rounded-xl bg-[#195adc] text-white flex items-center justify-center font-black shadow-xs group-hover:bg-[#378ffa] transition-colors',
+          'rounded-xl bg-[#195adc] text-white flex items-center justify-center font-black group-hover:bg-[#378ffa] transition-colors',
           iconSizes[size]
         )}
       >

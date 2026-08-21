@@ -3,15 +3,16 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Menu, X, Sparkles, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Menu, X, Sparkles, ShieldCheck, Zap } from 'lucide-react'
 import Logo from '@/components/logo'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
   { label: 'Overview', href: '#architecture' },
-  { label: 'Pipeline', href: '#flow-intro' },
+  { label: 'Simulator', href: '#margin-playground' },
+  { label: 'Architecture', href: '#flow-intro' },
+  { label: 'Comparison', href: '#comparison' },
   { label: 'Workflows', href: '#mandates' },
-  { label: 'Guardrails', href: '#mandates-detail' },
   { label: 'Integrations', href: '#integrations' },
 ]
 
@@ -31,29 +32,25 @@ export function HeroHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pt-3 sm:pt-4 transition-all duration-300 pointer-events-none">
       <div
         className={cn(
-          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass',
+          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass border border-black/[0.08]',
           scrolled
-            ? 'max-w-5xl py-2.5 px-4 sm:px-6'
-            : 'py-3 px-5 sm:px-7'
+            ? 'max-w-5xl py-2.5 px-4 sm:px-6 bg-white/90'
+            : 'py-3 px-5 sm:px-7 bg-white/80'
         )}
       >
         <div className="flex items-center justify-between">
-          {/* Brand Logo with Live Beacon */}
+          {/* Brand Logo */}
           <div className="flex items-center gap-3">
             <Logo size="sm" />
-            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 text-[10px] font-mono font-semibold text-emerald-700 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Razorpay Rails Active</span>
-            </div>
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-black/[0.03] p-1 rounded-full border border-black/[0.04]">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 bg-surface-100/80 p-1 rounded-full border border-black/[0.05]">
             {navLinks.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className="text-xs font-medium text-surface-600 hover:text-surface-900 px-3.5 py-1.5 rounded-full hover:bg-white hover:shadow-2xs transition-all duration-150"
+                className="text-xs font-semibold text-surface-700 hover:text-surface-900 px-3.5 py-1.5 rounded-full hover:bg-white transition-all duration-150"
               >
                 {link.label}
               </a>
@@ -64,7 +61,7 @@ export function HeroHeader() {
           <div className="flex items-center gap-2.5">
             <Link
               href="/login"
-              className="hidden sm:inline-flex items-center text-xs font-semibold text-surface-700 hover:text-surface-900 px-4 py-2 min-h-[38px] rounded-full hover:bg-black/[0.04] transition-all duration-150"
+              className="hidden sm:inline-flex items-center text-xs font-bold text-surface-700 hover:text-surface-900 px-4 py-2 min-h-[38px] rounded-full hover:bg-black/[0.04] transition-all duration-150"
             >
               Sign In
             </Link>
@@ -80,7 +77,7 @@ export function HeroHeader() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-surface-600 hover:text-brand-900 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors cursor-pointer"
+              className="lg:hidden p-2 text-surface-700 hover:text-brand-900 min-h-[38px] min-w-[38px] flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors cursor-pointer"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -90,7 +87,7 @@ export function HeroHeader() {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu Drawer Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -98,15 +95,10 @@ export function HeroHeader() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-x-4 top-20 bg-white/95 backdrop-blur-2xl border border-surface-200 rounded-3xl p-6 shadow-popover pointer-events-auto lg:hidden space-y-5"
+            className="fixed inset-x-4 top-20 max-w-md mx-auto bg-white/95 backdrop-blur-2xl border border-surface-200 rounded-3xl p-6 pointer-events-auto lg:hidden space-y-5"
           >
             <div className="flex items-center justify-between pb-3 border-b border-surface-100">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-mono font-bold text-surface-600 uppercase">
-                  Razorpay Agentic Commerce
-                </span>
-              </div>
+              <Logo size="sm" />
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-1 rounded-full text-surface-400 hover:text-surface-700"
@@ -121,7 +113,7 @@ export function HeroHeader() {
                   key={link.label}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block text-xs font-mono font-bold text-surface-700 hover:text-brand-500 px-3 py-2.5 rounded-xl hover:bg-surface-50 transition-colors"
+                  className="block text-xs font-mono font-bold text-surface-700 hover:text-brand-600 px-3 py-2.5 rounded-xl hover:bg-surface-50 transition-colors"
                 >
                   {link.label}
                 </a>
@@ -139,7 +131,7 @@ export function HeroHeader() {
               <Link
                 href="/onboarding"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-center py-2.5 rounded-full bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition-colors shadow-xs"
+                className="text-center py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors shadow-xs"
               >
                 Launch Store
               </Link>

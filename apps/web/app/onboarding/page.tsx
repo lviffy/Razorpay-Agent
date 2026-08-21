@@ -114,7 +114,7 @@ export default function OnboardingPage() {
       <header className="h-16 apple-glass px-6 flex items-center justify-between select-none sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_12px_rgba(25,90,220,0.3)]">
+            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs">
               A
             </div>
             <span className="font-display font-extrabold text-base text-surface-900">
@@ -144,10 +144,7 @@ export default function OnboardingPage() {
           {/* Assistant Sub-Header */}
           <div className="px-5 py-3.5 border-b border-black/[0.06] flex items-center justify-between bg-black/[0.02]">
             <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="text-xs font-bold text-surface-800 font-display">AgentBridge AI Assistant</span>
             </div>
             <span className="text-[11px] text-surface-500 font-mono font-semibold">Step: {state.currentStep}</span>
@@ -250,7 +247,7 @@ export default function OnboardingPage() {
 
                       {/* Step: WHATSAPP_CONNECT */}
                       {state.currentStep === "WHATSAPP_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3 shadow-xs">
+                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-semibold text-surface-900">
@@ -273,7 +270,7 @@ export default function OnboardingPage() {
 
                       {/* Step: RAZORPAY_CONNECT */}
                       {state.currentStep === "RAZORPAY_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3 shadow-xs">
+                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-semibold text-surface-900">
@@ -296,7 +293,7 @@ export default function OnboardingPage() {
 
                       {/* Step: TEST */}
                       {state.currentStep === "TEST" && (
-                        <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3 shadow-xs">
+                        <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-bold text-blue-950">
@@ -319,7 +316,7 @@ export default function OnboardingPage() {
 
                       {/* Step: READY / COMPLETED */}
                       {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
-                        <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3 shadow-xs">
+                        <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3">
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-emerald-600" />
                             <div>

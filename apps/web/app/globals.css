@@ -6,13 +6,13 @@
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
-  scrollbar-color: #d1d5db transparent;
+  scrollbar-color: #cbd5e1 transparent;
   scrollbar-width: thin;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
 }
 
-/* Smooth scrolling & intentional reduced motion preference */
+/* Smooth scrolling & accessible reduced motion */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -21,10 +21,10 @@ html {
   *,
   *::before,
   *::after {
-    animation-duration: 0.001s !important;
+    animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-    transform: none !important;
   }
 }
 
@@ -47,14 +47,14 @@ h1, h2, h3, h4, .font-display {
   font-family: var(--font-handdrawn), 'Delicious Handrawn', cursive;
 }
 
-/* GPU acceleration for smoother scrolling */
+/* GPU acceleration for smoother transitions */
 .gpu-accelerate {
   transform: translateZ(0);
   backface-visibility: hidden;
   perspective: 1000px;
 }
 
-/* Optimize images for scroll performance */
+/* Optimize images & videos for performance */
 img,
 video {
   content-visibility: auto;
@@ -69,9 +69,9 @@ video {
   --color-black: #09090b;
   --color-white: #ffffff;
   --color-text-primary: #09090b;
-  --color-surface: #f5f5f7;
+  --color-surface: #f4f6fa;
 
-  --background: 210 20% 99%;
+  --background: 210 20% 98%;
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
@@ -94,107 +94,145 @@ video {
 }
 
 /* =========================================================================
-   Apple-Grade Material & Lighting System
+   Ultra-Premium Material, Depth & Contrast System
    ========================================================================= */
 
-/* Apple Canvas with Atmospheric Gradient Mesh */
+/* Dynamic Canvas with Multi-Point Atmospheric Mesh */
 .apple-canvas {
   background-color: #fbfbfd;
   background-image: 
-    radial-gradient(120% 80% at 50% -10%, rgba(25, 90, 220, 0.07) 0%, rgba(120, 170, 255, 0.03) 40%, transparent 80%),
-    radial-gradient(90% 60% at 90% 25%, rgba(0, 82, 255, 0.04) 0%, transparent 60%),
-    radial-gradient(80% 50% at 10% 45%, rgba(25, 90, 220, 0.03) 0%, transparent 60%);
-  background-attachment: fixed;
+    radial-gradient(100% 70% at 50% 0%, rgba(25, 90, 220, 0.08) 0%, rgba(56, 141, 250, 0.03) 35%, transparent 75%),
+    radial-gradient(80% 50% at 85% 20%, rgba(0, 82, 255, 0.04) 0%, transparent 60%),
+    radial-gradient(70% 50% at 15% 40%, rgba(25, 90, 220, 0.03) 0%, transparent 60%),
+    radial-gradient(90% 60% at 50% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 70%);
 }
 
-/* Apple Liquid Glass (Vibrancy / Frosted Translucency) */
+/* Dot Grid Background */
+.dot-grid {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.dot-grid-dark {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Frosted Translucent Glass */
 .apple-glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.95),
-    0 10px 30px -5px rgba(0, 0, 0, 0.04),
-    0 2px 8px -2px rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
-.apple-glass-subtle {
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+.apple-glass-dark {
+  background: rgba(10, 15, 26, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
-/* Apple Surface Card (Elevated Material with Specular Highlight) */
+/* Surface Cards */
 .apple-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 251, 253, 0.85) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 1),
-    0 8px 28px -6px rgba(12, 35, 64, 0.04),
-    0 1px 3px 0 rgba(0, 0, 0, 0.02);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: none;
 }
 
 .apple-card-elevated {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 1),
-    0 16px 40px -8px rgba(12, 35, 64, 0.07),
-    0 3px 10px -2px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  box-shadow: none;
 }
 
-/* Tactile Apple Primary Button with Specular Edge */
+.apple-card-dark {
+  background: #090e1a;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: none;
+}
+
+/* Tactile Primary Button */
 .apple-button-primary {
   background: #195adc;
   color: #ffffff;
-  box-shadow: 
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.35),
-    0 2px 6px -1px rgba(25, 90, 220, 0.3),
-    0 6px 16px -2px rgba(25, 90, 220, 0.2);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #195adc;
+  box-shadow: none;
+  transition: all 0.15s ease;
 }
 .apple-button-primary:hover {
   background: #1246b8;
-  box-shadow: 
-    inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.45),
-    0 4px 12px -1px rgba(25, 90, 220, 0.4),
-    0 8px 24px -2px rgba(25, 90, 220, 0.25);
+  border-color: #1246b8;
+  box-shadow: none;
+  transform: translateY(-0.5px);
 }
 .apple-button-primary:active {
-  transform: scale(0.98);
+  transform: translateY(0px) scale(0.99);
 }
 
-/* Apple Subtle Pill Button */
+/* Secondary Button */
 .apple-button-secondary {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: #1f2937;
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+  box-shadow: none;
+  transition: all 0.15s ease;
 }
 .apple-button-secondary:hover {
-  background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 
-    inset 0 1px 1px 0 rgba(255, 255, 255, 1),
-    0 3px 8px -1px rgba(0, 0, 0, 0.05);
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+  transform: translateY(-0.5px);
 }
 .apple-button-secondary:active {
-  transform: scale(0.98);
+  transform: translateY(0px) scale(0.99);
 }
 
-/* Apple Micro-Dot Grid Pattern */
-.apple-dot-grid {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.07) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* =========================================================================
+   Custom High-Craft Slider Controls
+   ========================================================================= */
+input[type=range].custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+input[type=range].custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2.5px solid #195adc;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+input[type=range].custom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type=range].custom-slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+input[type=range].custom-slider-emerald::-webkit-slider-thumb {
+  border-color: #059669;
+  box-shadow: none;
+}
+
+input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
+  box-shadow: none;
 }
 
 /* Sleek custom scrollbars */
@@ -206,10 +244,18 @@ video {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(100, 116, 139, 0.55);
+}
+
+/* Dark mode custom scrollbar */
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 

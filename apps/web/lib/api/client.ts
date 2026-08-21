@@ -26,7 +26,10 @@ class LocalStateStore {
     if (typeof window === "undefined") return fallback;
     try {
       const data = localStorage.getItem(`agentbridge_${key}`);
-      return data ? JSON.parse(data) : fallback;
+      if (!data || data.trim() === "" || data === "undefined" || data === "null") {
+        return fallback;
+      }
+      return JSON.parse(data);
     } catch {
       return fallback;
     }

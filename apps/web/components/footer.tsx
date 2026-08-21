@@ -59,7 +59,7 @@ export default function Footer() {
             {/* Logo and Description */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-extrabold text-sm shadow-glow-blue">
+                <div className="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-extrabold text-sm">
                   A
                 </div>
                 <span className="font-display text-xl font-extrabold tracking-tight text-white">
@@ -147,10 +147,7 @@ export default function Footer() {
           <p>© 2026 AgentBridge Inc. Built for Razorpay Agentic Commerce.</p>
           <div className="flex items-center gap-6 text-[11px]">
             <span className="flex items-center gap-2 text-emerald-400 font-medium">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-              </span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
               All Systems Operational
             </span>
             <span className="text-gray-500">API v2.9 • Cloud v21.0</span>
