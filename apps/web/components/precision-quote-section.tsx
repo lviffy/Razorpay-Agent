@@ -1,44 +1,41 @@
 'use client'
 
 import React from 'react'
-import { motion } from 'framer-motion'
-import { ShieldCheck, CheckCircle2, Sparkles } from 'lucide-react'
+import { ShieldCheck, CheckCircle2, Lock, Zap } from 'lucide-react'
 
 export default function PrecisionQuoteSection() {
   return (
     <section
-      id="precision-quote"
+      id="precision-statement"
       className="relative py-14 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden text-surface-900 bg-white border-y border-black/[0.06]"
     >
-      <div className="max-w-[1240px] mx-auto apple-card-elevated rounded-[2.5rem] p-8 sm:p-12 flex flex-col md:flex-row items-center gap-8 sm:gap-10 relative z-10 bg-gradient-to-br from-white via-surface-50/60 to-blue-50/30 border border-black/[0.08]">
-        <div className="flex-shrink-0">
-          <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-brand-600 text-white flex items-center justify-center">
-            <ShieldCheck className="w-8 h-8 sm:w-9 sm:h-9 text-white" />
+      <div className="max-w-[1240px] mx-auto apple-card-elevated rounded-[2.5rem] p-7 sm:p-12 flex flex-col md:flex-row items-center gap-7 sm:gap-10 relative z-10 bg-gradient-to-br from-white via-surface-50/60 to-blue-50/30 border border-black/[0.08] shadow-xs">
+        <div className="shrink-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-md shadow-brand-600/20">
+            <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
         </div>
 
-        <blockquote className="w-full space-y-3">
-          <p className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-surface-900 tracking-tight leading-snug [text-wrap:balance]">
-            &ldquo;Indian shoppers naturally converse and bargain in WhatsApp. With AgentBridge,
-            your sales convert 3.4x faster while{' '}
+        <div className="w-full space-y-4">
+          <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-surface-900 tracking-tight leading-snug [text-wrap:balance]">
+            Shoppers bargain on WhatsApp. AgentBridge turns conversational friction into closed sales — while{' '}
             <span className="text-brand-600">
               every rupee of your profit margin remains mathematically protected.
             </span>
-            &rdquo;
-          </p>
+          </h3>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs text-surface-600 pt-1">
-            <span className="font-bold text-surface-900 font-sans">
-              AgentBridge Autonomous Commerce Thesis
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-surface-700 pt-1 font-medium">
+            <span className="text-surface-900 font-bold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Zero Margin Hallucinations
             </span>
-            <span>•</span>
-            <span className="text-brand-700 font-mono font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Zero Margin Hallucinations
+            <span className="flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" /> 15-Minute Atomic Stock Locks
             </span>
-            <span>•</span>
-            <span className="text-surface-500 font-mono">Razorpay Official Rails</span>
+            <span className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-brand-600 shrink-0" /> Official Razorpay Settlement Rails
+            </span>
           </div>
-        </blockquote>
+        </div>
       </div>
     </section>
   )

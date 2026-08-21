@@ -175,9 +175,8 @@ const targetSegments = [
       'Transform casual social media leads and abandoned shopping inquiries into immediate paying customers on WhatsApp with personalized multi-turn AI negotiation.',
     bullets: [
       '3.4x Higher Conversion vs Web Storefronts',
-      'Personalized Product Recommendations & Size Advice',
-      'Automated Negotiation within Pre-set Margins',
-      'Instant One-Tap UPI Checkout via Razorpay',
+      'Personalized Product Recommendations & Size Sizing Guidance',
+      'Instant 1-Tap UPI Checkout via Razorpay Payment Links',
     ],
     illustration: WhatsAppSellingCard,
   },
@@ -187,12 +186,11 @@ const targetSegments = [
     title: 'Built for High-Volume Shopify Merchants',
     subtitle: 'Unified Catalog & Automated Stock Protection',
     description:
-      'Sync 100+ Shopify SKUs or manage a native catalog with zero technical overhead. Automated 15-minute unit locking ensures no inventory conflicts during sales drops.',
+      'Sync 100+ Shopify SKUs or manage a native catalog with zero technical overhead. Automated 15-minute unit locking ensures no inventory conflicts during flash drops.',
     bullets: [
-      'One-Click Shopify OAuth & Variant Sync',
-      'Granular Margin Floor Rules per SKU',
-      'Autonomous 15-Minute Unit Reservation Locks',
-      'Multi-Variant and Sizing Recommendations',
+      'One-Click Shopify OAuth & Real-Time Variant Sync',
+      'Granular Margin Floor Guardrails per SKU',
+      'Autonomous 15-Minute Concurrency Reservation Locks',
     ],
     illustration: UnifiedCatalogCard,
   },
@@ -205,9 +203,8 @@ const targetSegments = [
       'Scale across dedicated WhatsApp numbers with seamless human escalation rules, cryptographic webhook auditing, and zero merchant secret exposure.',
     bullets: [
       'Official WhatsApp Cloud API Multi-Number Routing',
-      'HMAC SHA-256 Verified Webhook Gateway',
-      'One-Click Human Agent Live Takeover',
-      'Audit Trails for Every Price Negotiation',
+      'HMAC SHA-256 Verified Webhook Settlement Gateway',
+      'One-Click Human Agent Live Takeover & Audit Ledger',
     ],
     illustration: RazorpaySettlementCard,
   },
@@ -242,7 +239,7 @@ export default function BuiltForWhomSection() {
                 className={cn(
                   'px-3.5 sm:px-4 py-2 rounded-full text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap',
                   activeTab === segment.id
-                    ? 'bg-brand-600 text-white'
+                    ? 'bg-brand-600 text-white shadow-xs'
                     : 'text-surface-600 hover:text-surface-900 hover:bg-white'
                 )}
               >
@@ -253,9 +250,9 @@ export default function BuiltForWhomSection() {
         </div>
 
         {/* 2-Pane Frame with Apple Card Elevation */}
-        <div className="apple-card-elevated rounded-[2.5rem] p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center border border-black/[0.08]">
+        <div className="apple-card-elevated rounded-[2.5rem] p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch border border-black/[0.08] shadow-sm">
           {/* Left Description (6 cols) */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-6 flex flex-col justify-center h-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}
@@ -274,33 +271,24 @@ export default function BuiltForWhomSection() {
                   </h3>
                 </div>
 
-                <p className="text-xs sm:text-sm text-surface-600 leading-relaxed font-normal">
+                <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal">
                   {current.description}
                 </p>
 
-                <div className="space-y-2.5 pt-2">
+                <div className="space-y-3 pt-2">
                   {current.bullets.map((b, i) => (
-                    <div key={i} className="flex items-center gap-2.5 text-xs sm:text-sm text-surface-800 font-medium">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <div key={i} className="flex items-center gap-3 text-sm sm:text-base text-surface-900 font-semibold">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                       <span>{b}</span>
                     </div>
                   ))}
-                </div>
-
-                <div className="pt-4">
-                  <Link href="/onboarding">
-                    <Button className="apple-button-primary font-bold rounded-full text-xs px-6 h-11 gap-2 cursor-pointer">
-                      <span>Get Started with {current.tabName}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </Link>
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
           {/* Right Interactive Illustration (6 cols) */}
-          <div className="lg:col-span-6 min-h-[350px] sm:min-h-[380px] lg:aspect-[4/3] bg-surface-50 border border-black/[0.08] rounded-[2rem] p-3 sm:p-4 flex items-center justify-center overflow-hidden">
+          <div className="lg:col-span-6 h-full min-h-[350px] sm:min-h-[380px] bg-surface-50 border border-black/[0.08] rounded-[2rem] p-3 sm:p-4 flex items-center justify-center overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.id}
@@ -308,7 +296,7 @@ export default function BuiltForWhomSection() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.98 }}
                 transition={{ duration: 0.15 }}
-                className="w-full h-full"
+                className="w-full h-full flex items-center justify-center"
               >
                 <IllustrationComponent />
               </motion.div>

@@ -1,317 +1,367 @@
 'use client'
 
 import React, { useState } from 'react'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShieldCheck,
   Zap,
   Lock,
   RefreshCw,
   CheckCircle2,
-  AlertTriangle,
   Sliders,
-  Sparkles,
-  ArrowRight,
-  TrendingUp,
   CreditCard,
   MessageSquare,
   Bot,
+  Check,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
-interface PromptPreset {
-  id: string
-  label: string
-  offerPrice: number
-  text: string
-  intent: 'bargain_below' | 'bargain_above' | 'bundle'
-}
-
-const PRESET_QUERIES: PromptPreset[] = [
-  {
-    id: 'below-floor',
-    label: 'Lowball Offer (Below Floor)',
-    offerPrice: 3200,
-    text: 'Hey! Will you take ₹3,200 for this right now? Can pay immediately via GPay.',
-    intent: 'bargain_below',
-  },
-  {
-    id: 'near-floor',
-    label: 'Reasonable Bargain (Above Floor)',
-    offerPrice: 3750,
-    text: 'Can you do ₹3,750? Ready to checkout today.',
-    intent: 'bargain_above',
-  },
-  {
-    id: 'free-shipping',
-    label: 'Sweetener Request',
-    offerPrice: 3550,
-    text: 'If I pay ₹3,550, can you include free express delivery to Mumbai?',
-    intent: 'bargain_below',
-  },
-]
 
 export default function MarginPlayground() {
   const [listPrice, setListPrice] = useState<number>(4499)
   const [floorPrice, setFloorPrice] = useState<number>(3600)
-  const [selectedPreset, setSelectedPreset] = useState<PromptPreset>(PRESET_QUERIES[0])
   const [buyerOffer, setBuyerOffer] = useState<number>(3200)
+  const [isSimulatingPayment, setIsSimulatingPayment] = useState<boolean>(false)
+  const [hasPaid, setHasPaid] = useState<boolean>(false)
 
-  const handleSelectPreset = (preset: PromptPreset) => {
-    setSelectedPreset(preset)
-    setBuyerOffer(preset.offerPrice)
+  // Real-time calculation logic
+  const discountFromList = Math.max(0, Math.round(((listPrice - buyerOffer) / listPrice) * 100))
+  const isBelowFloor = buyerOffer < floorPrice
+  // When below floor, AI counters at floor + small safety buffer (₹199) with sweetener
+  const counterPrice = isBelowFloor ? Math.min(listPrice, floorPrice + 199) : buyerOffer
+  const estimatedCost = Math.round(floorPrice * 0.8) // 80% COGS base
+  const netMarginSaved = Math.max(0, counterPrice - estimatedCost)
+
+  const handleQuickOffer = (offer: number) => {
+    setBuyerOffer(offer)
+    setHasPaid(false)
   }
 
-  // Real-time AI computation logic
-  const discountFromList = Math.round(((listPrice - buyerOffer) / listPrice) * 100)
-  const isBelowFloor = buyerOffer < floorPrice
-  const counterPrice = isBelowFloor ? Math.max(floorPrice, Math.round(floorPrice * 1.04)) : buyerOffer
-  const profitPreserved = counterPrice - Math.round(floorPrice * 0.85) // Est. COGS 85% of floor
+  const handleSimulatePayment = () => {
+    if (hasPaid) {
+      setHasPaid(false)
+      return
+    }
+    setIsSimulatingPayment(true)
+    setTimeout(() => {
+      setIsSimulatingPayment(false)
+      setHasPaid(true)
+    }, 800)
+  }
 
   return (
-    <section id="margin-playground" className="py-20 sm:py-28 bg-white border-y border-black/[0.06] relative overflow-hidden">
-      {/* Background Architectural Mesh */}
+    <section
+      id="margin-playground"
+      className="py-20 sm:py-28 bg-white border-y border-black/[0.06] relative overflow-hidden"
+    >
+      {/* Background Architectural Glow */}
       <div
-        className="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(25,90,220,0.06)_0%,rgba(16,185,129,0.03)_50%,transparent_70%)] blur-3xl -z-10"
+        className="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.03)_0%,transparent_70%)] blur-3xl -z-10"
         aria-hidden="true"
       />
 
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12 relative z-10">
-        {/* Section Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-200/80 text-[11px] font-mono font-bold text-brand-700 uppercase">
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Interactive Margin Guardrail Simulator</span>
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12 relative z-10">
+        {/* Clean Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+          <div className="max-w-xl space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-100 border border-black/[0.06] text-xs font-mono font-medium text-surface-800">
+              <Sliders className="w-3.5 h-3.5 text-surface-600" />
+              <span>Interactive Margin Simulator</span>
             </div>
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
-              Test How the AI Protects Your Margins in Real-Time
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
+              Test How the AI Protects Your Margins
             </h2>
           </div>
 
           <p className="text-sm sm:text-base text-surface-600 max-w-md leading-relaxed font-normal">
-            Adjust your SKU catalog pricing and floor limits below. See how AgentBridge
-            mathematically evaluates buyer bargaining on WhatsApp without human intervention.
+            Adjust the sliders below to see how AgentBridge applies deterministic margin floors,
+            counters lowball offers, and generates instant Razorpay payment links.
           </p>
         </div>
 
-        {/* The 2-Column Interactive Sandbox */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Merchant SKU Configuration Sliders (5 cols) */}
-          <div className="lg:col-span-5 apple-card-elevated rounded-[2rem] p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-black/[0.08] pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center font-bold">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-sm text-surface-900">
-                    Merchant Guardrail Rules
-                  </h3>
-                  <span className="text-[10.5px] font-mono text-surface-500">
-                    SKU: NK-PEG-40 (Active)
-                  </span>
-                </div>
+        {/* 2-Column Balanced Simulator */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+          {/* Left Column: SKU Configuration (5 cols) */}
+          <div className="lg:col-span-5 bg-surface-50 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-black/[0.06] pb-4 min-h-[52px]">
+              <div>
+                <h3 className="font-display font-bold text-sm text-surface-900">
+                  SKU Margin Rules
+                </h3>
+                <span className="text-xs text-surface-500 font-mono">
+                  Nike Air Zoom Pegasus 40
+                </span>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
-                MANDATE ACTIVE
+              <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-medium">
+                Live Rule Active
               </span>
             </div>
 
-            {/* Slider 1: Retail List Price */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-mono font-bold">
-                <span className="text-surface-700">Retail List Price (MSRP)</span>
-                <span className="text-surface-900 font-extrabold text-sm">
-                  ₹{listPrice.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="2000"
-                max="8000"
-                step="100"
-                value={listPrice}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  setListPrice(val)
-                  if (val <= floorPrice) setFloorPrice(val - 300)
-                }}
-                className="custom-slider"
-              />
-              <div className="flex justify-between text-[10px] font-mono text-surface-400">
-                <span>₹2,000</span>
-                <span>₹8,000</span>
-              </div>
-            </div>
-
-            {/* Slider 2: Hard Floor Price */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs font-mono font-bold">
-                <span className="text-emerald-700 flex items-center gap-1">
-                  <Lock className="w-3 h-3" /> Hard Margin Floor (Never Sell Below)
-                </span>
-                <span className="text-emerald-700 font-extrabold text-sm">
-                  ₹{floorPrice.toLocaleString('en-IN')}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1500"
-                max={listPrice - 100}
-                step="50"
-                value={floorPrice}
-                onChange={(e) => setFloorPrice(Number(e.target.value))}
-                className="custom-slider custom-slider-emerald"
-              />
-              <div className="flex justify-between text-[10px] font-mono text-surface-400">
-                <span>₹1,500</span>
-                <span>Max: ₹{(listPrice - 100).toLocaleString('en-IN')}</span>
-              </div>
-            </div>
-
-            {/* Presets for Buyer Queries */}
-            <div className="space-y-2.5 pt-2 border-t border-black/[0.06]">
-              <label className="text-xs font-mono font-bold text-surface-700 block uppercase">
-                Simulate Buyer WhatsApp Inquiry
-              </label>
+            {/* Sliders Body */}
+            <div className="space-y-5 flex-1 flex flex-col justify-around py-1">
+              {/* Slider 1: Retail Price */}
               <div className="space-y-2">
-                {PRESET_QUERIES.map((preset) => (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-surface-700">
+                    Retail MSRP
+                  </span>
+                  <span className="text-sm font-mono font-bold text-surface-900">
+                    ₹{listPrice.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="2000"
+                  max="8000"
+                  step="50"
+                  value={listPrice}
+                  onChange={(e) => {
+                    const val = Number(e.target.value)
+                    setListPrice(val)
+                    if (val <= floorPrice) setFloorPrice(val - 200)
+                  }}
+                  className="w-full accent-surface-900 cursor-pointer h-1.5 bg-black/[0.08] rounded-lg"
+                />
+              </div>
+
+              {/* Slider 2: Margin Floor */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-surface-700 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-surface-500" />
+                    Hard Profit Floor
+                  </span>
+                  <span className="text-sm font-mono font-bold text-emerald-700">
+                    ₹{floorPrice.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1500"
+                  max={Math.max(1600, listPrice - 100)}
+                  step="50"
+                  value={floorPrice}
+                  onChange={(e) => setFloorPrice(Number(e.target.value))}
+                  className="w-full accent-emerald-600 cursor-pointer h-1.5 bg-black/[0.08] rounded-lg"
+                />
+              </div>
+
+              {/* Slider 3: Buyer Offer */}
+              <div className="space-y-2 pt-2 border-t border-black/[0.06]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-surface-700">
+                    Buyer Offer
+                  </span>
+                  <span className="text-sm font-mono font-bold text-surface-900">
+                    ₹{buyerOffer.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1500"
+                  max={listPrice}
+                  step="50"
+                  value={buyerOffer}
+                  onChange={(e) => {
+                    setBuyerOffer(Number(e.target.value))
+                    setHasPaid(false)
+                  }}
+                  className="w-full accent-surface-900 cursor-pointer h-1.5 bg-black/[0.08] rounded-lg"
+                />
+
+                {/* Preset Chips */}
+                <div className="grid grid-cols-3 gap-2 pt-2">
                   <button
-                    key={preset.id}
-                    onClick={() => handleSelectPreset(preset)}
+                    type="button"
+                    onClick={() => handleQuickOffer(Math.max(1500, floorPrice - 400))}
                     className={cn(
-                      'w-full text-left p-3.5 rounded-xl border text-xs transition-all cursor-pointer space-y-1',
-                      selectedPreset.id === preset.id
-                        ? 'bg-brand-50/90 border-brand-300 text-brand-900 shadow-2xs'
-                        : 'bg-surface-50 border-black/[0.06] text-surface-700 hover:bg-white hover:border-black/[0.12]'
+                      'py-1.5 px-2 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer text-center truncate',
+                      buyerOffer < floorPrice
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-xs'
+                        : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
                     )}
                   >
-                    <div className="flex items-center justify-between font-mono font-bold text-[11px]">
-                      <span>{preset.label}</span>
-                      <span className={preset.offerPrice < floorPrice ? 'text-amber-600' : 'text-emerald-600'}>
-                        Offer: ₹{preset.offerPrice.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <p className="text-[11.5px] text-surface-600 line-clamp-1 italic font-sans">
-                      &ldquo;{preset.text}&rdquo;
-                    </p>
+                    Lowball ₹{(Math.max(1500, floorPrice - 400)).toLocaleString('en-IN')}
                   </button>
-                ))}
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickOffer(floorPrice)}
+                    className={cn(
+                      'py-1.5 px-2 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer text-center truncate',
+                      buyerOffer === floorPrice
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-xs'
+                        : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
+                    )}
+                  >
+                    Floor ₹{floorPrice.toLocaleString('en-IN')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickOffer(Math.min(listPrice, floorPrice + 350))}
+                    className={cn(
+                      'py-1.5 px-2 rounded-lg text-xs font-mono font-medium border transition-all cursor-pointer text-center truncate',
+                      buyerOffer > floorPrice
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-xs'
+                        : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
+                    )}
+                  >
+                    Above ₹{(Math.min(listPrice, floorPrice + 350)).toLocaleString('en-IN')}
+                  </button>
+                </div>
               </div>
+            </div>
+
+            {/* Left Footer */}
+            <div className="border-t border-black/[0.06] pt-3 flex items-center justify-between text-xs font-mono text-surface-500">
+              <span className="flex items-center gap-1.5 text-emerald-700 font-medium">
+                <Check className="w-3.5 h-3.5" />
+                Live Rule Engine Connected
+              </span>
+              <span>Guardrails Armed</span>
             </div>
           </div>
 
-          {/* Right Column: Real-Time AI Autonomous Decision & Razorpay Output (7 cols) */}
-          <div className="lg:col-span-7 apple-card-dark rounded-[2rem] p-6 sm:p-8 text-white space-y-6 shadow-popover">
-            {/* Header Telemetry */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold shadow-glow-blue">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-sm text-white">
-                    AgentBridge Autonomous Decision Engine
-                  </h3>
-                  <span className="text-[10.5px] font-mono text-blue-200">
-                    Gemini 2.5 Flash • &lt;38ms Latency
-                  </span>
-                </div>
+          {/* Right Column: AI Decision Output (7 cols) */}
+          <div className="lg:col-span-7 bg-[#090d16] text-white rounded-3xl p-6 sm:p-7 border border-white/10 flex flex-col justify-between h-full space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4 min-h-[52px]">
+              <div>
+                <h3 className="font-display font-bold text-sm text-white">
+                  Decision Engine Output
+                </h3>
+                <span className="text-xs text-slate-400 font-mono">
+                  Deterministic Guardrail • &lt;38ms Latency
+                </span>
               </div>
 
               <span
                 className={cn(
-                  'text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border',
+                  'text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full border self-start sm:self-auto',
                   isBelowFloor
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                    : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                 )}
               >
-                {isBelowFloor ? 'HARD FLOOR TRIGGERED' : 'WITHIN MANDATE BOUNDS'}
+                {isBelowFloor ? 'Floor Protected — Counter Generated' : 'Within Mandate — Auto-Approved'}
               </span>
             </div>
 
-            {/* Live Visual Profit Matrix */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 bg-white/5 border border-white/10 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono text-gray-400 block uppercase">
-                  Buyer Offer
-                </span>
-                <p className="font-mono text-base font-extrabold text-white">
-                  ₹{buyerOffer.toLocaleString('en-IN')}
-                </p>
-                <span className="text-[10px] font-mono text-gray-400">
-                  {discountFromList}% off list
-                </span>
-              </div>
-
-              <div className="p-3.5 bg-white/5 border border-white/10 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono text-emerald-400 block uppercase">
-                  Floor Mandate
-                </span>
-                <p className="font-mono text-base font-extrabold text-emerald-400">
-                  ₹{floorPrice.toLocaleString('en-IN')}
-                </p>
-                <span className="text-[10px] font-mono text-emerald-300">
-                  100% Protected
-                </span>
-              </div>
-
-              <div className="p-3.5 bg-brand-500/10 border border-brand-500/30 rounded-xl space-y-1">
-                <span className="text-[10px] font-mono text-blue-300 block uppercase">
-                  AI Final Offer
-                </span>
-                <p className="font-mono text-base font-extrabold text-brand-300">
-                  ₹{counterPrice.toLocaleString('en-IN')}
-                </p>
-                <span className="text-[10px] font-mono text-emerald-400">
-                  +₹{profitPreserved} Net Margin
-                </span>
-              </div>
-            </div>
-
-            {/* Generated WhatsApp Output Bubble */}
-            <div className="p-4 rounded-2xl bg-[#0b141a] border border-white/10 space-y-3">
-              <div className="flex items-center justify-between text-[11px] font-mono text-gray-400 border-b border-white/10 pb-2">
-                <span className="flex items-center gap-1.5 text-brand-300 font-semibold">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  Generated WhatsApp Response
-                </span>
-                <span className="text-emerald-400 font-bold">1 Unit Reserved (15m)</span>
-              </div>
-
-              <p className="text-xs sm:text-sm text-gray-100 leading-relaxed font-sans">
-                {isBelowFloor
-                  ? `“I can’t do ₹${buyerOffer.toLocaleString('en-IN')}, but I’ve reserved 1 unit for you at ₹${counterPrice.toLocaleString('en-IN')} with Free Express Shipping! 🚀 Tap below to pay via UPI:”`
-                  : `“Deal! I’ve locked the price at ₹${counterPrice.toLocaleString('en-IN')} for the next 15 minutes. Complete your 1-tap checkout here:”`}
-              </p>
-
-              {/* Signed Razorpay Link Payload */}
-              <div className="p-3 rounded-xl bg-[#0052ff]/15 border border-[#0052ff]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-blue-200">
-                <div className="flex items-center gap-2 truncate">
-                  <CreditCard className="w-4 h-4 text-brand-400 shrink-0" />
-                  <span className="truncate">rzp.io/i/plink_guardrail_{counterPrice}</span>
+            {/* Metrics & Output Body */}
+            <div className="space-y-4 flex-1 flex flex-col justify-around py-1">
+              {/* 3 Metric Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 bg-white/5 border border-white/5 rounded-2xl space-y-0.5">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">
+                    Buyer Requested
+                  </span>
+                  <p className="font-mono text-base sm:text-lg font-bold text-white">
+                    ₹{buyerOffer.toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10.5px] font-mono text-slate-400">
+                    {discountFromList}% off MSRP
+                  </span>
                 </div>
-                <span className="bg-[#0052ff] text-white px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 self-start sm:self-auto">
-                  ₹{counterPrice.toLocaleString('en-IN')} UPI
-                </span>
+
+                <div className="p-3 bg-white/5 border border-white/5 rounded-2xl space-y-0.5">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">
+                    Floor Mandate
+                  </span>
+                  <p className="font-mono text-base sm:text-lg font-bold text-slate-200">
+                    ₹{floorPrice.toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10.5px] font-mono text-emerald-400 font-medium">
+                    100% Floor Safe
+                  </span>
+                </div>
+
+                <div className="p-3 bg-white/5 border border-white/5 rounded-2xl space-y-0.5">
+                  <span className="text-[10px] font-mono text-slate-400 block uppercase">
+                    Final Offer
+                  </span>
+                  <p className="font-mono text-base sm:text-lg font-bold text-emerald-400">
+                    ₹{counterPrice.toLocaleString('en-IN')}
+                  </p>
+                  <span className="text-[10.5px] font-mono text-slate-300">
+                    +₹{netMarginSaved.toLocaleString('en-IN')} Net Margin
+                  </span>
+                </div>
+              </div>
+
+              {/* Simulated Response Box */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-white/10 pb-2">
+                  <span className="flex items-center gap-1.5 text-slate-200">
+                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                    WhatsApp Buyer Response
+                  </span>
+                  <span className="text-slate-300">15m Stock Reserved</span>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans font-normal">
+                  {isBelowFloor ? (
+                    <>
+                      &ldquo;I can&apos;t do ₹{buyerOffer.toLocaleString('en-IN')}, but I can lock it right now for{' '}
+                      <span className="text-white font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> with Free
+                      Express Shipping! Deal?&rdquo;
+                    </>
+                  ) : (
+                    <>
+                      &ldquo;Deal! I&apos;ve reserved 1 unit at{' '}
+                      <span className="text-white font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> for the
+                      next 15 minutes. Tap below to complete instant checkout:&rdquo;
+                    </>
+                  )}
+                </p>
+
+                {/* 1-Tap Razorpay UPI Bar */}
+                <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="min-w-0">
+                    <span className="text-white font-semibold block">Razorpay 1-Tap UPI</span>
+                    <span className="text-[10.5px] font-mono text-slate-400 truncate block">
+                      rzp.io/i/plink_pegasus40_₹{counterPrice}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSimulatePayment}
+                    disabled={isSimulatingPayment}
+                    className={cn(
+                      'px-4 py-2 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0',
+                      hasPaid
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                        : 'bg-white hover:bg-slate-100 text-slate-950 shadow-xs'
+                    )}
+                  >
+                    {isSimulatingPayment ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Verifying...</span>
+                      </>
+                    ) : hasPaid ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Paid ₹{counterPrice.toLocaleString('en-IN')} via UPI</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-3.5 h-3.5 fill-current" />
+                        <span>Pay ₹{counterPrice.toLocaleString('en-IN')} via UPI</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* CTA inside dark box */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-gray-400 font-mono">
-                Zero human negotiation delay • Zero discount leakage
+            {/* Right Footer */}
+            <div className="border-t border-white/10 pt-3 flex items-center justify-between text-xs font-mono text-slate-400">
+              <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
+                <Check className="w-3.5 h-3.5" />
+                Zero Hallucinations
               </span>
-              <Link href="/onboarding" className="shrink-0">
-                <Button className="apple-button-primary rounded-full text-xs font-bold px-5 h-10 gap-1.5 cursor-pointer w-full sm:w-auto">
-                  <span>Configure Your SKUs</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
+              <span>Hard Mathematical Floor</span>
             </div>
           </div>
         </div>

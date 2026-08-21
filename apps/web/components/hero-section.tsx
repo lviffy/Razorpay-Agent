@@ -159,63 +159,60 @@ export default function HeroSection() {
               </span>
             </h1>
 
-            {/* Sub-copy */}
-            <p className="text-base sm:text-lg text-surface-700 leading-relaxed max-w-xl font-normal [text-wrap:pretty]">
-              Deploy autonomous AI seller agents that discover products, negotiate strictly within
-              your SKU margin mandates, lock live inventory, and collect instant 1-tap UPI payments
-              directly on WhatsApp.
+            {/* Sub-copy (Simplified & Punchy) */}
+            <p className="text-base sm:text-lg text-surface-700 leading-relaxed max-w-xl font-medium [text-wrap:pretty]">
+              AI agents that negotiate, protect margins, and close sales — while you sleep.
             </p>
 
-            {/* Primary Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 pt-1">
+            {/* Primary Action Button (Single Green CTA) */}
+            <div className="pt-1">
               <Link href="/onboarding">
-                <Button className="group apple-button-primary font-bold rounded-full px-7 h-12 text-sm gap-2 cursor-pointer">
-                  <span>Start Conversational Setup</span>
+                <Button className="group bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full px-8 h-13 text-sm sm:text-base gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                  <span>Start Autonomous Selling</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-
-              <Link href="/dashboard">
-                <Button
-                  variant="outline"
-                  className="apple-button-secondary rounded-full text-sm font-bold px-6 h-12 cursor-pointer"
-                >
-                  Open Merchant Dashboard
                 </Button>
               </Link>
             </div>
 
-            {/* Trust Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-black/[0.08]">
-              <div className="space-y-0.5">
+            {/* Trust Metrics Bar with Perfectly Aligned 2-Word Labels */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 pt-6 border-t border-black/[0.08]">
+              <div className="space-y-1">
                 <p className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight tabular-nums">
                   3.4x
                 </p>
-                <p className="text-xs text-surface-500 font-medium">Conversion Lift</p>
+                <p className="text-xs sm:text-[13px] text-surface-600 font-medium whitespace-nowrap">
+                  Conversion Lift
+                </p>
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <p className="font-display text-2xl sm:text-3xl font-extrabold text-brand-600 tracking-tight tabular-nums">
                   &lt;45ms
                 </p>
-                <p className="text-xs text-surface-500 font-medium">Intent Recall</p>
+                <p className="text-xs sm:text-[13px] text-surface-600 font-medium whitespace-nowrap">
+                  Response Time
+                </p>
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <p className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight tabular-nums">
                   100%
                 </p>
-                <p className="text-xs text-surface-500 font-medium">Floor Protected</p>
+                <p className="text-xs sm:text-[13px] text-surface-600 font-medium whitespace-nowrap">
+                  Margin Guard
+                </p>
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <p className="font-display text-2xl sm:text-3xl font-extrabold text-emerald-600 tracking-tight tabular-nums">
                   1-Tap
                 </p>
-                <p className="text-xs text-surface-500 font-medium">UPI Settlement</p>
+                <p className="text-xs sm:text-[13px] text-surface-600 font-medium whitespace-nowrap">
+                  UPI Checkout
+                </p>
               </div>
             </div>
           </div>
 
           {/* Right Column: High-Craft Interactive WhatsApp Device Frame (6 cols) */}
-          <div className="lg:col-span-6 flex flex-col">
+          <div className="lg:col-span-6 flex flex-col w-full max-w-full">
             {/* Scenario Switcher Tabs */}
             <div className="w-full mb-3">
               <div className="grid grid-cols-3 gap-1 p-1 bg-white/95 backdrop-blur-md rounded-full border border-black/[0.08]">
@@ -224,9 +221,9 @@ export default function HeroSection() {
                     key={s.id}
                     onClick={() => handleScenarioChange(s)}
                     className={cn(
-                      'py-2 px-2 text-center rounded-full text-xs font-semibold transition-all cursor-pointer truncate',
+                      'py-1.5 sm:py-2 px-1.5 sm:px-2 text-center rounded-full text-[11px] sm:text-xs font-semibold transition-all cursor-pointer truncate',
                       activeScenario.id === s.id
-                        ? 'bg-brand-600 text-white font-bold'
+                        ? 'bg-brand-600 text-white font-bold shadow-xs'
                         : 'text-surface-600 hover:text-surface-900 hover:bg-surface-100'
                     )}
                   >
@@ -237,34 +234,34 @@ export default function HeroSection() {
             </div>
 
             {/* Realistic High-Fidelity Phone Frame */}
-            <div className="relative rounded-[2rem] bg-white border border-black/[0.1] overflow-hidden transition-all duration-300">
+            <div className="relative rounded-[1.75rem] sm:rounded-[2rem] bg-white border border-black/[0.1] overflow-hidden transition-all duration-300 shadow-md w-full">
               {/* WhatsApp App Top Header Bar */}
-              <div className="bg-[#0b141a] text-white px-5 py-3.5 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white">
-                      <Bot className="w-5 h-5 text-white" />
+              <div className="bg-[#0b141a] text-white px-3.5 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between border-b border-white/10">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="relative shrink-0">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white">
+                      <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#25D366] border-2 border-[#0b141a]" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#25D366] border-2 border-[#0b141a]" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="font-bold text-sm text-white">RunFast Sports</h3>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <h3 className="font-bold text-xs sm:text-sm text-white truncate">RunFast Sports</h3>
                       {/* WhatsApp Verified Green Badge */}
-                      <span className="w-4 h-4 rounded-full bg-[#25D366] flex items-center justify-center text-[10px] text-white font-bold" title="Official WhatsApp Verified Business">
+                      <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#25D366] flex items-center justify-center text-[9px] sm:text-[10px] text-white font-bold shrink-0" title="Official WhatsApp Verified Business">
                         ✓
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#25D366] flex items-center gap-1 font-medium">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#25D366]" />
-                      Official Business Account • Online
+                    <p className="text-[10px] sm:text-[11px] text-[#25D366] flex items-center gap-1 font-medium truncate">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#25D366] shrink-0" />
+                      Official Business • Online
                     </p>
                   </div>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-[10px] font-mono text-gray-400 block uppercase">Atomic Stock Lock</span>
-                  <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 justify-end">
+                <div className="text-right shrink-0">
+                  <span className="text-[9px] sm:text-[10px] font-mono text-gray-400 block uppercase">Stock Lock</span>
+                  <span className="text-[11px] sm:text-xs font-mono font-bold text-amber-400 flex items-center gap-1 justify-end">
                     <Clock className="w-3 h-3" />
                     {activeScenario.lockTimer}
                   </span>
@@ -272,11 +269,11 @@ export default function HeroSection() {
               </div>
 
               {/* Chat Canvas Body */}
-              <div className="p-4 sm:p-5 space-y-3.5 bg-[#efeae2]/60 min-h-[400px] flex flex-col justify-between dot-grid">
+              <div className="p-3 sm:p-5 space-y-3 bg-[#efeae2]/60 min-h-[380px] sm:min-h-[400px] flex flex-col justify-between dot-grid">
                 <div className="space-y-3">
                   {/* Timestamp Pill */}
                   <div className="text-center">
-                    <span className="text-[10px] font-medium text-surface-500 bg-white/80 px-2.5 py-0.5 rounded-full">
+                    <span className="text-[9.5px] sm:text-[10px] font-medium text-surface-500 bg-white/85 px-2.5 py-0.5 rounded-full">
                       Today • WhatsApp Encrypted
                     </span>
                   </div>
