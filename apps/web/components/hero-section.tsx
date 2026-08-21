@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -14,258 +14,317 @@ import {
   Zap,
   ShoppingBag,
   Sparkles,
+  RefreshCw,
+  Clock,
+  TrendingUp,
+  ChevronRight,
+  ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-interface VerticalPillar {
+interface Scenario {
   id: string
-  title: string
-  subtitle: string
-  description: string
-  badge: string
-  primaryMetric: { value: string; label: string }
-  secondaryMetric: { value: string; label: string }
-  capabilities: string[]
-  accentColor: string
+  label: string
+  product: string
+  listPrice: number
+  floorPrice: number
+  customerQuery: string
+  aiReasoning: string
+  aiCounterOffer: string
+  offeredPrice: number
+  lockTimer: string
+  settlementStatus: string
 }
 
-const verticalPillars: VerticalPillar[] = [
+const scenarios: Scenario[] = [
   {
-    id: 'ai-seller',
-    title: 'AI WhatsApp Seller Agent',
-    subtitle: 'Conversational Intent & Context Engine',
-    badge: 'AI SELLER',
-    description:
-      'Engages shoppers directly on WhatsApp where Indian commerce happens. Recognizes natural language queries, multi-product intent, and variant requests in real time.',
-    primaryMetric: { value: '< 45ms', label: 'Intent Recall' },
-    secondaryMetric: { value: '24 / 7', label: 'Autonomous Selling' },
-    capabilities: [
-      'WhatsApp Cloud API Direct Integration',
-      'Context-Aware Semantic Search',
-      'Multi-Variant & Size Recommendations',
-      'Automated Human Escalation Triggers',
-    ],
-    accentColor: '#195adc',
+    id: 'bargain',
+    label: 'Margin Negotiation',
+    product: 'Nike Air Zoom Pegasus 40 (UK 9)',
+    listPrice: 4299,
+    floorPrice: 3500,
+    customerQuery: 'Hey! Can I get the Pegasus 40 in UK 9 for ₹3,400? Will pay instantly via UPI.',
+    aiReasoning: 'Offer ₹3,400 is BELOW floor ₹3,500. Proposing hard-floor counter-offer with free express shipping sweetener.',
+    aiCounterOffer: 'I can’t do ₹3,400, but I can lock it right now for ₹3,699 with Free Express Shipping! 🚀 Deal?',
+    offeredPrice: 3699,
+    lockTimer: '14:59 (1 Unit Reserved)',
+    settlementStatus: 'Settled to HDFC Bank A/C in 12s via Razorpay',
   },
   {
-    id: 'mandates',
-    title: 'Deterministic Margin Mandates',
-    subtitle: 'Mathematical Guardrails Engine',
-    badge: 'MARGIN GUARDRAILS',
-    description:
-      'Never lose money on autonomous discounts. Define granular SKU-level floor prices and discount ceilings that the AI mathematically enforces before counter-offering.',
-    primaryMetric: { value: '100%', label: 'Mandate Compliance' },
-    secondaryMetric: { value: '₹3,500', label: 'Hard Floor Rule' },
-    capabilities: [
-      'Granular SKU Price Floor Limits',
-      'Max Discount % Ceilings (e.g. 12%)',
-      'Multi-Item Bundle Logic',
-      'Dynamic Counter-Offer Negotiation',
-    ],
-    accentColor: '#195adc',
+    id: 'bundle',
+    label: 'Smart Bundling',
+    product: 'RunFast Pro Vest + Soft Flasks',
+    listPrice: 2899,
+    floorPrice: 2200,
+    customerQuery: 'Does the hydro vest include 500ml soft flasks or are they separate?',
+    aiReasoning: 'Cross-sell intent detected. Applying bundle rule: Vest + 2x Flasks within max 15% bundle discount cap.',
+    aiCounterOffer: 'They’re usually ₹799 extra, but I can bundle the Vest + 2x 500ml Flasks together for ₹2,499 today! 🔥',
+    offeredPrice: 2499,
+    lockTimer: '15:00 (Bundle Reserved)',
+    settlementStatus: 'Settled to ICICI Bank A/C in 9s via Razorpay',
   },
   {
-    id: 'razorpay-rails',
-    title: 'Instant Razorpay Rails',
-    subtitle: 'Payment Links & Webhook Settlement',
-    badge: 'RAZORPAY CHECKOUT',
-    description:
-      'Generates authenticated Razorpay Payment Links (UPI, Cards, Netbanking) straight inside the conversation. Webhooks automatically fulfill orders and release inventory.',
-    primaryMetric: { value: '1-Tap', label: 'UPI Checkout' },
-    secondaryMetric: { value: '15 min', label: 'Auto Stock Lock' },
-    capabilities: [
-      'Dynamic rzp.io Payment Links',
-      '15-Minute Temporary Stock Holds',
-      'HMAC SHA-256 Webhook Verification',
-      'Automated Order Lifecycle & Sync',
-    ],
-    accentColor: '#195adc',
+    id: 'inventory-lock',
+    label: 'Atomic Stock Lock',
+    product: 'Garmin Forerunner 265 Music',
+    listPrice: 46990,
+    floorPrice: 43500,
+    customerQuery: 'Is the Black/Grey edition in stock? Need 1 unit for weekend marathon.',
+    aiReasoning: 'Stock count = 2 units. Temporary 15-minute concurrency lock activated to prevent race conditions.',
+    aiCounterOffer: 'Only 2 units remaining! I’ve reserved 1 unit for the next 15 minutes at ₹44,200. Here’s your instant checkout:',
+    offeredPrice: 44200,
+    lockTimer: '14:48 (1 Unit Locked)',
+    settlementStatus: 'Stock committed & settled in 15s via Razorpay',
   },
 ]
 
 export default function HeroSection() {
-  const [activeVertical, setActiveVertical] = useState<string>('ai-seller')
-  const currentPillar =
-    verticalPillars.find((p) => p.id === activeVertical) || verticalPillars[0]
+  const [activeScenario, setActiveScenario] = useState<Scenario>(scenarios[0])
+  const [paid, setPaid] = useState<boolean>(false)
+
+  // Reset payment state when scenario changes
+  const handleScenarioChange = (s: Scenario) => {
+    setActiveScenario(s)
+    setPaid(false)
+  }
 
   return (
     <section
       id="architecture"
-      className="relative min-h-[92vh] flex flex-col justify-center pt-28 sm:pt-32 pb-16 sm:pb-24 bg-white text-[#09090b] overflow-hidden"
+      className="relative min-h-[90vh] flex flex-col justify-center pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white text-surface-900 overflow-hidden"
     >
-      {/* 50px Precision Structural Grid Background */}
+      {/* Background Subtle Gradient & Grid */}
       <div
-        className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:50px_50px] opacity-40 pointer-events-none"
+        className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] opacity-60 pointer-events-none"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-brand-100/50 via-brand-50/20 to-transparent blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8 z-10 w-full space-y-12">
-        {/* Top Hero Header */}
-        <div className="max-w-4xl space-y-4">
+      <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Left Column: Authoritative Copy & Conversion Actions (6 cols) */}
+          <div className="lg:col-span-6 space-y-6 sm:space-y-8 text-left">
+            {/* Headline */}
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-[3.85rem] font-extrabold tracking-tight text-surface-900 leading-[1.08] [text-wrap:balance]">
+              Turn WhatsApp conversations into{' '}
+              <span className="text-brand-600">
+                instant Razorpay sales.
+              </span>
+            </h1>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.08 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-[#09090b] leading-[1.08] [text-wrap:balance]"
-          >
-            Turn WhatsApp conversations into{' '}
-            <span className="text-[#195adc]">instant Razorpay sales.</span>
-          </motion.h1>
+            {/* Sub-copy */}
+            <p className="text-base sm:text-lg text-surface-600 leading-relaxed max-w-xl [text-wrap:pretty]">
+              Deploy autonomous AI seller agents that understand buyer queries, negotiate strictly
+              within your SKU floor mandates, lock live inventory, and issue instant 1-tap UPI
+              checkout links.
+            </p>
 
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.16 }}
-            className="text-base sm:text-lg text-[#52525b] max-w-2xl leading-relaxed [text-wrap:pretty]"
-          >
-            An autonomous AI seller agent that handles natural language queries, negotiates within
-            your strict margin mandates, temporarily locks live stock, and issues instant UPI
-            checkout links.
-          </motion.p>
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-3.5 pt-1">
+              <Link href="/onboarding">
+                <Button className="group bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full px-7 h-12 text-sm gap-2 shadow-xs hover:shadow-glow-blue transition-all duration-200 cursor-pointer">
+                  <span>Start Conversational Onboarding</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </Button>
+              </Link>
 
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.24 }}
-            className="flex flex-wrap items-center gap-3 pt-2"
-          >
-            <Link href="/onboarding">
-              <Button className="bg-[#195adc] hover:bg-[#378ffa] text-white font-bold rounded-full px-6 h-12 text-xs sm:text-sm gap-2 shadow-xs">
-                <span>Start Conversational Onboarding</span>
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-
-            <Link href="/dashboard">
-              <Button
-                variant="outline"
-                className="rounded-full text-xs sm:text-sm font-bold px-6 h-12 border-[#e4e4e7] bg-white hover:bg-[#f8fafc]"
-              >
-                Open Merchant Dashboard
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-
-        {/* Vertical Switcher Frame */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-4">
-          {/* Segment Selector Column (4 cols) */}
-          <div className="lg:col-span-4 flex flex-col gap-3">
-            {verticalPillars.map((pillar) => {
-              const isSelected = pillar.id === activeVertical
-              return (
-                <button
-                  key={pillar.id}
-                  onClick={() => setActiveVertical(pillar.id)}
-                  className={cn(
-                    'text-left p-5 rounded-2xl border transition-all duration-200 cursor-pointer space-y-1.5',
-                    isSelected
-                      ? 'bg-[#f8fafc] border-[#195adc] shadow-xs ring-1 ring-[#195adc]/20'
-                      : 'bg-white border-[#e4e4e7] hover:border-[#195adc]/40 hover:bg-[#fafafa]'
-                  )}
+              <Link href="/dashboard">
+                <Button
+                  variant="outline"
+                  className="rounded-full text-sm font-bold px-6 h-12 border-surface-200 bg-white text-surface-800 hover:bg-surface-50 hover:border-surface-300 shadow-2xs transition-all cursor-pointer"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#52525b]">
-                      {pillar.badge}
-                    </span>
-                    {isSelected && (
-                      <span className="w-2 h-2 rounded-full bg-[#195adc]" />
-                    )}
-                  </div>
-                  <h3 className="font-bold text-sm text-[#09090b]">{pillar.title}</h3>
-                  <p className="text-xs text-[#52525b] line-clamp-2">{pillar.subtitle}</p>
-                </button>
-              )
-            })}
+                  Open Merchant Dashboard
+                </Button>
+              </Link>
+            </div>
+
+            {/* Trust Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-surface-200/80">
+              <div>
+                <p className="font-display text-2xl font-extrabold text-surface-900 tracking-tight tabular-nums">3.4x</p>
+                <p className="text-xs text-surface-500 font-medium">Conversion Lift</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl font-extrabold text-brand-600 tracking-tight tabular-nums">&lt;45ms</p>
+                <p className="text-xs text-surface-500 font-medium">Intent Recall</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl font-extrabold text-surface-900 tracking-tight tabular-nums">100%</p>
+                <p className="text-xs text-surface-500 font-medium">Floor Protected</p>
+              </div>
+              <div>
+                <p className="font-display text-2xl font-extrabold text-emerald-600 tracking-tight tabular-nums">1-Tap</p>
+                <p className="text-xs text-surface-500 font-medium">UPI Settlement</p>
+              </div>
+            </div>
           </div>
 
-          {/* Dynamic Details Column (8 cols) */}
-          <div className="lg:col-span-8 bg-[#f8fafc] border border-[#e4e4e7] rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-8 shadow-xs">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentPillar.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#195adc] uppercase">
-                      {currentPillar.badge}
-                    </span>
-                    <span className="text-[#e4e4e7]">•</span>
-                    <span className="text-xs font-medium text-[#52525b]">
-                      {currentPillar.subtitle}
-                    </span>
-                  </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-[#09090b] tracking-tight">
-                    {currentPillar.title}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-[#52525b] leading-relaxed max-w-xl">
-                    {currentPillar.description}
-                  </p>
-                </div>
+          {/* Right Column: Interactive Live WhatsApp Simulation Card (6 cols) */}
+          <div className="lg:col-span-6 flex flex-col">
+            {/* Scenario Switcher Tabs */}
+            <div className="flex items-center gap-1.5 p-1 bg-surface-100/80 rounded-2xl border border-surface-200 mb-3 self-start">
+              {scenarios.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleScenarioChange(s)}
+                  className={cn(
+                    'px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer',
+                    activeScenario.id === s.id
+                      ? 'bg-white text-brand-600 shadow-xs border border-surface-200/60'
+                      : 'text-surface-600 hover:text-surface-900 hover:bg-white/60'
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
 
-                {/* Metrics Highlights */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-                  <div className="p-3.5 bg-white border border-[#e4e4e7] rounded-xl space-y-0.5">
-                    <span className="text-[10px] font-mono text-[#52525b] font-bold">
-                      {currentPillar.primaryMetric.label.toUpperCase()}
-                    </span>
-                    <p className="text-xl font-bold font-mono text-[#09090b]">
-                      {currentPillar.primaryMetric.value}
-                    </p>
+            {/* High-Fidelity Phone/Chat Frame */}
+            <div className="relative rounded-3xl bg-white border border-surface-200 shadow-card overflow-hidden transition-all duration-300">
+              {/* WhatsApp App Header Bar */}
+              <div className="bg-[#0c2340] text-white px-4 py-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center font-bold text-white shadow-xs">
+                      <Bot className="w-5 h-5" />
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#0c2340]" />
                   </div>
-
-                  <div className="p-3.5 bg-white border border-[#e4e4e7] rounded-xl space-y-0.5">
-                    <span className="text-[10px] font-mono text-[#52525b] font-bold">
-                      {currentPillar.secondaryMetric.label.toUpperCase()}
-                    </span>
-                    <p className="text-xl font-bold font-mono text-[#195adc]">
-                      {currentPillar.secondaryMetric.value}
-                    </p>
-                  </div>
-
-                  <div className="col-span-2 p-3.5 bg-white border border-[#e4e4e7] rounded-xl space-y-1">
-                    <span className="text-[10px] font-mono text-[#52525b] font-bold">
-                      ENGINE VERIFICATION
-                    </span>
-                    <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Active &amp; Ready for Deployment
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-bold text-sm text-white">RunFast Sports</h3>
+                      <span className="px-1.5 py-0.2 rounded bg-brand-500/30 text-[9px] font-mono text-brand-200 font-semibold uppercase">
+                        AI SELLER
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-200/80 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Official WhatsApp Cloud API • Online
                     </p>
                   </div>
                 </div>
 
-                {/* Capabilities Checklist */}
-                <div className="pt-2">
-                  <p className="text-xs font-mono font-bold text-[#52525b] uppercase mb-3">
-                    Key Platform Capabilities:
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {currentPillar.capabilities.map((cap, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 text-xs text-[#09090b] font-medium"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#195adc]" />
-                        <span>{cap}</span>
+                <div className="flex items-center gap-2 text-right">
+                  <div className="hidden sm:block">
+                    <span className="text-[10px] font-mono text-gray-400 block uppercase">Atomic Lock</span>
+                    <span className="text-xs font-mono font-bold text-amber-400 flex items-center gap-1 justify-end">
+                      <Clock className="w-3 h-3" />
+                      {activeScenario.lockTimer}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chat Canvas */}
+              <div className="p-4 sm:p-5 space-y-3.5 bg-[#f4f6f8]/70 min-h-[380px] flex flex-col justify-between">
+                <div className="space-y-3">
+                  {/* Customer Message Bubble */}
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-xs p-3.5 border border-surface-200 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[10px] font-mono font-bold text-surface-400 uppercase">
+                          Shopper (WhatsApp)
+                        </span>
+                        <span className="text-[10px] text-surface-400">10:42 AM</span>
                       </div>
-                    ))}
+                      <p className="text-xs sm:text-sm text-surface-800 leading-relaxed font-normal">
+                        {activeScenario.customerQuery}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* AI Reasoning Guardrail Banner */}
+                  <div className="p-2.5 rounded-xl bg-[#eff6ff] border border-blue-200/80 text-[11px] space-y-1">
+                    <div className="flex items-center justify-between text-brand-700 font-mono font-bold text-[10px] uppercase">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
+                        Margin Mandate Guardrail Evaluated
+                      </span>
+                      <span className="text-emerald-700">Floor ₹{activeScenario.floorPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                    <p className="text-brand-900/80 text-[11px] leading-snug font-sans">
+                      {activeScenario.aiReasoning}
+                    </p>
+                  </div>
+
+                  {/* AI Seller Counter-Offer & Razorpay Checkout Bubble */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[90%] bg-white rounded-2xl rounded-tr-xs p-3.5 border border-brand-200/80 shadow-subtle space-y-2.5">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[10px] font-mono font-bold text-brand-600 uppercase flex items-center gap-1">
+                          <Bot className="w-3 h-3" /> AgentBridge AI
+                        </span>
+                        <span className="text-[10px] text-surface-400">10:42 AM</span>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-surface-900 leading-relaxed">
+                        {activeScenario.aiCounterOffer}
+                      </p>
+
+                      {/* Razorpay 1-Tap Payment Link Card */}
+                      <div className="p-3 rounded-xl bg-gradient-to-br from-[#0c2340] to-[#123663] text-white space-y-2.5 shadow-xs">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-5 h-5 rounded bg-brand-500 flex items-center justify-center font-bold text-[10px]">
+                              R
+                            </div>
+                            <span className="font-bold text-xs text-white">Razorpay Checkout</span>
+                          </div>
+                          <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">
+                            1-TAP UPI
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <div>
+                            <p className="text-gray-300 text-[11px]">{activeScenario.product}</p>
+                            <p className="font-mono text-base font-extrabold text-white">
+                              ₹{activeScenario.offeredPrice.toLocaleString('en-IN')}{' '}
+                              <span className="text-xs font-normal text-gray-400 line-through">
+                                ₹{activeScenario.listPrice.toLocaleString('en-IN')}
+                              </span>
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setPaid(!paid)}
+                            className={cn(
+                              'px-3.5 py-2 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer flex items-center gap-1 shadow-xs',
+                              paid
+                                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                : 'bg-brand-500 hover:bg-brand-400 text-white active:scale-95'
+                            )}
+                          >
+                            {paid ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Paid ₹{activeScenario.offeredPrice.toLocaleString('en-IN')}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="w-3.5 h-3.5 fill-current" />
+                                <span>Pay via UPI</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            </AnimatePresence>
 
-            <div className="pt-4 border-t border-[#e4e4e7] flex items-center justify-between text-xs text-[#52525b]">
-              <span>Powered by official WhatsApp Cloud API &amp; Razorpay Rails</span>
-              <span className="font-mono text-[11px] text-[#09090b] font-bold">
-                API Latency: 32ms
-              </span>
+                {/* Bottom Webhook Settlement Telemetry Bar */}
+                <div className="pt-2 border-t border-surface-200 flex items-center justify-between text-[11px] font-mono text-surface-500">
+                  <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    {paid ? 'Webhook Verified (HMAC SHA-256)' : 'Ready for 1-Tap Settlement'}
+                  </span>
+                  <span className="text-surface-600">{activeScenario.settlementStatus}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

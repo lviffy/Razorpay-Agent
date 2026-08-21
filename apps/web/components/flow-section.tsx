@@ -1,207 +1,243 @@
 'use client'
-import React, { useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import Blog1 from '@/components/ui/blog-1'
 
-const flowSteps = [
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
+import {
+  Layers,
+  Bot,
+  CreditCard,
+  ArrowRight,
+  ShieldCheck,
+  CheckCircle2,
+  Lock,
+  Sparkles,
+  Zap,
+  Check,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+
+const pipelineStages = [
   {
-    date: 'STAGE 01 — UNIFIED CATALOG REPOSITORY',
-    title:
-      'Ingest your native product catalog or connect Shopify with one click. Automatic variant sync and granular SKU floor price guardrails.',
-    author: {
-      name: '01',
-      role: 'Catalog & Inventory Spine',
+    step: '01',
+    id: 'catalog-ingest',
+    title: 'Catalog & Margin Mandate Ingestion',
+    subtitle: 'Unified Inventory & Deterministic Floor Rules',
+    description:
+      'Ingest your native product catalog or connect Shopify with one click. Define SKU-level floor prices (e.g. ₹3,500) and max discount ceilings that the AI mathematically enforces.',
+    icon: Layers,
+    badge: 'STAGE 01 — STORE CONFIGURATION',
+    telemetry: {
+      action: 'catalog.sync() & mandate.lock()',
+      latency: '120ms Initial Sync',
+      status: '18 SKUs Configured with Hard Floors',
     },
+    codeSnippet: `// 1. Ingest Product & Hard Floor Price
+const product = await catalog.upsert({
+  sku: "NK-PEG-40",
+  title: "Nike Air Zoom Pegasus 40 (UK 9)",
+  price: 4299,
+  minPrice: 3500, // Hard floor: never sell below
+  maxDiscountPct: 15,
+  stockCount: 18,
+});`,
   },
   {
-    date: 'STAGE 02 — MARGIN MANDATES & AI SELLER',
-    title:
-      'Gemini 2.5 Flash detects buyer intent, queries inventory, and negotiates within your strict margin floors while temporarily locking units.',
-    author: {
-      name: '02',
-      role: 'Autonomous Margin Protection',
+    step: '02',
+    id: 'ai-negotiation',
+    title: 'Autonomous Negotiation & Stock Lock',
+    subtitle: 'Conversational Intent & 15-Minute Concurrency',
+    description:
+      'Gemini 2.5 Flash processes buyer inquiries in natural language, reasons over margin guardrails, makes structured counter-offers, and temporarily reserves stock for 15 minutes.',
+    icon: Bot,
+    badge: 'STAGE 02 — WHATSAPP REASONING',
+    telemetry: {
+      action: 'intent.evaluate() -> counterOffer.issue()',
+      latency: '< 45ms Intent Recall',
+      status: '1 Unit Reserved (Timer: 15m)',
     },
+    codeSnippet: `// 2. Autonomous Margin Negotiation & Stock Hold
+const { decision, counterPrice } = evaluateMandate({
+  buyerOffer: 3400,
+  skuFloor: product.minPrice, // 3500
+});
+
+if (decision === "COUNTER_OFFER") {
+  await inventory.lockUnit(product.sku, { durationMinutes: 15 });
+  return sendWhatsAppMessage(buyer, "I can do ₹3,699 with Free Express Shipping!");
+}`,
   },
   {
-    date: 'STAGE 03 — WHATSAPP COMMERCE & RAZORPAY SETTLEMENT',
-    title:
-      'Issues authenticated Razorpay Payment Links directly in WhatsApp chat. HMAC verified webhooks confirm payments and fulfill orders.',
-    author: {
-      name: '03',
-      role: 'Conversational Settlement Rails',
+    step: '03',
+    id: 'razorpay-settlement',
+    title: 'Instant 1-Tap Razorpay Settlement',
+    subtitle: 'Payment Links & Webhook Order Fulfillment',
+    description:
+      'The AI issues an authenticated Razorpay Payment Link directly in the chat. HMAC SHA-256 verified webhooks instantly confirm payment, commit inventory, and settle INR directly to merchant bank accounts.',
+    icon: CreditCard,
+    badge: 'STAGE 03 — RAZORPAY SETTLEMENT',
+    telemetry: {
+      action: 'payment.captured -> order.fulfill()',
+      latency: '< 10ms Webhook Verification',
+      status: 'Settled to Merchant Bank in 12s',
     },
+    codeSnippet: `// 3. Razorpay Payment Link & HMAC Webhook
+const paymentLink = await razorpay.paymentLink.create({
+  amount: 369900, // ₹3,699.00 in paise
+  currency: "INR",
+  description: "Order #AB-1092 • Pegasus 40 UK 9",
+  customer: { contact: "+919876543210" },
+});
+
+// Webhook HMAC Verification & Auto-Fulfillment
+verifyWebhookSignature(body, signature, webhookSecret);
+await orders.fulfill({ orderId: "AB-1092", rzpPaymentId: "pay_Rzp982012" });`,
   },
 ]
 
-interface TrailTile {
-  key: string
-  col: number
-  row: number
-  timestamp: number
-}
-
 export default function FlowSection() {
-  const [trail, setTrail] = useState<TrailTile[]>([])
-  const [isHovered, setIsHovered] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-  const lastClientPos = useRef<{ clientX: number; clientY: number } | null>(null)
-  const rafId = useRef<number | null>(null)
-
-  const updateTileFromClientPos = (clientX: number, clientY: number) => {
-    if (!sectionRef.current) return
-    const rect = sectionRef.current.getBoundingClientRect()
-
-    if (
-      clientX >= rect.left &&
-      clientX <= rect.right &&
-      clientY >= rect.top &&
-      clientY <= rect.bottom
-    ) {
-      const x = clientX - rect.left
-      const y = clientY - rect.top
-
-      const GRID_SIZE = 50
-      const col = Math.floor(x / GRID_SIZE)
-      const row = Math.floor(y / GRID_SIZE)
-
-      if (x >= 0 && y >= 0) {
-        const key = `${col}-${row}`
-        const now = Date.now()
-
-        setTrail((prev) => {
-          if (prev.length > 0 && prev[prev.length - 1].key === key) {
-            return prev.map((item, idx) =>
-              idx === prev.length - 1 ? { ...item, timestamp: now } : item
-            )
-          }
-          const updated = [
-            ...prev.filter((item) => item.key !== key),
-            { key, col, row, timestamp: now },
-          ]
-          return updated.slice(-6)
-        })
-        setIsHovered(true)
-      }
-    }
-  }
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    lastClientPos.current = { clientX: e.clientX, clientY: e.clientY }
-    if (rafId.current !== null) return
-    rafId.current = requestAnimationFrame(() => {
-      if (lastClientPos.current) {
-        updateTileFromClientPos(lastClientPos.current.clientX, lastClientPos.current.clientY)
-      }
-      rafId.current = null
-    })
-  }
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (lastClientPos.current && rafId.current === null) {
-        rafId.current = requestAnimationFrame(() => {
-          if (lastClientPos.current) {
-            updateTileFromClientPos(
-              lastClientPos.current.clientX,
-              lastClientPos.current.clientY
-            )
-          }
-          rafId.current = null
-        })
-      }
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (rafId.current !== null) cancelAnimationFrame(rafId.current)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (trail.length === 0) return
-
-    const interval = setInterval(() => {
-      const now = Date.now()
-      setTrail((prev) => prev.filter((item) => now - item.timestamp < 600))
-    }, 150)
-
-    return () => clearInterval(interval)
-  }, [trail])
+  const [activeStep, setActiveStep] = useState<number>(0)
+  const current = pipelineStages[activeStep]
+  const IconComponent = current.icon
 
   return (
     <section
-      ref={sectionRef}
       id="flow-intro"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false)
-        lastClientPos.current = null
-        setTimeout(() => setTrail([]), 450)
-      }}
-      className="relative bg-white overflow-hidden py-16 sm:py-20 border-t border-[#e4e4e7]"
+      className="relative bg-white py-20 sm:py-28 border-t border-surface-200 overflow-hidden text-surface-900"
     >
-      {/* 50px Precision Grid Background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e4e4e7_1px,transparent_1px),linear-gradient(to_bottom,#e4e4e7_1px,transparent_1px)] bg-[size:50px_50px] opacity-80 pointer-events-none" />
+      <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 space-y-12">
+        {/* Section Header */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="max-w-2xl space-y-3">
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+              How AgentBridge Executes Autonomous Sales
+            </h2>
+          </div>
 
-      {/* 3D Popping Grid Squares with Trail Decay */}
-      <AnimatePresence>
-        {isHovered &&
-          trail.map((tile, i) => {
-            const ageIndex = trail.length - 1 - i
-            const yLift = -4.5 + ageIndex * 1.0
-            const xOffset = -1.8 + ageIndex * 0.4
-            const opacity = Math.max(0.12, 1 - ageIndex * 0.16)
-            const shadowOffset = Math.max(1, Math.round(4.5 - ageIndex * 0.8))
-            const shadowAlpha = Math.max(0.15, 0.95 - ageIndex * 0.16)
+          <p className="text-sm sm:text-base text-surface-600 max-w-md leading-relaxed font-normal">
+            From initial product catalog ingestion to WhatsApp AI negotiation and automated Razorpay bank settlement.
+          </p>
+        </div>
+
+        {/* 3 Step Interactive Selector Pills */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {pipelineStages.map((stage, idx) => {
+            const isSelected = idx === activeStep
+            const StepIcon = stage.icon
 
             return (
-              <motion.div
-                key={tile.key}
-                initial={{ scale: 0.92, opacity: 0, y: 0, x: 0 }}
-                animate={{
-                  scale: 1.03 - ageIndex * 0.012,
-                  opacity,
-                  y: yLift,
-                  x: xOffset,
-                }}
-                exit={{ scale: 0.88, opacity: 0, y: 0, x: 0 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-                style={{
-                  left: `${tile.col * 50}px`,
-                  top: `${tile.row * 50}px`,
-                }}
-                className="absolute w-[50px] h-[50px] bg-white border border-[#09090b] rounded-none pointer-events-none z-10 flex items-center justify-center"
+              <button
+                key={stage.id}
+                onClick={() => setActiveStep(idx)}
+                className={cn(
+                  'p-4 sm:p-5 rounded-2xl border text-left transition-all duration-200 cursor-pointer space-y-2',
+                  isSelected
+                    ? 'bg-brand-50/50 border-brand-500 ring-2 ring-brand-500/10 shadow-xs'
+                    : 'bg-surface-50 border-surface-200 hover:bg-white hover:border-surface-300'
+                )}
               >
-                <div
-                  className={`w-full h-full rounded-none border-t border-l border-white border-r border-b border-[#09090b]/10 transition-colors duration-200 ${
-                    ageIndex === 0
-                      ? 'bg-gradient-to-br from-white via-[#f8fafc] to-[#eff6ff]'
-                      : 'bg-gradient-to-br from-white via-[#fcfcfd] to-[#f4f4f5]'
-                  }`}
-                  style={{
-                    boxShadow: `${shadowOffset}px ${shadowOffset}px 0px rgba(9,9,11,${shadowAlpha})`,
-                  }}
-                />
-              </motion.div>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={cn(
+                      'font-display text-xs font-bold font-mono px-2 py-0.5 rounded-md',
+                      isSelected ? 'bg-brand-500 text-white' : 'bg-surface-200 text-surface-700'
+                    )}
+                  >
+                    STAGE {stage.step}
+                  </span>
+                  <StepIcon
+                    className={cn('w-4 h-4', isSelected ? 'text-brand-600' : 'text-surface-400')}
+                  />
+                </div>
+                <h3 className="font-display text-sm font-bold text-surface-900 line-clamp-1">
+                  {stage.title}
+                </h3>
+              </button>
             )
           })}
-      </AnimatePresence>
+        </div>
 
-      <div className="relative z-10">
-        <Blog1
-          className="mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8 bg-transparent text-[#09090b]"
-          header={{
-            heading: 'Built for how modern commerce actually happens',
-            description:
-              'From unified catalog ingestion to automated WhatsApp negotiations and instant Razorpay UPI checkouts, every stage connects deterministically.',
-            ctaText: 'Launch Your AI Store',
-            ctaHref: '/onboarding',
-          }}
-          posts={flowSteps}
-        />
+        {/* Detailed Stage Showcase Pane */}
+        <div className="bg-[#fafbfc] border border-surface-200 rounded-3xl p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center shadow-card">
+          {/* Left Description (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={current.id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <span className="text-xs font-mono font-bold text-brand-600 uppercase">
+                    {current.badge}
+                  </span>
+                  <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight">
+                    {current.title}
+                  </h3>
+                  <p className="text-sm font-semibold text-surface-700">{current.subtitle}</p>
+                </div>
+
+                <p className="text-xs sm:text-sm text-surface-600 leading-relaxed">
+                  {current.description}
+                </p>
+
+                {/* Telemetry Highlights */}
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 bg-white border border-surface-200 rounded-xl space-y-0.5">
+                    <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Latency</span>
+                    <p className="text-xs font-bold font-mono text-brand-600">{current.telemetry.latency}</p>
+                  </div>
+                  <div className="p-3 bg-white border border-surface-200 rounded-xl space-y-0.5">
+                    <span className="text-[10px] font-mono text-surface-500 uppercase font-bold">Execution Status</span>
+                    <p className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      Active
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3">
+                  <Link href="/onboarding">
+                    <Button className="bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-full text-xs px-6 h-11 gap-2 shadow-xs cursor-pointer">
+                      <span>Test Stage {current.step} in Live Simulator</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Right Code & Execution Pipeline Frame (6 cols) */}
+          <div className="lg:col-span-6 bg-[#0c2340] border border-blue-950/60 rounded-2xl p-5 sm:p-6 shadow-popover text-white space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <span className="text-[11px] font-mono text-gray-400 ml-2">pipeline_execution.ts</span>
+              </div>
+              <span className="text-[10.5px] font-mono bg-brand-500/30 text-brand-200 px-2 py-0.5 rounded font-bold">
+                STAGE {current.step}
+              </span>
+            </div>
+
+            <pre className="text-xs font-mono text-blue-100 overflow-x-auto leading-relaxed py-2">
+              <code>{current.codeSnippet}</code>
+            </pre>
+
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-gray-400">
+              <span>{current.telemetry.action}</span>
+              <span className="text-emerald-400 font-semibold">Ready</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
 }
+

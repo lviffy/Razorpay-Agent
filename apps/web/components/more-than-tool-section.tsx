@@ -1,4 +1,5 @@
 'use client'
+
 import React, { ReactNode, forwardRef, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -8,7 +9,6 @@ import {
   ShieldCheck,
   CreditCard,
   Lock,
-  Layers,
   Sparkles,
 } from 'lucide-react'
 import { AnimatedBeam } from '@/components/ui/animated-beam'
@@ -59,13 +59,13 @@ const CardDecorator = ({ children }: { children: ReactNode }) => (
       className="absolute inset-0"
       style={{
         backgroundImage:
-          'linear-gradient(to right, #e4e4e7 1px, transparent 1px), linear-gradient(to bottom, #e4e4e7 1px, transparent 1px)',
+          'linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)',
         backgroundSize: '20px 20px',
       }}
     />
     <div
-      className="absolute inset-0 m-auto flex size-10 sm:size-11 items-center justify-center border-l border-t bg-white group-hover:bg-[#195adc] transition-colors duration-300"
-      style={{ borderColor: '#e4e4e7' }}
+      className="absolute inset-0 m-auto flex size-10 sm:size-11 items-center justify-center border-l border-t bg-white group-hover:bg-brand-500 transition-colors duration-300"
+      style={{ borderColor: '#e5e7eb' }}
     >
       {children}
     </div>
@@ -83,38 +83,31 @@ interface PillarCardProps {
 
 function PillarCard({ icon: Icon, badge, title, description, index, animate = true }: PillarCardProps) {
   const cardContent = (
-    <div className="group relative flex flex-col items-center text-center rounded-2xl bg-[#fafafa] border border-[#e4e4e7] hover:border-[#195adc]/30 hover:shadow-sm transition-all duration-300 overflow-hidden w-full h-full justify-between">
+    <div className="group relative flex flex-col items-center text-center rounded-2xl bg-white border border-surface-200 hover:border-brand-300 hover:shadow-card transition-all duration-300 overflow-hidden w-full h-full justify-between p-6">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#195adc]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
       />
 
-      <div className="pb-2 pt-5 sm:pt-6 px-5 w-full flex flex-col items-center">
+      <div className="pb-2 pt-2 w-full flex flex-col items-center">
         <CardDecorator>
           <Icon
-            className="size-5 text-[#09090b] group-hover:text-white transition-colors duration-300"
+            className="size-5 text-surface-900 group-hover:text-white transition-colors duration-300"
             aria-hidden
           />
         </CardDecorator>
 
-        <span
-          className="mt-3 inline-block text-[10px] font-semibold uppercase tracking-[0.18em] px-2.5 py-0.5 rounded-full border"
-          style={{
-            color: '#195adc',
-            borderColor: '#195adc33',
-            backgroundColor: '#195adc0d',
-          }}
-        >
+        <span className="mt-3 inline-block text-[10.5px] font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-brand-200 bg-brand-50 text-brand-700">
           {badge}
         </span>
 
-        <h3 className="mt-2 text-[#09090b] font-bold text-sm sm:text-base tracking-tight">
+        <h3 className="mt-2 font-display text-surface-900 font-bold text-base sm:text-lg tracking-tight">
           {title}
         </h3>
       </div>
 
-      <div className="px-5 pb-5 sm:pb-6">
-        <p className="text-xs sm:text-sm text-[#52525b] leading-relaxed">
+      <div className="pt-2">
+        <p className="text-xs sm:text-sm text-surface-600 leading-relaxed">
           {description}
         </p>
       </div>
@@ -127,10 +120,10 @@ function PillarCard({ icon: Icon, badge, title, description, index, animate = tr
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.55, delay: 0.1 + index * 0.1, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, delay: 0.1 + index * 0.1 }}
       className="w-full h-full"
     >
       {cardContent}
@@ -146,7 +139,7 @@ const BeamCircle = forwardRef<
     <div
       ref={ref}
       className={cn(
-        'z-10 flex size-9 sm:size-11 items-center justify-center rounded-full border border-[#e4e4e7] bg-white p-2 sm:p-2.5 shadow-xs text-[#09090b]',
+        'z-10 flex size-9 sm:size-11 items-center justify-center rounded-full border border-surface-200 bg-white p-2 sm:p-2.5 shadow-2xs text-surface-900',
         className
       )}
     >
@@ -168,10 +161,10 @@ function AnimatedBeamDemo() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, delay: 0.2 }}
       className="mt-4 sm:mt-6"
     >
       <div
@@ -181,32 +174,32 @@ function AnimatedBeamDemo() {
         <div className="flex size-full flex-col max-w-lg max-h-[140px] sm:max-h-[160px] items-stretch justify-between gap-3 sm:gap-4">
           <div className="flex flex-row items-center justify-between">
             <BeamCircle ref={div1Ref}>
-              <Smartphone className="size-4 sm:size-5 text-[#09090b]" />
+              <Smartphone className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
             <BeamCircle ref={div5Ref}>
-              <CreditCard className="size-4 sm:size-5 text-[#09090b]" />
+              <CreditCard className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
           </div>
           <div className="flex flex-row items-center justify-between">
             <BeamCircle ref={div2Ref}>
-              <Store className="size-4 sm:size-5 text-[#09090b]" />
+              <Store className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
             <BeamCircle
               ref={div4Ref}
-              className="size-11 sm:size-13 border-[#195adc]/30 bg-[#195adc] text-white font-bold text-base shadow-sm p-0 flex items-center justify-center"
+              className="size-11 sm:size-13 border-brand-300 bg-brand-500 text-white font-extrabold text-base shadow-glow-blue p-0 flex items-center justify-center"
             >
               A
             </BeamCircle>
             <BeamCircle ref={div6Ref}>
-              <ShoppingBag className="size-4 sm:size-5 text-[#09090b]" />
+              <ShoppingBag className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
           </div>
           <div className="flex flex-row items-center justify-between">
             <BeamCircle ref={div3Ref}>
-              <ShieldCheck className="size-4 sm:size-5 text-[#09090b]" />
+              <ShieldCheck className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
             <BeamCircle ref={div7Ref}>
-              <Lock className="size-4 sm:size-5 text-[#09090b]" />
+              <Lock className="size-4 sm:size-5 text-surface-900" />
             </BeamCircle>
           </div>
         </div>
@@ -272,13 +265,13 @@ function AnimatedBeamDemo() {
 export function MoreThanToolContent() {
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
-      <div className="text-center">
+      <div className="text-center space-y-3">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-balance text-3xl sm:text-4xl lg:text-5xl font-semibold text-[#09090b] tracking-tight"
+          className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-surface-900 tracking-tight"
         >
           More than just a chatbot
         </motion.h2>
@@ -288,7 +281,7 @@ export function MoreThanToolContent() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="mt-3 text-sm sm:text-base text-[#52525b] leading-relaxed max-w-2xl mx-auto [text-wrap:pretty]"
+          className="text-sm sm:text-base text-surface-600 leading-relaxed max-w-2xl mx-auto [text-wrap:pretty]"
         >
           AgentBridge is an end-to-end transactional middleware connecting WhatsApp conversations,
           margin policies, stock reservation locks, and instant Razorpay payment rails.
@@ -336,9 +329,7 @@ export function MoreThanToolContent() {
 
 export default function MoreThanToolSection() {
   return (
-    <section
-      className="relative bg-[#fafafa] py-12 sm:py-20 overflow-hidden border-t border-[#e4e4e7]"
-    >
+    <section className="relative bg-[#fafbfc] py-16 sm:py-20 overflow-hidden border-t border-surface-200">
       <MoreThanToolContent />
     </section>
   )

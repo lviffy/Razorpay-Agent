@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { InfiniteSlider } from './ui/infinite-slider'
@@ -18,70 +19,56 @@ import {
 } from 'lucide-react'
 
 const INTEGRATIONS = [
-  { icon: CreditCard, color: 'text-[#195adc]', label: 'Razorpay Rails' },
-  { icon: Smartphone, color: 'text-[#195adc]', label: 'WhatsApp Cloud' },
-  { icon: ShoppingBag, color: 'text-[#195adc]', label: 'Shopify Sync' },
-  { icon: Zap, color: 'text-[#195adc]', label: 'UPI Payments' },
-  { icon: ShieldCheck, color: 'text-[#195adc]', label: 'HMAC Webhooks' },
-  { icon: Sparkles, color: 'text-[#195adc]', label: 'Gemini Intent' },
-  { icon: Store, color: 'text-[#195adc]', label: 'Native Catalog' },
-  { icon: Lock, color: 'text-[#195adc]', label: 'Stock Locks' },
-  { icon: Layers, color: 'text-[#195adc]', label: 'Merchant Telemetry' },
-  { icon: Database, color: 'text-[#195adc]', label: 'Audit Logs' },
-  { icon: Globe, color: 'text-[#195adc]', label: 'Meta Business' },
-  { icon: CheckCircle2, color: 'text-[#195adc]', label: 'Order Fulfillment' },
+  { icon: CreditCard, color: 'text-brand-600', label: 'Razorpay Rails' },
+  { icon: Smartphone, color: 'text-brand-600', label: 'WhatsApp Cloud' },
+  { icon: ShoppingBag, color: 'text-brand-600', label: 'Shopify Sync' },
+  { icon: Zap, color: 'text-emerald-600', label: '1-Tap UPI Pay' },
+  { icon: ShieldCheck, color: 'text-brand-600', label: 'HMAC Webhooks' },
+  { icon: Sparkles, color: 'text-brand-600', label: 'Gemini 2.5 Intent' },
+  { icon: Store, color: 'text-brand-600', label: 'Native Catalog' },
+  { icon: Lock, color: 'text-brand-600', label: '15m Stock Locks' },
+  { icon: Layers, color: 'text-brand-600', label: 'Merchant Telemetry' },
+  { icon: Database, color: 'text-brand-600', label: 'Audit Trails' },
+  { icon: Globe, color: 'text-brand-600', label: 'Meta Business' },
+  { icon: CheckCircle2, color: 'text-emerald-600', label: 'Order Fulfillment' },
 ]
 
 export default function IntegrationSection() {
-  const containerRef = useRef<HTMLElement>(null)
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  })
-
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0])
-  const scale = useTransform(scrollYProgress, [0, 0.2], [0.95, 1])
-
   return (
     <section
-      ref={containerRef}
       id="integrations"
-      className="py-16 sm:py-24 bg-slate-50 text-[#09090b] relative overflow-hidden border-t border-[#e4e4e7]"
+      className="py-20 sm:py-28 bg-white text-surface-900 relative overflow-hidden border-t border-surface-200"
     >
-      <motion.div
-        style={{ opacity, scale }}
-        className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
-      >
-        <div className="text-center mb-8 sm:mb-12 space-y-3">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-[#09090b]">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
+        <div className="text-center space-y-3 max-w-2xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
             Seamless Commerce Integrations
           </h2>
-          <p className="text-base sm:text-lg text-[#52525b] leading-relaxed max-w-xl mx-auto">
+          <p className="text-base text-surface-600 leading-relaxed">
             Your WhatsApp conversations, inventory catalogs, and Razorpay checkout rails are
             connected in one continuous autonomous loop.
           </p>
         </div>
 
         <div
-          className="relative group"
+          className="relative group pt-4"
           style={{
             maskImage:
-              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+              'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
             WebkitMaskImage:
-              'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+              'linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%)',
           }}
         >
           <InfiniteSlider speed={40} gap={16}>
             {INTEGRATIONS.map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col items-center justify-center p-3.5 sm:p-5 min-w-[90px] sm:min-w-[130px] bg-white border border-[#e4e4e7] rounded-2xl transition-all group/item shadow-2xs"
+                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] bg-[#fafbfc] border border-surface-200 rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-brand-300 hover:shadow-subtle"
               >
                 <item.icon
-                  className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2 transition-transform duration-300 group-hover/item:scale-110`}
+                  className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2.5 transition-transform duration-200 group-hover/item:scale-110`}
                 />
-                <span className="font-mono font-bold text-[#09090b] text-center uppercase tracking-wider text-[9px] sm:text-[10.5px] whitespace-nowrap">
+                <span className="font-mono font-bold text-surface-800 text-center uppercase tracking-wider text-[10px] sm:text-[11px] whitespace-nowrap">
                   {item.label}
                 </span>
               </div>
@@ -92,19 +79,20 @@ export default function IntegrationSection() {
             {[...INTEGRATIONS].reverse().map((item, idx) => (
               <div
                 key={idx}
-                className="flex flex-col items-center justify-center p-3.5 sm:p-5 min-w-[90px] sm:min-w-[130px] bg-white border border-[#e4e4e7] rounded-2xl transition-all group/item shadow-2xs"
+                className="flex flex-col items-center justify-center p-4 sm:p-5 min-w-[110px] sm:min-w-[140px] bg-[#fafbfc] border border-surface-200 rounded-2xl transition-all duration-200 group/item hover:bg-white hover:border-brand-300 hover:shadow-subtle"
               >
                 <item.icon
-                  className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2 transition-transform duration-300 group-hover/item:scale-110`}
+                  className={`w-6 h-6 sm:w-7 sm:h-7 ${item.color} mb-2.5 transition-transform duration-200 group-hover/item:scale-110`}
                 />
-                <span className="font-mono font-bold text-[#09090b] text-center uppercase tracking-wider text-[9px] sm:text-[10.5px] whitespace-nowrap">
+                <span className="font-mono font-bold text-surface-800 text-center uppercase tracking-wider text-[10px] sm:text-[11px] whitespace-nowrap">
                   {item.label}
                 </span>
               </div>
             ))}
           </InfiniteSlider>
         </div>
-      </motion.div>
+      </div>
     </section>
   )
 }
+

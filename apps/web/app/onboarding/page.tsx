@@ -99,32 +99,37 @@ export default function OnboardingPage() {
 
   if (!state) {
     return (
-      <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center text-xs text-surface-500">
-        Loading AgentBridge Onboarding...
+      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-surface-500 font-mono">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse" />
+          <span>Loading AgentBridge Setup Assistant...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F6F8] flex flex-col">
+    <div className="min-h-screen bg-[#fafbfc] flex flex-col">
       {/* Onboarding Header */}
-      <header className="h-14 bg-white border-b border-surface-200 px-6 flex items-center justify-between select-none">
+      <header className="h-16 bg-white border-b border-surface-200 px-6 flex items-center justify-between select-none">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#0C83FD] rounded flex items-center justify-center font-bold text-white text-xs">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs shadow-glow-blue">
               A
             </div>
-            <span className="font-bold text-sm text-surface-900">AgentBridge</span>
+            <span className="font-display font-extrabold text-base text-surface-900">
+              Agent<span className="text-brand-600">Bridge</span>
+            </span>
           </Link>
           <span className="text-surface-300">/</span>
-          <span className="text-xs font-semibold text-surface-600">Store Setup Assistant</span>
+          <span className="text-xs font-semibold text-surface-600 font-mono">Store Setup Assistant</span>
         </div>
 
         <div className="flex items-center gap-3">
           <Badge variant="brand">CONVERSATIONAL SETUP</Badge>
           <button
             onClick={handleReset}
-            className="text-surface-400 hover:text-surface-600 p-1.5 rounded hover:bg-surface-100"
+            className="text-surface-400 hover:text-surface-600 p-2 rounded-lg hover:bg-surface-100 transition-colors"
             title="Reset Session"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -135,14 +140,17 @@ export default function OnboardingPage() {
       {/* Main 2-Panel Area */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Panel: Conversational Assistant (60%) */}
-        <div className="lg:col-span-7 bg-white border border-surface-200 rounded-md flex flex-col h-[calc(100vh-7rem)] overflow-hidden">
+        <div className="lg:col-span-7 bg-white border border-surface-200 rounded-2xl flex flex-col h-[calc(100vh-7.5rem)] overflow-hidden shadow-card">
           {/* Assistant Sub-Header */}
-          <div className="px-5 py-3 border-b border-surface-100 flex items-center justify-between bg-surface-50">
+          <div className="px-5 py-3.5 border-b border-surface-100 flex items-center justify-between bg-surface-50">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-semibold text-surface-800">AgentBridge AI Assistant</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-xs font-bold text-surface-800 font-display">AgentBridge AI Assistant</span>
             </div>
-            <span className="text-[11px] text-surface-500 font-mono">Step: {state.currentStep}</span>
+            <span className="text-[11px] text-surface-500 font-mono font-semibold">Step: {state.currentStep}</span>
           </div>
 
           {/* Chat Stream */}
@@ -242,7 +250,7 @@ export default function OnboardingPage() {
 
                       {/* Step: WHATSAPP_CONNECT */}
                       {state.currentStep === "WHATSAPP_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-md space-y-3">
+                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3 shadow-xs">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-semibold text-surface-900">
@@ -256,7 +264,7 @@ export default function OnboardingPage() {
                           </div>
                           <Button
                             onClick={() => handleSendMessage("Connect WhatsApp Business Number +91 98765 00000")}
-                            className="w-full text-xs"
+                            className="w-full text-xs font-bold rounded-xl"
                           >
                             Connect Business Number (+91 98765 00000)
                           </Button>
@@ -265,7 +273,7 @@ export default function OnboardingPage() {
 
                       {/* Step: RAZORPAY_CONNECT */}
                       {state.currentStep === "RAZORPAY_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-md space-y-3">
+                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3 shadow-xs">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-xs font-semibold text-surface-900">
@@ -279,7 +287,7 @@ export default function OnboardingPage() {
                           </div>
                           <Button
                             onClick={() => handleSendMessage("Connect Razorpay API Keys in Test Mode")}
-                            className="w-full text-xs"
+                            className="w-full text-xs font-bold rounded-xl"
                           >
                             Connect Razorpay Test Credentials (rzp_test_xxxx)
                           </Button>
@@ -288,10 +296,10 @@ export default function OnboardingPage() {
 
                       {/* Step: TEST */}
                       {state.currentStep === "TEST" && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-3">
+                        <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3 shadow-xs">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs font-semibold text-blue-950">
+                              <p className="text-xs font-bold text-blue-950">
                                 Ready for Storefront Verification
                               </p>
                               <p className="text-[11px] text-blue-800">
@@ -302,7 +310,7 @@ export default function OnboardingPage() {
                           </div>
                           <Button
                             onClick={() => setSimulatorOpen(true)}
-                            className="w-full text-xs"
+                            className="w-full text-xs font-bold rounded-xl bg-brand-500 hover:bg-brand-600 text-white"
                           >
                             Run Interactive Storefront Simulation
                           </Button>
@@ -311,7 +319,7 @@ export default function OnboardingPage() {
 
                       {/* Step: READY / COMPLETED */}
                       {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
-                        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-md space-y-3">
+                        <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3 shadow-xs">
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-emerald-600" />
                             <div>
@@ -326,7 +334,7 @@ export default function OnboardingPage() {
                           <Button
                             onClick={() => router.push("/dashboard")}
                             variant="success"
-                            className="w-full text-xs gap-2"
+                            className="w-full text-xs gap-2 font-bold rounded-xl"
                           >
                             <span>Open Merchant Dashboard</span>
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -360,8 +368,9 @@ export default function OnboardingPage() {
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Type your reply or describe a product... (e.g. 'RunFast Sports')"
               disabled={loading}
+              className="rounded-xl"
             />
-            <Button type="submit" size="md" disabled={!inputValue.trim() || loading}>
+            <Button type="submit" size="md" disabled={!inputValue.trim() || loading} className="rounded-xl">
               <Send className="w-4 h-4" />
             </Button>
           </form>
@@ -390,3 +399,4 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
