@@ -56,10 +56,13 @@ export default function LoginPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        if (res.user && res.user.onboardingCompleted === false) {
-          router.push("/onboarding");
-        } else {
+        if (res.redirecting) {
+          return;
+        }
+        if (res.user && res.user.onboardingCompleted) {
           router.push("/dashboard");
+        } else {
+          router.push("/onboarding");
         }
       } else {
         setErrorMsg(res.error || "Failed to sign in with Google.");

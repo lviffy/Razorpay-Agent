@@ -94,6 +94,9 @@ export default function SignupPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
+        if (res.redirecting) {
+          return;
+        }
         if (res.user?.onboardingCompleted) {
           router.push("/dashboard");
         } else {

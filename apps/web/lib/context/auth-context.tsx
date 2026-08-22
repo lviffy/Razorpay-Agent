@@ -152,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const googleUrlData = await api.auth.getGoogleUrl();
         if (googleUrlData.configured && googleUrlData.url) {
           window.location.href = googleUrlData.url;
-          return { success: true };
+          return { success: true, redirecting: true };
         }
       }
 

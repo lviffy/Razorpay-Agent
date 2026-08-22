@@ -56,6 +56,8 @@ app.get("/health", (_req, res) => {
 app.get("/auth/callback", (req, res) => {
   const token = (req.query.token as string) || "";
   const error = (req.query.error as string) || "";
+  const onboardingCompleted = (req.query.onboardingCompleted as string) || "";
+  const isNewUser = (req.query.isNewUser as string) || "";
 
   if (error) {
     return res.status(400).send(`<!DOCTYPE html>
@@ -70,6 +72,11 @@ app.get("/auth/callback", (req, res) => {
 </body></html>`);
   }
 
+  const queryParams = new URLSearchParams();
+  if (token) queryParams.set("token", token);
+  if (onboardingCompleted) queryParams.set("onboardingCompleted", onboardingCompleted);
+  if (isNewUser) queryParams.set("isNewUser", isNewUser);
+
   return res.send(`<!DOCTYPE html>
 <html>
 <head>
@@ -83,14 +90,13 @@ app.get("/auth/callback", (req, res) => {
         document.cookie = "zapai_auth_token=" + token + "; path=/; max-age=2592000; SameSite=Lax";
       }
       // Redirect to local Next.js frontend /auth/callback page
-      const target = window.location.port === "3000"
-        ? "/auth/callback?token=" + encodeURIComponent(token)
-        : "http://localhost:3000/auth/callback?token=" + encodeURIComponent(token);
+      const qs = ${JSON.stringify(queryParams.toString())};
+      const target = (window.location.port === "3000" ? "/auth/callback" : "http://localhost:3000/auth/callback") + (qs ? "?" + qs : "");
       setTimeout(function() {
         window.location.href = target;
       }, 300);
     } catch (e) {
-      window.location.href = "/dashboard";
+      window.location.href = "/onboarding";
     }
   </script>
 </head>

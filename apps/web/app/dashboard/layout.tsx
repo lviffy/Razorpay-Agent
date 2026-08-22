@@ -1,12 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/context/auth-context";
 import { Sidebar, MobileSidebarDrawer } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { StoreProvider } from "@/lib/context/store-context";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.onboardingCompleted === false) {
+        router.replace("/onboarding");
+      }
+    }
+  }, [user, isLoading, router]);
 
   return (
     <StoreProvider>

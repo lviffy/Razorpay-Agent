@@ -194,6 +194,7 @@ export interface AuthResponse {
   user?: AuthUser;
   error?: string;
   message?: string;
+  redirecting?: boolean;
 }
 
 export interface LoginCredentials {

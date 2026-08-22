@@ -27,7 +27,10 @@ const googleOAuthClient = new OAuth2Client(
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function generateToken(user: { id: string; email: string; name: string; role: string; storeId?: string }, expiresIn = "7d") {
+function generateToken(
+  user: { id: string; email: string; name: string; role: string; storeId?: string; onboardingCompleted?: boolean },
+  expiresIn = "7d"
+) {
   return jwt.sign(
     {
       userId: user.id,
@@ -35,6 +38,7 @@ function generateToken(user: { id: string; email: string; name: string; role: st
       name: user.name,
       role: user.role,
       storeId: user.storeId,
+      onboardingCompleted: Boolean(user.onboardingCompleted),
     },
     JWT_SECRET,
     { expiresIn: expiresIn as any }
@@ -116,6 +120,7 @@ router.post("/signup", async (req: Request, res: Response) => {
       name: newUser.name,
       role: newUser.role,
       storeId: newUser.store_id,
+      onboardingCompleted: Boolean(newUser.onboarding_completed),
     }, "7d");
 
     // Track active session in Neon DB
@@ -217,6 +222,7 @@ router.post("/login", async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       storeId: user.store_id,
+      onboardingCompleted: Boolean(user.onboarding_completed),
     }, expiresIn);
 
     // Save session in Neon DB
@@ -364,6 +370,7 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       storeId: user.store_id,
+      onboardingCompleted: Boolean(user.onboarding_completed),
     }, "7d");
 
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -466,6 +473,7 @@ router.post("/google", async (req: Request, res: Response) => {
       name: user.name,
       role: user.role,
       storeId: user.store_id,
+      onboardingCompleted: Boolean(user.onboarding_completed),
     }, "7d");
 
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);

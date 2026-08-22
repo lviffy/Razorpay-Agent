@@ -14,6 +14,8 @@ function AuthCallbackContent() {
   useEffect(() => {
     const token = searchParams.get("token");
     const errParam = searchParams.get("error");
+    const paramOnboarding = searchParams.get("onboardingCompleted");
+    const isNewUserParam = searchParams.get("isNewUser");
 
     if (errParam) {
       setError(decodeURIComponent(errParam));
@@ -24,26 +26,33 @@ function AuthCallbackContent() {
       try {
         localStorage.setItem("zapai_auth_token", token);
         document.cookie = `zapai_auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
-        
-        const paramOnboarding = searchParams.get("onboardingCompleted");
-        
-        refreshUser().then(() => {
-          import("@/lib/api/client").then(({ api }) => {
-            api.auth.me().then((res) => {
-              const completed = res?.user?.onboardingCompleted ?? (paramOnboarding === "true");
-              if (!completed) {
-                router.replace("/onboarding");
-              } else {
-                router.replace("/dashboard");
-              }
-            }).catch(() => {
-              if (paramOnboarding === "false") {
-                router.replace("/onboarding");
-              } else {
-                router.replace("/dashboard");
-              }
-            });
-          });
+
+        // Decode JWT token payload directly to read onboardingCompleted
+        let tokenOnboarding: boolean | null = null;
+        try {
+          const parts = token.split(".");
+          if (parts.length >= 2) {
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+            if (typeof payload.onboardingCompleted === "boolean") {
+              tokenOnboarding = payload.onboardingCompleted;
+            }
+          }
+        } catch (jwtErr) {
+          console.warn("Could not decode JWT payload:", jwtErr);
+        }
+
+        // Determine destination: Default to /onboarding unless explicitly completed
+        const isCompleted =
+          paramOnboarding === "true" || tokenOnboarding === true;
+        const isExplicitlyNew =
+          paramOnboarding === "false" || isNewUserParam === "true" || tokenOnboarding === false;
+
+        refreshUser().finally(() => {
+          if (isExplicitlyNew || !isCompleted) {
+            router.replace("/onboarding");
+          } else {
+            router.replace("/dashboard");
+          }
         });
       } catch (e: any) {
         setError(e.message || "Failed to persist authentication session.");
