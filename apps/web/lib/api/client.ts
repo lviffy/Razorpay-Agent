@@ -251,8 +251,9 @@ export const api = {
       );
     },
     getGoogleUrl: async (): Promise<{ configured: boolean; url: string | null }> => {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       return fetchJson<{ configured: boolean; url: string | null }>(
-        "/auth/google/url",
+        `/auth/google/url?origin=${encodeURIComponent(origin)}`,
         {},
         { configured: false, url: null }
       );

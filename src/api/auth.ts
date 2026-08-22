@@ -251,7 +251,7 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 // ── GET /api/v1/auth/google/url ───────────────────────────────────────────────
-router.get("/google/url", (_req: Request, res: Response) => {
+router.get("/google/url", (req: Request, res: Response) => {
   if (!GOOGLE_CLIENT_ID) {
     return res.json({
       configured: false,
@@ -260,6 +260,11 @@ router.get("/google/url", (_req: Request, res: Response) => {
     });
   }
 
+  const origin =
+    (req.query.origin as string) ||
+    (req.headers.referer ? new URL(req.headers.referer).origin : "") ||
+    APP_URL;
+
   const url = googleOAuthClient.generateAuthUrl({
     access_type: "offline",
     scope: [
@@ -267,6 +272,7 @@ router.get("/google/url", (_req: Request, res: Response) => {
       "https://www.googleapis.com/auth/userinfo.email",
     ],
     prompt: "consent",
+    state: origin,
   });
 
   return res.json({ configured: true, url });
@@ -274,10 +280,16 @@ router.get("/google/url", (_req: Request, res: Response) => {
 
 // ── GET /api/v1/auth/google/callback ──────────────────────────────────────────
 router.get("/google/callback", async (req: Request, res: Response) => {
+  const state = req.query.state as string;
+  let targetBase = APP_URL;
+  if (state && (state.startsWith("http://") || state.startsWith("https://"))) {
+    targetBase = state.replace(/\/+$/, "");
+  }
+
   try {
     const code = req.query.code as string;
     if (!code) {
-      return res.redirect(`${APP_URL}/login?error=Google+authorization+code+missing`);
+      return res.redirect(`${targetBase}/login?error=Google+authorization+code+missing`);
     }
 
     const { tokens } = await googleOAuthClient.getToken(code);
@@ -313,7 +325,7 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     }
 
     if (!email) {
-      return res.redirect(`${APP_URL}/login?error=Failed+to+retrieve+email+from+Google`);
+      return res.redirect(`${targetBase}/login?error=Failed+to+retrieve+email+from+Google`);
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -354,10 +366,10 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       [user.id, token, expiresAt, req.headers["user-agent"] || null]
     );
 
-    return res.redirect(`${APP_URL}/auth/callback?token=${token}&email=${encodeURIComponent(user.email)}`);
+    return res.redirect(`${targetBase}/auth/callback?token=${token}&email=${encodeURIComponent(user.email)}`);
   } catch (err: any) {
     console.error("Google callback error:", err);
-    return res.redirect(`${APP_URL}/login?error=Google+authentication+failed`);
+    return res.redirect(`${targetBase}/login?error=Google+authentication+failed`);
   }
 });
 
