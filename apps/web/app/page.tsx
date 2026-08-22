@@ -37,7 +37,7 @@ export default function Home() {
       {/* 6. WHY AGENTIC COMMERCE: Human Storefronts vs Machine-Native Primitives */}
       <ComparisonSection />
 
-      {/* 7. INTEGRATIONS: WhatsApp, Shopify, Razorpay, Gemini, Redis, Postgres */}
+      {/* 7. INTEGRATIONS: WhatsApp, Shopify, Razorpay, AI, Redis, Postgres */}
       <IntegrationSection />
 
       {/* 8. FINAL CTA: Give your store an agent */}

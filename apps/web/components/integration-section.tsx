@@ -1,15 +1,14 @@
 'use client'
 
-import React from 'react'
+import { CheckCircle2 } from 'lucide-react'
 import {
-  Smartphone,
-  ShoppingBag,
-  CreditCard,
-  Sparkles,
-  Zap,
-  Database,
-  CheckCircle2,
-} from 'lucide-react'
+  WhatsAppIcon,
+  ShopifyIcon,
+  RazorpayIcon,
+  AIIcon,
+  RedisIcon,
+  PostgreSqlIcon,
+} from './icons/brand-icons'
 
 const CORE_INTEGRATIONS = [
   {
@@ -19,8 +18,8 @@ const CORE_INTEGRATIONS = [
     desc: 'Official Meta Cloud API intake for consumer requests, multi-turn bargaining, and 1-tap checkout delivery.',
     badge: 'Enterprise BSP',
     accent: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    iconBg: 'bg-emerald-600 text-white',
-    icon: Smartphone,
+    iconBg: 'bg-[#25D366] text-white',
+    icon: WhatsAppIcon,
   },
   {
     name: 'Shopify',
@@ -30,7 +29,7 @@ const CORE_INTEGRATIONS = [
     badge: 'Catalog Engine',
     accent: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     iconBg: 'bg-[#95BF47] text-white',
-    icon: ShoppingBag,
+    icon: ShopifyIcon,
   },
   {
     name: 'Razorpay',
@@ -39,18 +38,18 @@ const CORE_INTEGRATIONS = [
     desc: 'Idempotent Orders API, 1-Tap UPI Optimizer, HMAC-SHA256 webhooks, and instant T+0 INR bank settlement.',
     badge: 'Official Rails',
     accent: 'border-brand-200 bg-brand-50 text-brand-800',
-    iconBg: 'bg-[#0052ff] text-white',
-    icon: CreditCard,
+    iconBg: 'bg-[#0052FF] text-white',
+    icon: RazorpayIcon,
   },
   {
-    name: 'Google Gemini 2.5',
+    name: 'AI',
     category: 'Intelligence Layer',
     role: 'Bounded Agent Reasoning',
     desc: 'Sub-45ms natural language comprehension, Hinglish negotiation, and strict margin guardrail tool calling.',
     badge: 'Sub-45ms LLM',
     accent: 'border-purple-200 bg-purple-50 text-purple-800',
-    iconBg: 'bg-purple-600 text-white',
-    icon: Sparkles,
+    iconBg: 'bg-slate-900 text-white',
+    icon: AIIcon,
   },
   {
     name: 'Redis',
@@ -59,8 +58,8 @@ const CORE_INTEGRATIONS = [
     desc: 'In-memory distributed mutex locks for atomic inventory reservations to prevent flash-sale double selling.',
     badge: 'Atomic Mutex',
     accent: 'border-rose-200 bg-rose-50 text-rose-800',
-    iconBg: 'bg-rose-600 text-white',
-    icon: Zap,
+    iconBg: 'bg-[#DC382D] text-white',
+    icon: RedisIcon,
   },
   {
     name: 'PostgreSQL (Neon)',
@@ -69,8 +68,8 @@ const CORE_INTEGRATIONS = [
     desc: 'ACID-compliant relational store for margin rules, 5-point transaction linkage, and immutable audit trails.',
     badge: 'State Machine',
     accent: 'border-blue-200 bg-blue-50 text-blue-800',
-    iconBg: 'bg-slate-900 text-white',
-    icon: Database,
+    iconBg: 'bg-[#336791] text-white',
+    icon: PostgreSqlIcon,
   },
 ]
 

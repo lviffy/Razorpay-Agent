@@ -20,6 +20,7 @@ import {
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ShopifyIcon, RazorpayIcon } from './icons/brand-icons'
 
 function WhatsAppSellingCard() {
   return (
@@ -83,8 +84,8 @@ function UnifiedCatalogCard() {
     <div className="w-full h-full bg-[#f8fafc] rounded-2xl p-4 sm:p-5 border border-black/[0.08] flex flex-col justify-between space-y-3 font-sans">
       <div className="flex items-center justify-between border-b border-black/[0.06] pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#95BF47] text-white flex items-center justify-center font-bold text-xs">
-            S
+          <div className="w-7 h-7 rounded-lg bg-[#95BF47] text-white flex items-center justify-center shadow-xs">
+            <ShopifyIcon className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-xs text-surface-900">Shopify &amp; Catalog Sync</span>
         </div>
@@ -131,8 +132,8 @@ function RazorpaySettlementCard() {
     <div className="w-full h-full bg-[#0c2340] rounded-2xl p-4 sm:p-5 border border-blue-900/60 flex flex-col justify-between space-y-3 font-sans text-white">
       <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#0052ff] text-white flex items-center justify-center font-bold text-xs">
-            R
+          <div className="w-7 h-7 rounded-lg bg-[#0052ff] text-white flex items-center justify-center shadow-xs">
+            <RazorpayIcon className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-xs text-white">Razorpay Webhook Engine</span>
         </div>

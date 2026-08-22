@@ -88,7 +88,7 @@ export default function FlowSection() {
             {/* Bottom Meta */}
             <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
               <span>Natural Language Recall</span>
-              <span className="text-slate-300">Gemini 2.5 Flash</span>
+              <span className="text-slate-300">AI Agent Reasoning</span>
             </div>
           </div>
 

@@ -2,7 +2,7 @@
 
 > **Track:** Razorpay AI Buildathon 2026 — AI Growth & Agentic Commerce  
 > **Status:** Final Submission Draft  
-> **Core Stack:** Bun • TypeScript • Google Gemini • Razorpay • Neon Postgres • Redis • WhatsApp Cloud API • x402 Protocol  
+> **Core Stack:** Bun • TypeScript • AI Engine • Razorpay • Neon Postgres • Redis • WhatsApp Cloud API • x402 Protocol  
 > **Documentation:** [PRD.md](PRD.md) • [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
@@ -112,7 +112,7 @@ AgentBridge operates as a three-layer intelligent middleware connecting e-commer
 
 ## 🤖 Dual AI Agent System
 
-AgentBridge implements two specialized LLM agents built on **Google Gemini 2.5 / Flash** with function calling:
+AgentBridge implements two specialized LLM agents built on **Autonomous AI Reasoning** with function calling:
 
 ```
 [Buyer Agent] ──── (1) Search & Request Offer ────► [Store A Seller Agent]
@@ -204,7 +204,7 @@ Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 keys 
 
 - **Runtime Engine:** [Bun](https://bun.sh/) (v1.1+) — native TypeScript execution with built-in test runner.
 - **Language:** TypeScript 100% (Strict Mode).
-- **AI / LLM Orchestration:** Google Gemini 2.5 / Flash via `@google/generative-ai`.
+- **AI / LLM Orchestration:** Advanced Autonomous LLM Reasoning with Function Calling.
 - **Database:** Serverless Postgres via [Neon DB](https://neon.tech/).
 - **In-Memory Cache & Locking:** Redis 7 (`ioredis`) for atomic inventory reservation (`SET NX EX`).
 - **Payment Processing:** Official `razorpay` Node SDK.

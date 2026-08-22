@@ -3,6 +3,16 @@
 import React from 'react'
 import { InfiniteSlider } from './ui/infinite-slider'
 import { CheckCircle2 } from 'lucide-react'
+import {
+  RazorpayIcon,
+  WhatsAppIcon,
+  GooglePayIcon,
+  PhonePeIcon,
+  ShopifyIcon,
+  CredIcon,
+  PaytmIcon,
+  BankSettlementIcon,
+} from './icons/brand-icons'
 
 const ECOSYSTEM_PARTNERS = [
   {
@@ -10,98 +20,56 @@ const ECOSYSTEM_PARTNERS = [
     category: 'Payment Rails',
     badge: 'Official Integration',
     color: '#0052ff',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 2L4 7v10l8 5 8-5V7l-8-5z"
-          fill="#0052ff"
-          stroke="#ffffff"
-          strokeWidth="1.5"
-        />
-        <path d="M12 6l-5 3v6l5 3 5-3V9l-5-3z" fill="#ffffff" />
-      </svg>
-    ),
+    icon: <RazorpayIcon className="w-5 h-5 text-[#0052ff]" />,
   },
   {
     name: 'WhatsApp Cloud API',
     category: 'Meta Verified',
     badge: 'Enterprise BSP',
     color: '#25D366',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-        <path
-          d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm.01 1.67c2.2 0 4.27.86 5.82 2.42a8.19 8.19 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.24 8.24-1.45 0-2.87-.38-4.12-1.1l-.3-.17-3.12.82.83-3.04-.19-.3a8.21 8.21 0 0 1-1.25-4.45c0-4.54 3.7-8.24 8.24-8.24z"
-          fill="#25D366"
-        />
-      </svg>
-    ),
+    icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />,
   },
   {
     name: 'Google Pay',
     category: '1-Tap UPI',
     badge: 'Instant Intent',
     color: '#4285F4',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-        <rect width="24" height="24" rx="6" fill="#f8fafc" />
-        <path d="M12 5v14M5 12h14" stroke="#4285F4" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-    ),
+    icon: <GooglePayIcon className="w-5 h-5 text-[#4285F4]" />,
   },
   {
     name: 'PhonePe',
     category: 'UPI Autopay',
     badge: 'Zero Dropoff',
     color: '#5f259f',
-    icon: (
-      <div className="w-5 h-5 rounded-md bg-[#5f259f] flex items-center justify-center text-white font-bold text-[10px]">
-        पे
-      </div>
-    ),
+    icon: <PhonePeIcon className="w-5 h-5 text-[#5f259f]" />,
   },
   {
     name: 'Shopify Sync',
     category: 'Catalog Engine',
     badge: 'OAuth 2.0',
     color: '#95BF47',
-    icon: (
-      <div className="w-5 h-5 rounded-md bg-[#95BF47] flex items-center justify-center text-white font-bold text-[10px]">
-        S
-      </div>
-    ),
+    icon: <ShopifyIcon className="w-5 h-5 text-[#95BF47]" />,
   },
   {
     name: 'CRED UPI',
     category: 'High-Ticket Pay',
     badge: 'Premium D2C',
     color: '#000000',
-    icon: (
-      <div className="w-5 h-5 rounded-md bg-black flex items-center justify-center text-white font-bold text-[10px]">
-        C
-      </div>
-    ),
+    icon: <CredIcon className="w-5 h-5" />,
   },
   {
     name: 'Paytm UPI',
     category: 'Instant Settle',
     badge: 'Bank Switch',
     color: '#00b9f5',
-    icon: (
-      <div className="w-5 h-5 rounded-md bg-[#00b9f5] flex items-center justify-center text-white font-bold text-[10px]">
-        P
-      </div>
-    ),
+    icon: <PaytmIcon className="w-5 h-5 text-[#00b9f5]" />,
   },
   {
     name: 'HDFC & ICICI',
     category: 'Direct Settle',
     badge: 'T+0 INR',
     color: '#004c8f',
-    icon: (
-      <div className="w-5 h-5 rounded-md bg-[#004c8f] flex items-center justify-center text-white font-bold text-[9px]">
-        BANK
-      </div>
-    ),
+    icon: <BankSettlementIcon className="w-5 h-5 text-[#004c8f]" />,
   },
 ]
 

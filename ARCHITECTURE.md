@@ -73,7 +73,7 @@ The production architecture decomposes into 7 decoupled, horizontally scalable s
   - No live Shopify sync, no GraphQL calls, no OAuth
 
 ### 2.3 Dual-Agent Orchestration & A2A Engine
-- **Runtime:** Google Gemini (AI Studio) via `@google/generative-ai` with structured function calling
+- **Runtime:** Autonomous AI LLM with structured function calling
 - **Seller Agent (`src/agents/seller-agent.ts`):**
   - Evaluates buyer queries against per-merchant negotiation rules from Postgres
   - Executes one counter-offer within `max_discount_percentage` bound
@@ -88,7 +88,7 @@ The production architecture decomposes into 7 decoupled, horizontally scalable s
 - **Pattern:**
   - `POST /webhooks/whatsapp` validates Meta signature, persists message, pushes job to Redis, returns **200 immediately**
   - Worker dequeues job and runs full Buyer Agent → Seller Agent → Razorpay flow asynchronously
-  - Prevents Meta webhook timeouts during Gemini API calls (which may take 5–15s)
+  - Prevents Meta webhook timeouts during AI model reasoning calls (which may take 5–15s)
 
 ### 2.5 Distributed Inventory Reservation & Locking
 - **Technology:** Redis `SET NX EX 120` — atomic, single-key lock
@@ -125,7 +125,7 @@ The production architecture decomposes into 7 decoupled, horizontally scalable s
   - `x402_transaction_id` — Fiat-Native HTTP 402 transaction reference
   - `razorpay_payment_id` — canonical money-movement proof
   - `order_id` — AgentBridge order reference
-  - `agent_reasoning_trace` — full Gemini tool call log
+  - `agent_reasoning_trace` — full AI tool call trace log
   - `event_checksum` — SHA256(prev_checksum + payload)
 
 ---

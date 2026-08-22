@@ -367,9 +367,9 @@ The following are real features that will be built in v2 — they are excluded f
 |---|---|---|
 | Merchant data | Seeded Neon DB (Postgres) — no live Shopify sync | Two mock merchants pre-loaded with products, inventory, and negotiation rules; reliable with zero external API dependency |
 | Runtime & language | **Bun** + **TypeScript 100%** | Fast startup, native TS execution, built-in test runner; no transpile step |
-| Agent runtime | **Google Gemini** (AI Studio) via `@google/generative-ai` with function calling | Tool-call interface enforces bounded actions; LLM handles natural language negotiation |
+| Agent runtime | **Autonomous AI LLM** via function calling | Tool-call interface enforces bounded actions; LLM handles natural language negotiation |
 | Agent-to-agent protocol | Fiat-Native HTTP 402 challenge/response (`X-402-*` headers) | Machine-readable payment handshake scoped to Razorpay INR flow (see ARCHITECTURE.md §3) |
-| WhatsApp interface | WhatsApp Business Cloud API — **async worker pattern** | Inbound webhook returns 200 immediately; Redis queue + worker processes Gemini calls asynchronously |
+| WhatsApp interface | WhatsApp Business Cloud API — **async worker pattern** | Inbound webhook returns 200 immediately; Redis queue + worker processes AI calls asynchronously |
 | Payment infrastructure | Razorpay Orders + **Standard Payment Links** + Webhooks (test mode) | Standard Payment Links are verified working in test mode with explicit Success/Failure choices |
 | Inventory locking | Redis `SET NX EX 120` atomic lock | Simple, correct; Postgres is source of truth for inventory state machine |
 | Audit log | Neon DB (Postgres) append-only table | 5-field immutable event store with checksum chaining |

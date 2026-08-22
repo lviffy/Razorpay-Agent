@@ -1,7 +1,7 @@
 {
   "name": "agentbridge",
   "version": "0.1.0",
-  "description": "Agentic commerce middleware — two-merchant demo with Gemini, Razorpay, WhatsApp & x402",
+  "description": "Agentic commerce middleware — two-merchant demo with AI, Razorpay, WhatsApp & x402",
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
