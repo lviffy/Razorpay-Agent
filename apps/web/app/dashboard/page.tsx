@@ -57,31 +57,31 @@ export default function DashboardOverviewPage() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Merchant Cockpit</h1>
-              <Badge variant="outline" className="gap-1.5 font-medium text-[11px] bg-zinc-100 text-zinc-700 border-zinc-200">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <h1 className="text-lg sm:text-xl font-bold text-zinc-900 tracking-tight">Merchant Cockpit</h1>
+              <Badge variant="outline" className="gap-1.5 font-medium text-[10px] sm:text-[11px] bg-zinc-100 text-zinc-700 border-zinc-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 Live Telemetry
               </Badge>
             </div>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs text-zinc-500 mt-0.5 sm:mt-1">
               Real-time telemetry on autonomous WhatsApp negotiations and Razorpay settlements.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard/products">
-              <Button variant="outline" size="sm" className="text-xs h-8 bg-white border-zinc-300 hover:bg-zinc-50 font-medium text-zinc-700 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
+            <Link href="/dashboard/products" className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto text-xs h-8 bg-white border-zinc-300 hover:bg-zinc-50 font-medium text-zinc-700 shadow-2xs">
                 <Layers className="w-3.5 h-3.5 text-zinc-500 mr-1.5" />
                 Manage Catalog
               </Button>
             </Link>
-            <Link href="/dashboard/conversations">
-              <Button variant="default" size="sm" className="text-xs h-8 bg-blue-600 hover:bg-blue-700 font-medium text-white shadow-xs">
+            <Link href="/dashboard/conversations" className="flex-1 sm:flex-none">
+              <Button variant="default" size="sm" className="w-full sm:w-auto text-xs h-8 bg-blue-600 hover:bg-blue-700 font-medium text-white shadow-xs">
                 <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
                 Live AI Conversations
               </Button>
@@ -91,24 +91,24 @@ export default function DashboardOverviewPage() {
 
         {/* AI Seller Agent Banner Card */}
         <Card className="border-zinc-200 shadow-xs">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-6">
               <div className="space-y-3 max-w-xl">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-zinc-900 text-white text-[11px] font-semibold tracking-wide">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-zinc-900 text-white text-[10px] sm:text-[11px] font-semibold tracking-wide">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     AI SELLER AGENT ACTIVE
                   </span>
-                  <Badge variant="outline" className="text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
+                  <Badge variant="outline" className="text-[10px] sm:text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
                     WhatsApp Cloud API
                   </Badge>
-                  <Badge variant="outline" className="text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
+                  <Badge variant="outline" className="text-[10px] sm:text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
                     Razorpay Instant
                   </Badge>
                 </div>
 
                 <div>
-                  <h2 className="text-base font-bold text-zinc-900">
+                  <h2 className="text-sm sm:text-base font-bold text-zinc-900">
                     Autonomous WhatsApp Selling & Negotiation Engine
                   </h2>
                   <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
@@ -117,11 +117,11 @@ export default function DashboardOverviewPage() {
                 </div>
 
                 {/* Policy Chips with Tooltips */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-0.5">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="cursor-help inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
-                        <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
+                      <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
+                        <ShieldCheck className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
                         Floor: ₹3,500
                       </span>
                     </TooltipTrigger>
@@ -130,8 +130,8 @@ export default function DashboardOverviewPage() {
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="cursor-help inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
-                        <Sliders className="w-3.5 h-3.5 text-zinc-600" />
+                      <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
+                        <Sliders className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
                         Max Discount: 12%
                       </span>
                     </TooltipTrigger>
@@ -140,8 +140,8 @@ export default function DashboardOverviewPage() {
 
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="cursor-help inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
-                        <ShoppingBag className="w-3.5 h-3.5 text-zinc-600" />
+                      <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
+                        <ShoppingBag className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
                         Free Shipping &gt; ₹3,000
                       </span>
                     </TooltipTrigger>
@@ -151,21 +151,21 @@ export default function DashboardOverviewPage() {
               </div>
 
               {/* Outcome Stat Modules */}
-              <div className="w-full lg:w-auto grid grid-cols-3 gap-3 bg-zinc-50 border border-zinc-200 p-4 rounded-xl flex-shrink-0">
-                <div className="text-center px-3 border-r border-zinc-200">
-                  <p className="text-[11px] text-zinc-500 font-medium">Conversion</p>
-                  <p className="text-xl font-bold font-mono text-zinc-900">{analytics.conversionRate}%</p>
-                  <span className="text-[10px] text-emerald-700 font-medium font-mono">+4.2% vs manual</span>
+              <div className="w-full lg:w-auto grid grid-cols-3 gap-2 sm:gap-3 bg-zinc-50 border border-zinc-200 p-3 sm:p-4 rounded-xl flex-shrink-0">
+                <div className="text-center px-1.5 sm:px-3 border-r border-zinc-200">
+                  <p className="text-[10px] sm:text-[11px] text-zinc-500 font-medium truncate">Conversion</p>
+                  <p className="text-lg sm:text-xl font-bold font-mono text-zinc-900 mt-0.5">{analytics.conversionRate}%</p>
+                  <span className="text-[9px] sm:text-[10px] text-emerald-700 font-medium font-mono block truncate">+4.2% vs man.</span>
                 </div>
-                <div className="text-center px-3 border-r border-zinc-200">
-                  <p className="text-[11px] text-zinc-500 font-medium">Avg Discount</p>
-                  <p className="text-xl font-bold font-mono text-zinc-900">{analytics.averageDiscount}%</p>
-                  <span className="text-[10px] text-zinc-500 font-medium font-mono">Floor protected</span>
+                <div className="text-center px-1.5 sm:px-3 border-r border-zinc-200">
+                  <p className="text-[10px] sm:text-[11px] text-zinc-500 font-medium truncate">Avg Discount</p>
+                  <p className="text-lg sm:text-xl font-bold font-mono text-zinc-900 mt-0.5">{analytics.averageDiscount}%</p>
+                  <span className="text-[9px] sm:text-[10px] text-zinc-500 font-medium font-mono block truncate">Floor safe</span>
                 </div>
-                <div className="text-center px-3">
-                  <p className="text-[11px] text-zinc-500 font-medium">Deals Closed</p>
-                  <p className="text-xl font-bold font-mono text-blue-600">{analytics.dealsClosed}</p>
-                  <span className="text-[10px] text-zinc-500 font-medium font-mono">100% UPI settled</span>
+                <div className="text-center px-1.5 sm:px-3">
+                  <p className="text-[10px] sm:text-[11px] text-zinc-500 font-medium truncate">Deals Closed</p>
+                  <p className="text-lg sm:text-xl font-bold font-mono text-blue-600 mt-0.5">{analytics.dealsClosed}</p>
+                  <span className="text-[9px] sm:text-[10px] text-zinc-500 font-medium font-mono block truncate">100% UPI</span>
                 </div>
               </div>
             </div>
@@ -173,67 +173,67 @@ export default function DashboardOverviewPage() {
         </Card>
 
         {/* 4 Financial KPI Cards using shadcn Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card className="border-zinc-200 shadow-xs">
-            <CardHeader className="p-5 pb-2">
+            <CardHeader className="p-3.5 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-zinc-500 text-xs">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">Agent GMV</span>
-                <CreditCard className="w-4 h-4 text-zinc-400" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Agent GMV</span>
+                <CreditCard className="w-4 h-4 text-zinc-400 shrink-0" />
               </div>
-              <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(analytics.agentGmv)}</CardTitle>
-              <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>+{analytics.gmvGrowthPercent}% vs last week</span>
+              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(analytics.agentGmv)}</CardTitle>
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-600 font-medium mt-1 truncate">
+                <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">+{analytics.gmvGrowthPercent}% WoW</span>
               </div>
             </CardHeader>
-            <CardFooter className="p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-              <span>Settlement Gateway</span>
-              <span className="text-zinc-600 font-semibold">Razorpay UPI</span>
+            <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+              <span>Settlement</span>
+              <span className="text-zinc-600 font-semibold truncate ml-1">Razorpay UPI</span>
             </CardFooter>
           </Card>
 
           <Card className="border-zinc-200 shadow-xs">
-            <CardHeader className="p-5 pb-2">
+            <CardHeader className="p-3.5 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-zinc-500 text-xs">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">AI Conversations</span>
-                <MessageSquare className="w-4 h-4 text-zinc-400" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Conversations</span>
+                <MessageSquare className="w-4 h-4 text-zinc-400 shrink-0" />
               </div>
-              <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatNumber(analytics.totalConversations)}</CardTitle>
-              <CardDescription className="text-xs text-zinc-500 mt-1">100% automated via WhatsApp</CardDescription>
+              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatNumber(analytics.totalConversations)}</CardTitle>
+              <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">100% automated</CardDescription>
             </CardHeader>
-            <CardFooter className="p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-              <span>Response Time</span>
-              <span className="text-zinc-600 font-semibold">&lt; 1.2s avg</span>
+            <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+              <span>Latency</span>
+              <span className="text-zinc-600 font-semibold ml-1">&lt; 1.2s avg</span>
             </CardFooter>
           </Card>
 
           <Card className="border-zinc-200 shadow-xs">
-            <CardHeader className="p-5 pb-2">
+            <CardHeader className="p-3.5 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-zinc-500 text-xs">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">Settled Deals</span>
-                <ShoppingBag className="w-4 h-4 text-zinc-400" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Settled Deals</span>
+                <ShoppingBag className="w-4 h-4 text-zinc-400 shrink-0" />
               </div>
-              <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatNumber(analytics.dealsClosed)}</CardTitle>
-              <CardDescription className="text-xs text-zinc-500 mt-1">Zero human intervention</CardDescription>
+              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatNumber(analytics.dealsClosed)}</CardTitle>
+              <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Zero manual work</CardDescription>
             </CardHeader>
-            <CardFooter className="p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
-              <span>Closure Rate</span>
-              <span className="text-zinc-600 font-semibold">91.2% Success</span>
+            <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+              <span>Closure</span>
+              <span className="text-zinc-600 font-semibold ml-1">91.2% Win</span>
             </CardFooter>
           </Card>
 
           <Card className="border-zinc-200 shadow-xs">
-            <CardHeader className="p-5 pb-2">
+            <CardHeader className="p-3.5 sm:p-5 pb-2">
               <div className="flex items-center justify-between text-zinc-500 text-xs">
-                <span className="font-semibold uppercase tracking-wider text-[11px]">Average Order Value</span>
-                <ShieldCheck className="w-4 h-4 text-zinc-400" />
+                <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Avg Order Value</span>
+                <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
               </div>
-              <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(analytics.averageOrderValue)}</CardTitle>
-              <CardDescription className="text-xs text-zinc-500 mt-1">Protected by price floor</CardDescription>
+              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(analytics.averageOrderValue)}</CardTitle>
+              <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Floor protected</CardDescription>
             </CardHeader>
-            <CardFooter className="p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
+            <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
               <span>Margin Saved</span>
-              <span className="text-zinc-600 font-semibold">+₹9,310</span>
+              <span className="text-zinc-600 font-semibold ml-1">+₹9,310</span>
             </CardFooter>
           </Card>
         </div>
@@ -253,16 +253,18 @@ export default function DashboardOverviewPage() {
                 </Badge>
               </div>
 
-              {/* Filter Tabs using shadcn Tabs */}
-              <Tabs value={selectedActivityFilter} onValueChange={setSelectedActivityFilter}>
-                <TabsList className="h-7">
-                  {["ALL", "PAYMENTS", "NEGOTIATIONS", "INVENTORY"].map((filter) => (
-                    <TabsTrigger key={filter} value={filter} className="text-[10px] py-0.5 px-2">
-                      {filter}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              {/* Filter Tabs using shadcn Tabs with mobile horizontal scroll */}
+              <div className="overflow-x-auto no-scrollbar max-w-full pb-0.5">
+                <Tabs value={selectedActivityFilter} onValueChange={setSelectedActivityFilter}>
+                  <TabsList className="h-7 shrink-0">
+                    {["ALL", "PAYMENTS", "NEGOTIATIONS", "INVENTORY"].map((filter) => (
+                      <TabsTrigger key={filter} value={filter} className="text-[10px] py-0.5 px-2">
+                        {filter}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
 
             <Card className="border-zinc-200 divide-y divide-zinc-100 shadow-xs overflow-hidden">

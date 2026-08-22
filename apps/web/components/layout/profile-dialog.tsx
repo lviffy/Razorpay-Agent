@@ -103,25 +103,25 @@ export function ProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px] p-0 overflow-hidden border-zinc-200/90 rounded-2xl shadow-2xl bg-white [&>button]:hidden">
+      <DialogContent className="w-[95vw] sm:max-w-[540px] max-h-[90vh] overflow-y-auto p-0 border-zinc-200/90 rounded-2xl shadow-2xl bg-white [&>button]:hidden">
         {/* Clean Light Header */}
-        <div className="bg-zinc-50/80 border-b border-zinc-100 p-6 relative">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-xs ring-4 ring-blue-500/10 shrink-0">
+        <div className="bg-zinc-50/80 border-b border-zinc-100 p-4 sm:p-6 relative">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-blue-600 text-white font-bold text-sm sm:text-base flex items-center justify-center shadow-xs ring-4 ring-blue-500/10 shrink-0">
                 RF
               </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <DialogTitle className="text-base font-bold text-zinc-900 font-display">
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <DialogTitle className="text-sm sm:text-base font-bold text-zinc-900 font-display truncate">
                     {name || profile.name}
                   </DialogTitle>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 sm:px-2 py-0.5 rounded-full shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Admin
                   </span>
                 </div>
-                <DialogDescription className="text-xs text-zinc-500 font-mono">
+                <DialogDescription className="text-[11px] sm:text-xs text-zinc-500 font-mono truncate">
                   {profile.email}
                 </DialogDescription>
               </div>
@@ -131,7 +131,7 @@ export function ProfileDialog({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/50 p-1.5 rounded-lg transition-colors cursor-pointer"
+              className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-200/50 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
               aria-label="Close dialog"
             >
               <X className="w-4 h-4" />
@@ -140,7 +140,7 @@ export function ProfileDialog({
         </div>
 
         {/* Modal Form Body */}
-        <form onSubmit={handleSave} className="p-6 space-y-5">
+        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           {savedSuccess ? (
             <div className="py-10 flex flex-col items-center justify-center text-center space-y-2.5 animate-in fade-in zoom-in duration-200">
               <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
@@ -254,7 +254,7 @@ export function ProfileDialog({
                 <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider font-mono">
                   Store Environment & Permissions
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div className="flex items-center gap-2 text-zinc-700 bg-white px-2.5 py-1.5 rounded-lg border border-zinc-200/60 shadow-2xs">
                     <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                     <span className="truncate">Store: <strong className="font-semibold text-zinc-900">{profile.storeName}</strong></span>
@@ -275,7 +275,7 @@ export function ProfileDialog({
               </div>
 
               {/* Quick Navigation Cards */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                 <Link
                   href="/dashboard/settings"
                   onClick={() => onOpenChange(false)}

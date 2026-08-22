@@ -58,27 +58,27 @@ export default function ConversationsPage() {
         </div>
 
         {/* Mobile Tab Switcher */}
-        <div className="flex items-center gap-1 lg:hidden bg-zinc-100 p-1 rounded-lg border border-zinc-200 self-start text-xs">
+        <div className="grid grid-cols-3 w-full sm:w-auto lg:hidden bg-zinc-100 p-1 rounded-xl border border-zinc-200 text-xs">
           <button
             onClick={() => setMobileTab("threads")}
-            className={`px-3 py-1 rounded-md transition-colors ${
-              mobileTab === "threads" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
+            className={`py-1.5 px-2 text-center rounded-lg transition-colors truncate font-medium ${
+              mobileTab === "threads" ? "bg-white text-zinc-900 shadow-xs font-semibold" : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
             Threads ({threads.length})
           </button>
           <button
             onClick={() => setMobileTab("chat")}
-            className={`px-3 py-1 rounded-md transition-colors ${
-              mobileTab === "chat" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
+            className={`py-1.5 px-2 text-center rounded-lg transition-colors truncate font-medium ${
+              mobileTab === "chat" ? "bg-white text-zinc-900 shadow-xs font-semibold" : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
             WhatsApp Chat
           </button>
           <button
             onClick={() => setMobileTab("trace")}
-            className={`px-3 py-1 rounded-md transition-colors ${
-              mobileTab === "trace" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
+            className={`py-1.5 px-2 text-center rounded-lg transition-colors truncate font-medium ${
+              mobileTab === "trace" ? "bg-white text-zinc-900 shadow-xs font-semibold" : "text-zinc-600 hover:text-zinc-900"
             }`}
           >
             AI Trace
@@ -98,7 +98,7 @@ export default function ConversationsPage() {
           </p>
         </Card>
       ) : (
-        <Card className="border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs p-0">
+        <Card className="border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[500px] h-[calc(100dvh-13rem)] overflow-hidden shadow-xs p-0">
           {/* Pane 1: Conversation List (3 cols) */}
           <div
             className={`lg:col-span-3 border-r border-zinc-200 flex flex-col ${

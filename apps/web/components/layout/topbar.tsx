@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Menu,
   Search,
   Bell,
   Radio,
@@ -56,7 +57,7 @@ import { ProfileDialog } from "@/components/layout/profile-dialog";
 import { api, defaultMerchantProfile } from "@/lib/api/client";
 import { MerchantProfile } from "@/lib/types";
 
-export function Topbar() {
+export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -120,13 +121,25 @@ export function Topbar() {
 
   return (
     <>
-      <header className="h-14 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 select-none flex-shrink-0">
-        {/* Left: Active Store + Environment Pill */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200/80 px-2.5 py-1 rounded-lg">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-            <span className="font-semibold text-xs text-zinc-900">{profile.storeName}</span>
-            <span className="text-[10px] text-zinc-500 font-mono font-medium">
+      <header className="h-14 bg-white border-b border-zinc-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 select-none flex-shrink-0">
+        {/* Left: Mobile Hamburger + Active Store + Environment Pill */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {/* Mobile Sidebar Hamburger Toggle */}
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open Navigation Menu"
+            className="lg:hidden p-1.5 -ml-1 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors cursor-pointer shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-zinc-50 border border-zinc-200/80 px-2 sm:px-2.5 py-1 rounded-lg min-w-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0" />
+            <span className="font-semibold text-xs text-zinc-900 truncate max-w-[110px] sm:max-w-[180px]">
+              {profile.storeName}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono font-medium hidden xs:inline">
               (Sandbox)
             </span>
           </div>
@@ -151,7 +164,17 @@ export function Topbar() {
         </div>
 
         {/* Right: Quick Actions & Profile */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-1 sm:gap-2.5">
+          {/* Mobile Search Button (Quick ⌘K trigger) */}
+          <button
+            type="button"
+            onClick={() => setCommandOpen(true)}
+            aria-label="Search dashboard"
+            className="md:hidden text-zinc-500 hover:text-zinc-900 p-2 rounded-lg hover:bg-zinc-100/80 transition-colors cursor-pointer"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
           <Link
             href="/dashboard/whatsapp"
             className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
@@ -223,16 +246,16 @@ export function Topbar() {
               <button
                 type="button"
                 aria-label="User Account Menu"
-                className="flex items-center gap-2.5 pl-3 border-l border-zinc-200 hover:bg-zinc-50 py-1 px-2 rounded-xl transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
+                className="flex items-center gap-1.5 sm:gap-2.5 pl-2 sm:pl-3 border-l border-zinc-200 hover:bg-zinc-50 py-1 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
               >
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
                   RF
                 </div>
                 <div className="hidden lg:block text-left">
                   <p className="text-xs font-semibold text-zinc-900 leading-none">{profile.name}</p>
                   <p className="text-[10px] text-zinc-500 font-mono leading-none mt-1">{profile.merchantId}</p>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
               </button>
             </DropdownMenuTrigger>
 

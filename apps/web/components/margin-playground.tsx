@@ -186,44 +186,44 @@ export default function MarginPlayground() {
                 />
 
                 {/* Quick Offer Preset Buttons */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-1">
                   <button
                     type="button"
                     onClick={() => handleQuickOffer(floorPrice - 200)}
                     className={cn(
-                      'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
                       buyerOffer < effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
                     )}
                   >
-                    Lowball ₹{(floorPrice - 200).toLocaleString('en-IN')}
+                    <span className="hidden xs:inline">Lowball </span>₹{(floorPrice - 200).toLocaleString('en-IN')}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleQuickOffer(effectiveFloor)}
                     className={cn(
-                      'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
                       buyerOffer === effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
                     )}
                   >
-                    Floor ₹{effectiveFloor.toLocaleString('en-IN')}
+                    <span className="hidden xs:inline">Floor </span>₹{effectiveFloor.toLocaleString('en-IN')}
                   </button>
 
                   <button
                     type="button"
                     onClick={() => handleQuickOffer(listPrice - 100)}
                     className={cn(
-                      'py-1.5 px-2 rounded-xl text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
                       buyerOffer > effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
                     )}
                   >
-                    Full ₹{(listPrice - 100).toLocaleString('en-IN')}
+                    <span className="hidden xs:inline">Full </span>₹{(listPrice - 100).toLocaleString('en-IN')}
                   </button>
                 </div>
               </div>

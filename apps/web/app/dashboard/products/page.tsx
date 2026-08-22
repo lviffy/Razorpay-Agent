@@ -121,28 +121,30 @@ export default function ProductsPage() {
             />
           </div>
 
-          <Tabs value={filter} onValueChange={setFilter}>
-            <TabsList className="h-8">
-              {[
-                { id: "ALL", label: "All Products" },
-                { id: "AI_ENABLED", label: "AI Active" },
-                { id: "IN_STOCK", label: "In Stock" },
-                { id: "AGENTBRIDGE", label: "Native" },
-                { id: "SHOPIFY", label: "Shopify" },
-              ].map((tab) => (
-                <TabsTrigger key={tab.id} value={tab.id} className="text-xs py-1 px-2.5">
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="overflow-x-auto no-scrollbar max-w-full pb-0.5">
+            <Tabs value={filter} onValueChange={setFilter}>
+              <TabsList className="h-8 shrink-0">
+                {[
+                  { id: "ALL", label: "All Products" },
+                  { id: "AI_ENABLED", label: "AI Active" },
+                  { id: "IN_STOCK", label: "In Stock" },
+                  { id: "AGENTBRIDGE", label: "Native" },
+                  { id: "SHOPIFY", label: "Shopify" },
+                ].map((tab) => (
+                  <TabsTrigger key={tab.id} value={tab.id} className="text-xs py-1 px-2.5">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </Card>
 
       {/* Catalog Table */}
       <Card className="border-zinc-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[760px] text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold uppercase text-[10px] tracking-wider">
                 <th className="py-3 px-4">Product Details</th>

@@ -321,7 +321,7 @@ export default function HeroSection() {
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2.5 xs:gap-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-slate-300 text-[11px] font-medium truncate">Nike Air Zoom Pegasus 40</p>
                             <div className="flex items-baseline gap-2 mt-0.5">
@@ -341,7 +341,7 @@ export default function HeroSection() {
                             onClick={handleSimulatePayment}
                             disabled={isProcessing}
                             className={cn(
-                              'px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
+                              'w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
                               paid
                                 ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                                 : 'bg-[#0052ff] hover:bg-[#0045d8] text-white'

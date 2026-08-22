@@ -115,14 +115,16 @@ export function DashboardCharts() {
         </div>
 
         {/* View mode switcher */}
-        <Tabs value={viewMode} onValueChange={setViewMode}>
-          <TabsList className="h-8">
-            <TabsTrigger value="all" className="text-xs py-1 px-2.5">All Graphs</TabsTrigger>
-            <TabsTrigger value="gmv" className="text-xs py-1 px-2.5">GMV Volume</TabsTrigger>
-            <TabsTrigger value="margin" className="text-xs py-1 px-2.5">Margin Shield</TabsTrigger>
-            <TabsTrigger value="velocity" className="text-xs py-1 px-2.5">Lead Velocity</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="overflow-x-auto no-scrollbar max-w-full pb-0.5">
+          <Tabs value={viewMode} onValueChange={setViewMode}>
+            <TabsList className="h-8 shrink-0">
+              <TabsTrigger value="all" className="text-xs py-1 px-2.5">All Graphs</TabsTrigger>
+              <TabsTrigger value="gmv" className="text-xs py-1 px-2.5">GMV Volume</TabsTrigger>
+              <TabsTrigger value="margin" className="text-xs py-1 px-2.5">Margin Shield</TabsTrigger>
+              <TabsTrigger value="velocity" className="text-xs py-1 px-2.5">Lead Velocity</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* 3 Graph Grid using shadcn Cards */}

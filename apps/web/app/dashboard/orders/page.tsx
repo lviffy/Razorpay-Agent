@@ -112,7 +112,7 @@ export default function OrdersPage() {
       {/* Table */}
       <Card className="border-zinc-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="w-full min-w-[680px] text-xs text-left">
             <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium">
               <tr>
                 <th className="py-3 px-4">Order #</th>

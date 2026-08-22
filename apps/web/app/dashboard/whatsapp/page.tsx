@@ -157,7 +157,7 @@ export default function WhatsAppPage() {
       </div>
 
       {/* Meta Account Status Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-zinc-200 shadow-xs">
           <CardHeader className="p-4 pb-1">
             <div className="flex items-center justify-between text-xs text-zinc-500">

@@ -47,51 +47,51 @@ export default function AnalyticsPage() {
       </div>
 
       {/* 4 Top KPI Cards using shadcn Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-zinc-200 shadow-xs">
-          <CardHeader className="p-5 pb-2">
+          <CardHeader className="p-3.5 sm:p-5 pb-2">
             <div className="flex items-center justify-between text-zinc-500 text-xs">
-              <span className="font-semibold uppercase tracking-wider text-[11px]">Total Agent GMV</span>
-              <CreditCard className="w-4 h-4 text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Total Agent GMV</span>
+              <CreditCard className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
-            <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(data.agentGmv)}</CardTitle>
-            <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium mt-1">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>+{data.gmvGrowthPercent}% this week</span>
+            <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(data.agentGmv)}</CardTitle>
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-600 font-medium mt-1 truncate">
+              <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">+{data.gmvGrowthPercent}% this week</span>
             </div>
           </CardHeader>
         </Card>
 
         <Card className="border-zinc-200 shadow-xs">
-          <CardHeader className="p-5 pb-2">
+          <CardHeader className="p-3.5 sm:p-5 pb-2">
             <div className="flex items-center justify-between text-zinc-500 text-xs">
-              <span className="font-semibold uppercase tracking-wider text-[11px]">Conversion Rate</span>
-              <Percent className="w-4 h-4 text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Conversion Rate</span>
+              <Percent className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
-            <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{data.conversionRate}%</CardTitle>
-            <CardDescription className="text-xs text-zinc-500 mt-1">{data.dealsClosed} closed of {data.totalConversations} leads</CardDescription>
+            <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{data.conversionRate}%</CardTitle>
+            <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">{data.dealsClosed} closed of {data.totalConversations}</CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="border-zinc-200 shadow-xs">
-          <CardHeader className="p-5 pb-2">
+          <CardHeader className="p-3.5 sm:p-5 pb-2">
             <div className="flex items-center justify-between text-zinc-500 text-xs">
-              <span className="font-semibold uppercase tracking-wider text-[11px]">Avg Concession Given</span>
-              <ShieldCheck className="w-4 h-4 text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Avg Concession</span>
+              <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
-            <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{data.averageDiscount}%</CardTitle>
-            <CardDescription className="text-xs text-zinc-500 mt-1">Below 12% mandate ceiling</CardDescription>
+            <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{data.averageDiscount}%</CardTitle>
+            <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Below 12% ceiling</CardDescription>
           </CardHeader>
         </Card>
 
         <Card className="border-zinc-200 shadow-xs">
-          <CardHeader className="p-5 pb-2">
+          <CardHeader className="p-3.5 sm:p-5 pb-2">
             <div className="flex items-center justify-between text-zinc-500 text-xs">
-              <span className="font-semibold uppercase tracking-wider text-[11px]">Average Order Value</span>
-              <ShoppingBag className="w-4 h-4 text-zinc-400" />
+              <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Avg Order Value</span>
+              <ShoppingBag className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
-            <CardTitle className="text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(data.averageOrderValue)}</CardTitle>
-            <CardDescription className="text-xs text-zinc-500 mt-1">Enforced by price floor</CardDescription>
+            <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(data.averageOrderValue)}</CardTitle>
+            <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Floor protected</CardDescription>
           </CardHeader>
         </Card>
       </div>

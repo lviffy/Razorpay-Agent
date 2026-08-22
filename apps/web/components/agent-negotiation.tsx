@@ -189,7 +189,7 @@ export default function AgentNegotiationSection() {
           <div
             onClick={() => setSelectedStore('storeA')}
             className={cn(
-              'p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-xs',
+              'p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-xs',
               selectedStore === 'storeA'
                 ? 'bg-white border-brand-500/80 ring-2 ring-brand-500/10'
                 : 'bg-white/80 border-black/[0.08] hover:border-black/[0.15]'
@@ -200,21 +200,21 @@ export default function AgentNegotiationSection() {
                 A
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-sm text-surface-900 truncate">RunFast Sports (Bengaluru)</h4>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h4 className="font-bold text-sm text-surface-900 truncate">RunFast Sports (BLR)</h4>
                   <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
-                    Selected Winner
+                    Winner
                   </span>
                 </div>
-                <p className="text-xs text-surface-500 font-mono mt-0.5">
-                  Listed ₹3,999 • Hard Floor ₹3,600 • In Stock: 14
+                <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">
+                  Listed ₹3,999 • Floor ₹3,600 • In Stock: 14
                 </p>
               </div>
             </div>
 
-            <div className="text-right shrink-0 pl-3">
+            <div className="text-left xs:text-right shrink-0 xs:pl-3 w-full xs:w-auto pt-1 xs:pt-0 border-t xs:border-t-0 border-black/[0.05]">
               <span className="text-sm font-mono font-bold text-emerald-700 block">Agreed: ₹3,799</span>
-              <span className="text-[11px] text-surface-500 font-medium">+ Free Express Shipping</span>
+              <span className="text-[11px] text-surface-500 font-medium">+ Free Express Delivery</span>
             </div>
           </div>
 
@@ -222,7 +222,7 @@ export default function AgentNegotiationSection() {
           <div
             onClick={() => setSelectedStore('storeB')}
             className={cn(
-              'p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between shadow-2xs',
+              'p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-2xs',
               selectedStore === 'storeB'
                 ? 'bg-white border-brand-500/80 ring-2 ring-brand-500/10'
                 : 'bg-white/60 border-black/[0.06] hover:border-black/[0.12]'
@@ -233,19 +233,19 @@ export default function AgentNegotiationSection() {
                 B
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-bold text-sm text-surface-700 truncate">SpeedGear (Mumbai)</h4>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h4 className="font-bold text-sm text-surface-700 truncate">SpeedGear (MUM)</h4>
                   <span className="text-[10px] font-mono text-surface-600 bg-surface-100 px-2 py-0.5 rounded">
                     Compared
                   </span>
                 </div>
-                <p className="text-xs text-surface-500 font-mono mt-0.5">
+                <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">
                   Listed ₹4,199 • Floor ₹3,900 • In Stock: 3
                 </p>
               </div>
             </div>
 
-            <div className="text-right shrink-0 pl-3">
+            <div className="text-left xs:text-right shrink-0 xs:pl-3 w-full xs:w-auto pt-1 xs:pt-0 border-t xs:border-t-0 border-black/[0.05]">
               <span className="text-xs font-mono text-surface-500 block">Counter: ₹3,950</span>
               <span className="text-[11px] text-rose-600 font-medium">Outbid by Store A</span>
             </div>
