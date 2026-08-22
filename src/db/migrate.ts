@@ -74,14 +74,17 @@ async function migrate() {
 
     console.log("✅ Schema applied and verified");
 
-    // Always ensure rich seed data is applied / refreshed
-    console.log("🌱 Applying / refreshing seed data...");
-    const seed = readFileSync(
-      join(import.meta.dir, "seed.sql"),
-      "utf-8"
-    );
-    await client.query(seed);
-    console.log("✅ Seed data populated & up to date");
+    if (process.env.SKIP_SEED !== "true") {
+      console.log("🌱 Applying / refreshing seed data...");
+      const seed = readFileSync(
+        join(import.meta.dir, "seed.sql"),
+        "utf-8"
+      );
+      await client.query(seed);
+      console.log("✅ Seed data populated & up to date");
+    } else {
+      console.log("ℹ️ Skipping seed data insertion (SKIP_SEED=true)");
+    }
   } catch (err) {
     console.error("❌ Migration failed:", err);
     throw err;
