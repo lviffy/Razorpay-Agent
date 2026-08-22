@@ -1,11 +1,11 @@
 import { HeroHeader } from "@/components/header";
 import HeroSection from "@/components/hero-section";
 import TrustMarquee from "@/components/trust-marquee";
+import AgentNegotiationSection from "@/components/agent-negotiation";
 import MarginPlayground from "@/components/margin-playground";
-import FlowSection from "@/components/flow-section";
+import PaymentFlowSection from "@/components/payment-flow";
+import AuditTrailSection from "@/components/audit-trail";
 import ComparisonSection from "@/components/comparison-section";
-import PrecisionQuoteSection from "@/components/precision-quote-section";
-import BuiltForWhomSection from "@/components/built-for-whom-section";
 import IntegrationSection from "@/components/integration-section";
 import CTASection from "@/components/cta-section";
 import Footer from "@/components/footer";
@@ -13,37 +13,37 @@ import Footer from "@/components/footer";
 export default function Home() {
   return (
     <main className="min-h-screen apple-canvas text-surface-900 selection:bg-brand-500 selection:text-white relative overflow-x-clip">
-      {/* Floating Glass Header */}
+      {/* Floating Glass Navigation */}
       <HeroHeader />
 
-      {/* Hero Section with Live High-Fidelity WhatsApp & 1-Tap UPI Simulator */}
+      {/* 1. HERO: AI agents that negotiate and buy on WhatsApp */}
       <HeroSection />
 
-      {/* Official Partner & Payment Ecosystem Marquee */}
+      {/* Trust & Architecture Marquee */}
       <TrustMarquee />
 
-      {/* Interactive Margin Mandate Playground (Live Sliders & Decision Engine) */}
+      {/* 2. AGENT-TO-AGENT NEGOTIATION: Multi-Store Comparison, Bidding & 5-Stage Settlement */}
+      <AgentNegotiationSection />
+
+      {/* 3. MERCHANT CONTROL / MARGIN PROTECTION: Let agents negotiate. Never let them break your margins */}
       <MarginPlayground />
 
-      {/* Dark Bento Architecture Grid (Conversational AI, Floor Barrier, Stock Lock, Razorpay Rails) */}
-      <FlowSection />
+      {/* 4. RAZORPAY PAYMENT FLOW: How x402 Meets Razorpay (Programmable Handshake to Real INR) */}
+      <PaymentFlowSection />
 
-      {/* The Commerce Shift: Traditional Web Store vs AgentBridge WhatsApp Commerce */}
+      {/* 5. AUDIT TRAIL: Every agent action leaves a trail (5-Field Linked Chain) */}
+      <AuditTrailSection />
+
+      {/* 6. WHY AGENTIC COMMERCE: Human Storefronts vs Machine-Native Primitives */}
       <ComparisonSection />
 
-      {/* Authority Editorial Quote Banner */}
-      <PrecisionQuoteSection />
-
-      {/* Target Commerce Workflows & Interactive Visual Cards */}
-      <BuiltForWhomSection />
-
-      {/* Connected Ecosystem Integrations Slider */}
+      {/* 7. INTEGRATIONS: WhatsApp, Shopify, Razorpay, Gemini, Redis, Postgres */}
       <IntegrationSection />
 
-      {/* Obsidian Conversion CTA Banner */}
+      {/* 8. FINAL CTA: Give your store an agent */}
       <CTASection />
 
-      {/* Obsidian Footer with Live System Uptime */}
+      {/* Footer */}
       <Footer />
     </main>
   );

@@ -3,14 +3,16 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Menu, X, Sparkles, ShieldCheck, Zap } from 'lucide-react'
+import { ArrowRight, Menu, X, Bot, ShieldCheck, Zap } from 'lucide-react'
 import Logo from '@/components/logo'
 import { cn } from '@/lib/utils'
 
 const navLinks = [
-  { label: 'How It Works', href: '#flow-intro' },
+  { label: 'A2A Negotiation', href: '#negotiation' },
+  { label: 'Margin Engine', href: '#margin-protection' },
+  { label: 'x402 & Razorpay', href: '#payment-flow' },
+  { label: 'Audit Trail', href: '#audit-trail' },
   { label: 'Integrations', href: '#integrations' },
-  { label: 'Margin Engine', href: '#margin-playground' },
 ]
 
 export function HeroHeader() {
@@ -31,7 +33,7 @@ export function HeroHeader() {
         className={cn(
           'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass border border-black/[0.08]',
           scrolled
-            ? 'max-w-4xl py-2.5 px-4 sm:px-6 bg-white/90 shadow-xs'
+            ? 'max-w-5xl py-2.5 px-4 sm:px-6 bg-white/90 shadow-xs'
             : 'py-3 px-5 sm:px-7 bg-white/80'
         )}
       >
@@ -47,7 +49,7 @@ export function HeroHeader() {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-xs font-semibold text-surface-700 hover:text-surface-900 px-4 py-1.5 rounded-full hover:bg-white transition-all duration-150"
+                className="text-xs font-semibold text-surface-700 hover:text-surface-900 px-3.5 py-1.5 rounded-full hover:bg-white transition-all duration-150 whitespace-nowrap"
               >
                 {link.label}
               </a>
@@ -65,9 +67,9 @@ export function HeroHeader() {
 
             <Link
               href="/onboarding"
-              className="group inline-flex items-center gap-1.5 bg-surface-900 hover:bg-black text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
+              className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
             >
-              <span>Get Started</span>
+              <span>Start AgentBridge</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
@@ -128,9 +130,9 @@ export function HeroHeader() {
               <Link
                 href="/onboarding"
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-center py-2.5 rounded-full bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs"
+                className="text-center py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors shadow-xs"
               >
-                Get Started
+                Start AgentBridge
               </Link>
             </div>
           </motion.div>

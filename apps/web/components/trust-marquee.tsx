@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { InfiniteSlider } from './ui/infinite-slider'
-import { ShieldCheck, Zap, Lock, RefreshCw, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 
 const ECOSYSTEM_PARTNERS = [
   {
@@ -95,7 +95,7 @@ const ECOSYSTEM_PARTNERS = [
   {
     name: 'HDFC & ICICI',
     category: 'Direct Settle',
-    badge: 'T+0/T+1 INR',
+    badge: 'T+0 INR',
     color: '#004c8f',
     icon: (
       <div className="w-5 h-5 rounded-md bg-[#004c8f] flex items-center justify-center text-white font-bold text-[9px]">
@@ -107,12 +107,12 @@ const ECOSYSTEM_PARTNERS = [
 
 export function TrustMarquee() {
   return (
-    <div className="w-full py-8 border-y border-black/[0.06] bg-white/70 backdrop-blur-md relative overflow-hidden">
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-surface-500 font-mono">
+    <div className="w-full py-8 border-b border-black/[0.06] bg-white relative overflow-hidden">
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-surface-500">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="font-bold text-surface-800 uppercase tracking-wider text-[11px]">
-            Enterprise Payment &amp; Cloud Messaging Rails
+          <span className="font-semibold text-surface-800 uppercase tracking-wider text-[11px] font-mono">
+            Payment &amp; Cloud Messaging Infrastructure
           </span>
         </div>
         <div className="flex items-center gap-4 text-[11px]">
@@ -138,7 +138,7 @@ export function TrustMarquee() {
           {ECOSYSTEM_PARTNERS.map((partner, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 px-4 py-2.5 bg-white rounded-xl border border-black/[0.07] hover:border-brand-500/40 transition-all duration-200 min-w-[200px]"
+              className="flex items-center gap-3 px-4 py-2.5 bg-surface-50 rounded-2xl border border-black/[0.06] hover:border-brand-500/40 transition-all duration-200 min-w-[200px]"
             >
               <div className="shrink-0">{partner.icon}</div>
               <div className="flex flex-col">
@@ -146,7 +146,7 @@ export function TrustMarquee() {
                   <span className="font-bold text-xs text-surface-900 font-sans">
                     {partner.name}
                   </span>
-                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface-100 text-surface-600 border border-black/[0.04]">
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-surface-200 text-surface-700">
                     {partner.badge}
                   </span>
                 </div>
