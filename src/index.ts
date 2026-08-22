@@ -26,7 +26,7 @@ import simulatorRouter from "./api/simulator.ts";
 import onboardingRouter from "./api/onboarding.ts";
 
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+const PORT = parseInt(process.env.PORT || "8000", 10);
 
 // ── CORS & Body Parsing Middleware ────────────────────────────────────────────
 app.use(

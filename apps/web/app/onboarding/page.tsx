@@ -7,13 +7,11 @@ import { api } from "@/lib/api/client";
 import { OnboardingState, StoreProvider } from "@/lib/types";
 import { ChatMessage } from "@/components/onboarding/chat-message";
 import { ActionCard } from "@/components/onboarding/action-card";
-import { LiveStorePreview } from "@/components/onboarding/live-store-preview";
+import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import { ShopifySyncCard } from "@/components/onboarding/shopify-sync-card";
 import { SimulatorModal } from "@/components/onboarding/simulator-modal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Send,
   Sparkles,
@@ -24,7 +22,16 @@ import {
   ShieldCheck,
   Check,
   ArrowRight,
+  Sliders,
+  Smartphone,
+  CreditCard,
+  Zap,
+  Activity,
+  SlidersHorizontal,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -33,7 +40,9 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [nativeModalOpen, setNativeModalOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSession();
@@ -41,7 +50,10 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
   }, [state?.history, loading]);
 
@@ -63,6 +75,7 @@ export default function OnboardingPage() {
       console.error(err);
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
@@ -99,37 +112,60 @@ export default function OnboardingPage() {
 
   if (!state) {
     return (
-      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-surface-500 font-mono">
-        <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse" />
-          <span>Loading AgentBridge Setup Assistant...</span>
+      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-zinc-500 font-mono">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-ping" />
+          <span className="font-medium text-zinc-700">Connecting to AgentBridge Setup Assistant...</span>
         </div>
       </div>
     );
   }
 
+  const stepList = [
+    { key: "WELCOME", label: "Identity" },
+    { key: "STORE_SOURCE", label: "Catalog" },
+    { key: "AGENT_SETUP", label: "Mandate" },
+    { key: "WHATSAPP_CONNECT", label: "Channel" },
+    { key: "RAZORPAY_CONNECT", label: "Razorpay" },
+    { key: "TEST", label: "Simulate" },
+    { key: "READY", label: "Launch" },
+  ];
+
   return (
-    <div className="min-h-screen apple-canvas flex flex-col relative overflow-x-clip">
-      {/* Onboarding Header with Apple Glass */}
-      <header className="h-16 apple-glass px-6 flex items-center justify-between select-none sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-xs">
+    <div className="min-h-screen apple-canvas flex flex-col relative text-zinc-900 selection:bg-brand-500 selection:text-white">
+      {/* ── Top Floating Navigation Bar ── */}
+      <header className="h-16 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-zinc-200/70">
+        <div className="flex items-center gap-3.5">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-xs group-hover:bg-brand-600 transition-colors">
               A
             </div>
-            <span className="font-display font-extrabold text-base text-surface-900">
+            <span className="font-bold text-base tracking-tight text-zinc-900">
               Agent<span className="text-brand-600">Bridge</span>
             </span>
           </Link>
-          <span className="text-surface-300">/</span>
-          <span className="text-xs font-semibold text-surface-600 font-mono">Store Setup Assistant</span>
+          <span className="text-zinc-300">/</span>
+          <span className="text-xs font-semibold text-zinc-600 tracking-tight">Store Setup Assistant</span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Badge variant="brand">CONVERSATIONAL SETUP</Badge>
+        {/* Center: Live Store Readiness Capsule */}
+        <div className="hidden md:flex items-center gap-2">
+          <OnboardingStatusCapsule state={state} />
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowDrawer(!showDrawer)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/80 transition-colors"
+          >
+            <Activity className="w-3.5 h-3.5 text-brand-600" />
+            <span className="hidden sm:inline">Store HUD</span>
+          </button>
+
           <button
             onClick={handleReset}
-            className="text-surface-400 hover:text-surface-600 p-2 rounded-lg hover:bg-black/[0.04] transition-colors"
+            className="text-zinc-400 hover:text-zinc-700 p-2 rounded-full hover:bg-zinc-100 transition-colors"
             title="Reset Session"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -137,76 +173,148 @@ export default function OnboardingPage() {
         </div>
       </header>
 
-      {/* Main 2-Panel Area */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Panel: Conversational Assistant (60%) */}
-        <div className="lg:col-span-7 apple-card-elevated rounded-[1.75rem] flex flex-col h-[calc(100vh-7.5rem)] overflow-hidden">
-          {/* Assistant Sub-Header */}
-          <div className="px-5 py-3.5 border-b border-black/[0.06] flex items-center justify-between bg-black/[0.02]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs font-bold text-surface-800 font-display">AgentBridge AI Assistant</span>
-            </div>
-            <span className="text-[11px] text-surface-500 font-mono font-semibold">Step: {state.currentStep}</span>
-          </div>
-
-          {/* Chat Stream */}
-          <div ref={scrollRef} className="flex-1 p-5 overflow-y-auto space-y-4">
-            {state.history.map((msg, index) => {
-              const isLastAssistantMessage =
-                msg.sender === "assistant" && index === state.history.length - 1;
-
+      {/* ── Centered Conversational Stage ── */}
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-28 flex flex-col items-center">
+        {/* Step Progress Pills in the Middle */}
+        <div className="w-full mb-8 flex justify-center">
+          <div className="flex items-center gap-0.5 sm:gap-1 px-2.5 py-1.5 rounded-full bg-zinc-100/90 border border-zinc-200/80 text-[11px] font-medium text-zinc-500 overflow-x-auto no-scrollbar max-w-full shadow-2xs">
+            {stepList.map((st, idx) => {
+              const isCurrent = state.currentStep === st.key;
+              const isPassed = state.completionPercentage > (idx * 15);
               return (
-                <ChatMessage key={msg.id} sender={msg.sender} content={msg.content}>
-                  {/* Step-specific inline widgets attached to the current state */}
-                  {isLastAssistantMessage && (
-                    <div className="mt-2 space-y-3">
-                      {/* Step: STORE_SOURCE */}
-                      {state.currentStep === "STORE_SOURCE" && (
-                        <ActionCard
-                          title="Choose your catalog source:"
-                          options={[
-                            {
-                              id: "native",
-                              label: "Create my catalog here",
-                              description: "Native AgentBridge catalog with instant price floor rules.",
-                              badge: "Recommended",
-                              icon: <Store className="w-4 h-4" />,
-                              onClick: () => handleSelectProvider("AGENTBRIDGE"),
-                            },
-                            {
-                              id: "shopify",
-                              label: "Connect Shopify Store",
-                              description: "Import products, live inventory, and variants from Shopify.",
-                              badge: "Optional",
-                              icon: <ShoppingBag className="w-4 h-4" />,
-                              onClick: () => handleSelectProvider("SHOPIFY"),
-                            },
-                          ]}
-                        />
-                      )}
+                <div key={st.key} className="flex items-center shrink-0">
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
+                      isCurrent
+                        ? "bg-white text-zinc-900 font-semibold shadow-2xs border border-zinc-200/70"
+                        : isPassed
+                        ? "text-zinc-700 font-medium hover:text-zinc-900"
+                        : "text-zinc-400"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        isCurrent
+                          ? "bg-brand-600 ring-2 ring-brand-200"
+                          : isPassed
+                          ? "bg-emerald-500"
+                          : "bg-zinc-300"
+                      }`}
+                    />
+                    <span>{st.label}</span>
+                  </div>
+                  {idx < stepList.length - 1 && (
+                    <ChevronRight className="w-3 h-3 text-zinc-300 mx-0.5 shrink-0" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-                      {/* Step: SHOPIFY_CONNECT */}
-                      {state.currentStep === "SHOPIFY_CONNECT" && (
-                        <ShopifySyncCard onSyncComplete={handleShopifySyncComplete} />
-                      )}
+        {/* Conversational Stream - Centered, Breathable, No Outer Box */}
+        <div ref={scrollRef} className="w-full space-y-6 flex-1">
+          {state.history.map((msg, index) => {
+            const isLastAssistantMessage =
+              msg.sender === "assistant" && index === state.history.length - 1;
 
-                      {/* Step: CATALOG_SETUP (Native) */}
-                      {state.currentStep === "CATALOG_SETUP" && (
+            return (
+              <ChatMessage key={msg.id} sender={msg.sender} content={msg.content}>
+                {/* Step-specific inline widgets attached directly in the middle of the chat */}
+                {isLastAssistantMessage && (
+                  <div className="mt-4 space-y-3 w-full">
+                    {/* Step: WELCOME (Quick Business Name Preset Chips in Middle) */}
+                    {state.currentStep === "WELCOME" && (
+                      <div className="space-y-2.5 pt-1">
+                        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider pl-0.5">
+                          Quick Select or Type Below:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { name: "RunFast Sports", icon: "👟", cat: "Athletic Shoes & Apparel" },
+                            { name: "RoastLab Coffee", icon: "☕", cat: "Specialty Beans & Gear" },
+                            { name: "Volt Audio", icon: "⚡", cat: "Hi-Fi Headphones" },
+                            { name: "Luxe Wardrobe", icon: "👗", cat: "Designer Fashion" },
+                            { name: "Glow Botanics", icon: "✨", cat: "Organic Skincare & Serums" },
+                            { name: "Chronos Watches", icon: "⌚", cat: "Minimalist Timepieces" },
+                            { name: "Aura Home Living", icon: "🕯️", cat: "Artisanal Decor & Scents" },
+                            { name: "CyberByte Tech", icon: "🎮", cat: "Mechanical Keyboards & Gear" },
+                            { name: "Matcha Bloom", icon: "🍵", cat: "Ceremonial Grade Tea" },
+                            { name: "Nomad Carry", icon: "🎒", cat: "Modular Travel Packs" },
+                            { name: "Urban Kicks", icon: "🛹", cat: "Streetwear & Sneakers" },
+                            { name: "Optix Studio", icon: "👓", cat: "Eyewear & Sunframes" },
+                          ].map((brand) => (
+                            <motion.button
+                              key={brand.name}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => handleSendMessage(brand.name)}
+                              className="px-3.5 py-2 rounded-full bg-white border border-zinc-200/90 hover:border-brand-500 hover:bg-brand-50/40 text-xs font-medium text-zinc-800 shadow-2xs hover:shadow-xs transition-all flex items-center gap-2 cursor-pointer group shrink-0"
+                            >
+                              <span className="text-sm">{brand.icon}</span>
+                              <span className="font-semibold text-zinc-900 group-hover:text-brand-700">
+                                {brand.name}
+                              </span>
+                              <span className="text-[10px] text-zinc-400 font-normal">
+                                • {brand.cat}
+                              </span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step: STORE_SOURCE (Catalog Provider Choice) */}
+                    {state.currentStep === "STORE_SOURCE" && (
+                      <ActionCard
+                        title="Select Catalog Origin:"
+                        options={[
+                          {
+                            id: "native",
+                            label: "Create Native Catalog",
+                            description: "Fast in-browser setup with instant price floor & discount mandates.",
+                            badge: "Recommended",
+                            icon: <Store className="w-4 h-4" />,
+                            onClick: () => handleSelectProvider("AGENTBRIDGE"),
+                          },
+                          {
+                            id: "shopify",
+                            label: "Sync Shopify Store",
+                            description: "Connect store domain to auto-import live products, inventory & variants.",
+                            badge: "Instant Import",
+                            icon: <ShoppingBag className="w-4 h-4" />,
+                            onClick: () => handleSelectProvider("SHOPIFY"),
+                          },
+                        ]}
+                      />
+                    )}
+
+                    {/* Step: SHOPIFY_CONNECT */}
+                    {state.currentStep === "SHOPIFY_CONNECT" && (
+                      <ShopifySyncCard onSyncComplete={handleShopifySyncComplete} />
+                    )}
+
+                    {/* Step: CATALOG_SETUP (Native Catalog Primitives) */}
+                    {state.currentStep === "CATALOG_SETUP" && (
+                      <div className="space-y-3 pt-1">
                         <ActionCard
-                          title="Add products to native catalog:"
+                          title="Add Products to AI Index:"
                           options={[
                             {
                               id: "add_modal",
                               label: "Add Product Manually",
-                              description: "Set price, SKU, inventory, and floor price in clean modal.",
+                              description: "Custom price, SKU, inventory, and floor price barrier.",
+                              badge: "Modal Editor",
                               icon: <Layers className="w-4 h-4" />,
                               onClick: () => setNativeModalOpen(true),
                             },
                             {
-                              id: "quick_text",
-                              label: "Use Example: Nike Pegasus (₹3,999)",
-                              description: "AI automatically structures product & discount limits.",
+                              id: "quick_nike",
+                              label: "Use Example: Nike Pegasus 40 (₹3,999)",
+                              description: "AI automatically structures product with floor price ₹3,500 (18 units).",
+                              badge: "1-Click Preset",
                               icon: <Sparkles className="w-4 h-4" />,
                               onClick: () =>
                                 handleSendMessage(
@@ -215,171 +323,308 @@ export default function OnboardingPage() {
                             },
                           ]}
                         />
-                      )}
+                      </div>
+                    )}
 
-                      {/* Step: AGENT_SETUP */}
-                      {state.currentStep === "AGENT_SETUP" && (
-                        <ActionCard
-                          title="Select AI Negotiation Risk Profile:"
-                          options={[
+                    {/* Step: AGENT_SETUP (Interactive Segmented Risk Profile in Middle) */}
+                    {state.currentStep === "AGENT_SETUP" && (
+                      <div className="space-y-2.5 pt-1">
+                        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider pl-0.5">
+                          Choose Negotiation Risk Policy:
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          {[
                             {
                               id: "conservative",
-                              label: "Conservative (Max 8% off)",
-                              description: "Firm pricing, protects gross margin aggressively.",
+                              title: "Conservative",
+                              discount: "Max 8% Off",
+                              desc: "Strict gross margin defense. Holds firm on prices.",
+                              tag: "High Margin",
                               onClick: () => handleSendMessage("Conservative profile (max 8% discount)"),
                             },
                             {
                               id: "balanced",
-                              label: "Balanced (Max 12% off)",
-                              description: "Recommended: balances closing rate with margins.",
-                              badge: "Optimal",
+                              title: "Balanced",
+                              discount: "Max 12% Off",
+                              desc: "Optimal balance between closure rate and profit.",
+                              tag: "Recommended",
+                              isRecommended: true,
                               onClick: () => handleSendMessage("Balanced profile (max 12% discount)"),
                             },
                             {
                               id: "aggressive",
-                              label: "Aggressive (Max 18% off)",
-                              description: "Maximizes deal volume and immediate conversion.",
+                              title: "Aggressive",
+                              discount: "Max 18% Off",
+                              desc: "Maximizes deal volume and immediate conversions.",
+                              tag: "High Velocity",
                               onClick: () => handleSendMessage("Aggressive profile (max 18% discount)"),
                             },
-                          ]}
-                        />
-                      )}
-
-                      {/* Step: WHATSAPP_CONNECT */}
-                      {state.currentStep === "WHATSAPP_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-semibold text-surface-900">
-                                WhatsApp Cloud API Configuration
-                              </p>
-                              <p className="text-[11px] text-surface-500">
-                                Dedicated business channel for AI customer conversations
-                              </p>
-                            </div>
-                            <Badge variant="brand">TEST WEBHOOK</Badge>
-                          </div>
-                          <Button
-                            onClick={() => handleSendMessage("Connect WhatsApp Business Number +91 98765 00000")}
-                            className="w-full text-xs font-bold rounded-xl"
-                          >
-                            Connect Business Number (+91 98765 00000)
-                          </Button>
+                          ].map((profile) => (
+                            <motion.button
+                              key={profile.id}
+                              whileHover={{ y: -2 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={profile.onClick}
+                              className={`p-3.5 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                                profile.isRecommended
+                                  ? "bg-brand-50/40 border-brand-300 ring-1 ring-brand-200/60 shadow-xs"
+                                  : "bg-white border-zinc-200/80 hover:border-zinc-300 shadow-2xs"
+                              }`}
+                            >
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-zinc-900">{profile.title}</span>
+                                  <span
+                                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                                      profile.isRecommended
+                                        ? "bg-brand-500 text-white"
+                                        : "bg-zinc-100 text-zinc-600"
+                                    }`}
+                                  >
+                                    {profile.tag}
+                                  </span>
+                                </div>
+                                <p className="text-xs font-mono font-bold text-brand-600">{profile.discount}</p>
+                                <p className="text-[11px] text-zinc-500 leading-snug pt-1">{profile.desc}</p>
+                              </div>
+                              <div className="pt-3 flex items-center justify-between text-[10px] font-medium text-zinc-400 border-t border-zinc-100 mt-2">
+                                <span>Click to set</span>
+                                <ArrowRight className="w-3 h-3 text-brand-600" />
+                              </div>
+                            </motion.button>
+                          ))}
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* Step: RAZORPAY_CONNECT */}
-                      {state.currentStep === "RAZORPAY_CONNECT" && (
-                        <div className="p-4 bg-white border border-surface-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-xs font-semibold text-surface-900">
-                                Razorpay Payment Links & Checkout
-                              </p>
-                              <p className="text-[11px] text-surface-500">
-                                Autonomous payment link generation with automated webhooks
-                              </p>
+                    {/* Step: WHATSAPP_CONNECT */}
+                    {state.currentStep === "WHATSAPP_CONNECT" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-zinc-50/70 border border-zinc-200/80 space-y-3.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                              <Smartphone className="w-4 h-4" />
                             </div>
-                            <Badge variant="brand">TEST MODE</Badge>
-                          </div>
-                          <Button
-                            onClick={() => handleSendMessage("Connect Razorpay API Keys in Test Mode")}
-                            className="w-full text-xs font-bold rounded-xl"
-                          >
-                            Connect Razorpay Test Credentials (rzp_test_xxxx)
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Step: TEST */}
-                      {state.currentStep === "TEST" && (
-                        <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-xs font-bold text-blue-950">
-                                Ready for Storefront Verification
+                              <p className="text-xs font-bold text-zinc-900">
+                                WhatsApp Cloud API Channel
                               </p>
-                              <p className="text-[11px] text-blue-800">
-                                Test how your AI Seller Agent negotiates and issues Razorpay links.
-                              </p>
-                            </div>
-                            <Badge variant="brand">PRE-LAUNCH</Badge>
-                          </div>
-                          <Button
-                            onClick={() => setSimulatorOpen(true)}
-                            className="w-full text-xs font-bold rounded-xl bg-brand-500 hover:bg-brand-600 text-white"
-                          >
-                            Run Interactive Storefront Simulation
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Step: READY / COMPLETED */}
-                      {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
-                        <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3">
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                            <div>
-                              <p className="text-xs font-bold text-emerald-950">
-                                Store Activation Complete!
-                              </p>
-                              <p className="text-[11px] text-emerald-800">
-                                Your AI seller is active on WhatsApp with real Razorpay links.
+                              <p className="text-[11px] text-zinc-500">
+                                Autonomous 24/7 customer chat on WhatsApp
                               </p>
                             </div>
                           </div>
-                          <Button
-                            onClick={() => router.push("/dashboard")}
-                            variant="success"
-                            className="w-full text-xs gap-2 font-bold rounded-xl"
-                          >
-                            <span>Open Merchant Dashboard</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Button>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium">
+                            WEBHOOK VERIFIED
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  )}
-                </ChatMessage>
-              );
-            })}
 
-            {loading && (
-              <div className="flex items-center gap-2 text-xs text-surface-500 pl-2">
-                <div className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-                <span>AgentBridge AI is structuring your store...</span>
-              </div>
-            )}
-          </div>
+                        <Button
+                          onClick={() => handleSendMessage("Connect WhatsApp Business Number +91 98765 00000")}
+                          className="w-full text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 gap-2"
+                        >
+                          <span>Connect Business Number (+91 98765 00000)</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </motion.div>
+                    )}
 
-          {/* Input Bar */}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSendMessage();
-            }}
-            className="p-3 bg-white border-t border-surface-200 flex items-center gap-2"
+                    {/* Step: RAZORPAY_CONNECT */}
+                    {state.currentStep === "RAZORPAY_CONNECT" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-zinc-50/70 border border-zinc-200/80 space-y-3.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900">
+                                Razorpay Instant Checkout Engine
+                              </p>
+                              <p className="text-[11px] text-zinc-500">
+                                Autonomous payment link generation & webhook settlement
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 font-medium">
+                            TEST MODE
+                          </span>
+                        </div>
+
+                        <Button
+                          onClick={() => handleSendMessage("Connect Razorpay API Keys in Test Mode")}
+                          className="w-full text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2"
+                        >
+                          <span>Connect Razorpay Test Credentials (rzp_test_xxxx)</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </motion.div>
+                    )}
+
+                    {/* Step: TEST */}
+                    {state.currentStep === "TEST" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-blue-50/50 border border-blue-200/80 space-y-3.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-brand-700 flex items-center justify-center">
+                              <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900">
+                                Storefront Interactive Verification
+                              </p>
+                              <p className="text-[11px] text-zinc-600">
+                                Test how your AI Seller negotiates and issues real Razorpay links.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                            PRE-FLIGHT
+                          </span>
+                        </div>
+
+                        <Button
+                          onClick={() => setSimulatorOpen(true)}
+                          className="w-full text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2 shadow-xs"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Run Live Storefront Simulation</span>
+                        </Button>
+                      </motion.div>
+                    )}
+
+                    {/* Step: READY / COMPLETED */}
+                    {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-full p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 space-y-3.5"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                            <ShieldCheck className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-emerald-950">
+                              Store Activation Complete!
+                            </p>
+                            <p className="text-xs text-emerald-800">
+                              Your AI Seller Agent is active on WhatsApp with live Razorpay settlements.
+                            </p>
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={() => router.push("/dashboard")}
+                          className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs"
+                        >
+                          <span>Open Merchant Dashboard</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </ChatMessage>
+            );
+          })}
+
+          {loading && (
+            <div className="flex items-center gap-2.5 text-xs text-zinc-500 pl-11 py-2">
+              <div className="w-2 h-2 rounded-full bg-brand-500 animate-ping" />
+              <span className="font-mono">AgentBridge AI is configuring parameters...</span>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* ── Centered Floating Capsule Composer (Bottom) ── */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-2xl px-4 z-30 pointer-events-none">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="pointer-events-auto w-full bg-white/90 backdrop-blur-xl border border-zinc-200/90 shadow-lg rounded-full p-1.5 pl-5 flex items-center gap-2 focus-within:ring-2 focus-within:ring-brand-500/20 focus-within:border-brand-500 transition-all"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Type your reply or describe a product... (e.g. 'RunFast Sports')"
+            disabled={loading}
+            className="flex-1 bg-transparent text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 outline-none border-none"
+          />
+
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!inputValue.trim() || loading}
+            className="w-9 h-9 p-0 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs flex-shrink-0 disabled:opacity-40 transition-transform active:scale-95"
           >
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Type your reply or describe a product... (e.g. 'RunFast Sports')"
-              disabled={loading}
-              className="rounded-xl"
-            />
-            <Button type="submit" size="md" disabled={!inputValue.trim() || loading} className="rounded-xl">
-              <Send className="w-4 h-4" />
-            </Button>
-          </form>
-        </div>
-
-        {/* Right Panel: Real-Time Live Store Preview (40%) */}
-        <div className="lg:col-span-5">
-          <div className="sticky top-6">
-            <LiveStorePreview state={state} />
-          </div>
-        </div>
+            <Send className="w-3.5 h-3.5" />
+          </Button>
+        </form>
       </div>
+
+      {/* ── Slide-Over Store HUD Companion Drawer ── */}
+      <AnimatePresence>
+        {showDrawer && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDrawer(false)}
+              className="fixed inset-0 bg-black/20 backdrop-blur-xs z-50"
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 280 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 p-6 flex flex-col justify-between overflow-y-auto"
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
+                  <h3 className="text-sm font-bold text-zinc-900">Live Store Telemetry</h3>
+                  <button
+                    onClick={() => setShowDrawer(false)}
+                    className="text-xs text-zinc-400 hover:text-zinc-700 px-2 py-1 rounded-lg hover:bg-zinc-100"
+                  >
+                    Close
+                  </button>
+                </div>
+                <LiveStorePreview state={state} />
+              </div>
+
+              <div className="pt-6 border-t border-zinc-100">
+                <Button
+                  onClick={() => router.push("/dashboard")}
+                  variant="outline"
+                  className="w-full text-xs font-semibold rounded-xl gap-1.5"
+                >
+                  <span>Skip to Dashboard</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Modals */}
       <NativeProductModal
@@ -396,4 +641,5 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
 

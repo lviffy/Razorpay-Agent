@@ -22,18 +22,22 @@ import {
   defaultMerchantProfile,
 } from "./mock-data";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api/v1";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallback: T): Promise<T> {
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
     const res = await fetch(url, {
       ...options,
+      signal: options.signal || controller.signal,
       headers: {
         "Content-Type": "application/json",
         ...(options.headers || {}),
       },
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       console.warn(`API request to ${endpoint} returned status ${res.status}`);
@@ -46,6 +50,118 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
     console.warn(`API request to ${endpoint} failed, using fallback:`, err);
     return fallback;
   }
+}
+let clientOnboardingSession: OnboardingState = {
+  id: "onb_sess_001",
+  merchantId: "merch_runfast",
+  currentStep: "WELCOME",
+  provider: null,
+  businessName: null,
+  productCount: 4,
+  agentConfigured: false,
+  whatsappConnected: false,
+  razorpayConnected: false,
+  completionPercentage: 10,
+  history: [
+    {
+      id: "msg_init",
+      sender: "assistant",
+      content: "Welcome to AgentBridge. Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+      step: "WELCOME",
+      createdAt: new Date().toISOString(),
+    },
+  ],
+};
+
+function advanceFallbackStep(content: string): { reply: string; state: OnboardingState } {
+  const userMsgId = `usr_${Date.now()}`;
+  const botMsgId = `bot_${Date.now()}`;
+
+  clientOnboardingSession.history.push({
+    id: userMsgId,
+    sender: "user",
+    content,
+    step: clientOnboardingSession.currentStep,
+    createdAt: new Date().toISOString(),
+  });
+
+  let botReply = "";
+  let nextStep = clientOnboardingSession.currentStep;
+
+  switch (clientOnboardingSession.currentStep) {
+    case "WELCOME": {
+      clientOnboardingSession.businessName = content.trim();
+      nextStep = "STORE_SOURCE";
+      clientOnboardingSession.completionPercentage = 25;
+      botReply = `Great to meet you! "${clientOnboardingSession.businessName}" is ready for agentic commerce. Where do your products live today?`;
+      break;
+    }
+    case "STORE_SOURCE": {
+      if (content.toLowerCase().includes("shopify")) {
+        clientOnboardingSession.provider = "SHOPIFY";
+        nextStep = "SHOPIFY_CONNECT";
+        clientOnboardingSession.completionPercentage = 40;
+        botReply = "Connecting Shopify gives your AI agent direct access to real-time inventory and pricing. Enter your store domain below:";
+      } else {
+        clientOnboardingSession.provider = "AGENTBRIDGE";
+        nextStep = "CATALOG_SETUP";
+        clientOnboardingSession.completionPercentage = 40;
+        botReply = "Awesome! The native AgentBridge catalog gives you direct price-floor control. You can add products manually or use our preset.";
+      }
+      break;
+    }
+    case "CATALOG_SETUP": {
+      nextStep = "AGENT_SETUP";
+      clientOnboardingSession.productCount = 5;
+      clientOnboardingSession.completionPercentage = 60;
+      botReply = "Got it! Products and pricing floor rules have been indexed. Now let's set your AI Seller Agent's negotiation boundaries. How flexible should it be on discounts?";
+      break;
+    }
+    case "AGENT_SETUP": {
+      clientOnboardingSession.agentConfigured = true;
+      nextStep = "WHATSAPP_CONNECT";
+      clientOnboardingSession.completionPercentage = 75;
+      botReply = "Negotiation mandate active: maximum discount locked, floor price strictly enforced. Next, connect your WhatsApp Business number for AI customer conversations.";
+      break;
+    }
+    case "WHATSAPP_CONNECT": {
+      clientOnboardingSession.whatsappConnected = true;
+      nextStep = "RAZORPAY_CONNECT";
+      clientOnboardingSession.completionPercentage = 85;
+      botReply = "WhatsApp Cloud API connected (+91 98765 00000). Now connect your Razorpay account so your AI agent can generate secure payment links and settle orders.";
+      break;
+    }
+    case "RAZORPAY_CONNECT": {
+      clientOnboardingSession.razorpayConnected = true;
+      nextStep = "TEST";
+      clientOnboardingSession.completionPercentage = 95;
+      botReply = "Razorpay Test Mode connected and webhooks verified! Let's run a live simulation to test how your AI seller negotiates with a real customer.";
+      break;
+    }
+    case "TEST": {
+      nextStep = "READY";
+      clientOnboardingSession.completionPercentage = 100;
+      botReply = "Storefront simulation complete! Deal negotiated and test payment link generated. Your AI storefront is live and ready for business.";
+      break;
+    }
+    default: {
+      nextStep = "COMPLETED";
+      clientOnboardingSession.completionPercentage = 100;
+      botReply = "Store activated! Launching merchant cockpit...";
+      break;
+    }
+  }
+
+  clientOnboardingSession.currentStep = nextStep as any;
+  clientOnboardingSession.history.push({
+    id: botMsgId,
+    sender: "assistant",
+    content: botReply,
+    step: nextStep as any,
+    createdAt: new Date().toISOString(),
+  });
+
+  return { reply: botReply, state: { ...clientOnboardingSession } };
 }
 
 export const api = {
@@ -312,13 +428,48 @@ export const api = {
 
   onboarding: {
     getSession: async (): Promise<OnboardingState> => {
-      return fetchJson<OnboardingState>("/onboarding/session", {}, {
-        id: "onb_sess_001",
+      return fetchJson<OnboardingState>("/onboarding/session", {}, clientOnboardingSession);
+    },
+    sendMessage: async (content: string): Promise<{ reply: string; state: OnboardingState }> => {
+      return fetchJson<{ reply: string; state: OnboardingState }>(
+        "/onboarding/message",
+        {
+          method: "POST",
+          body: JSON.stringify({ content }),
+        },
+        advanceFallbackStep(content)
+      );
+    },
+    selectProvider: async (provider: StoreProvider): Promise<OnboardingState> => {
+      clientOnboardingSession.provider = provider;
+      if (provider === "SHOPIFY") {
+        clientOnboardingSession.currentStep = "SHOPIFY_CONNECT";
+        clientOnboardingSession.completionPercentage = 40;
+      } else {
+        clientOnboardingSession.currentStep = "CATALOG_SETUP";
+        clientOnboardingSession.completionPercentage = 40;
+      }
+      return clientOnboardingSession;
+    },
+    syncShopify: async (_shopDomain: string): Promise<{ count: number; state: OnboardingState }> => {
+      clientOnboardingSession.provider = "SHOPIFY";
+      clientOnboardingSession.productCount = 184;
+      clientOnboardingSession.currentStep = "AGENT_SETUP";
+      clientOnboardingSession.completionPercentage = 60;
+      return { count: 184, state: { ...clientOnboardingSession } };
+    },
+    completeStep: async (step: OnboardingStep): Promise<OnboardingState> => {
+      clientOnboardingSession.currentStep = step;
+      return clientOnboardingSession;
+    },
+    resetSession: async (): Promise<OnboardingState> => {
+      clientOnboardingSession = {
+        id: `onb_sess_${Date.now()}`,
         merchantId: "merch_runfast",
         currentStep: "WELCOME",
         provider: null,
         businessName: null,
-        productCount: 4,
+        productCount: 0,
         agentConfigured: false,
         whatsappConnected: false,
         razorpayConnected: false,
@@ -332,47 +483,8 @@ export const api = {
             createdAt: new Date().toISOString(),
           },
         ],
-      });
-    },
-    sendMessage: async (content: string): Promise<{ reply: string; state: OnboardingState }> => {
-      return fetchJson<{ reply: string; state: OnboardingState }>(
-        "/onboarding/message",
-        {
-          method: "POST",
-          body: JSON.stringify({ content }),
-        },
-        {
-          reply: "Got it! Your changes have been recorded in the database.",
-          state: {
-            id: "onb_sess_001",
-            merchantId: "merch_runfast",
-            currentStep: "COMPLETED",
-            provider: "AGENTBRIDGE",
-            businessName: "RunFast Sports",
-            productCount: 5,
-            agentConfigured: true,
-            whatsappConnected: true,
-            razorpayConnected: true,
-            completionPercentage: 100,
-            history: [],
-          },
-        }
-      );
-    },
-    selectProvider: async (provider: StoreProvider): Promise<OnboardingState> => {
-      const sess = await api.onboarding.getSession();
-      return { ...sess, provider };
-    },
-    syncShopify: async (shopDomain: string): Promise<{ count: number; state: OnboardingState }> => {
-      const sess = await api.onboarding.getSession();
-      return { count: 184, state: { ...sess, productCount: 184, currentStep: "AGENT_SETUP" } };
-    },
-    completeStep: async (step: OnboardingStep): Promise<OnboardingState> => {
-      const sess = await api.onboarding.getSession();
-      return { ...sess, currentStep: step };
-    },
-    resetSession: async (): Promise<OnboardingState> => {
-      return api.onboarding.getSession();
+      };
+      return clientOnboardingSession;
     },
   },
 };

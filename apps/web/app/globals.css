@@ -263,3 +263,13 @@ input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* Hide scrollbars completely while keeping scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+

@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import { cn } from "@/lib/utils";
-import { Bot, User } from "lucide-react";
+import { Sparkles, User } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface ChatMessageProps {
   sender: "assistant" | "user" | "system";
@@ -14,44 +17,63 @@ export function ChatMessage({ sender, content, timestamp, children }: ChatMessag
   const isUser = sender === "user";
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "flex gap-3 max-w-[88%] text-sm",
-        isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+        "w-full flex gap-3.5 items-start",
+        isUser ? "justify-end" : "justify-start"
       )}
     >
-      {/* Avatar */}
+      {/* Assistant Avatar */}
+      {isAssistant && (
+        <div className="relative flex-shrink-0 mt-0.5">
+          <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center shadow-xs ring-1 ring-zinc-800/10">
+            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+          </div>
+          <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+        </div>
+      )}
+
+      {/* Message Content Body */}
       <div
         className={cn(
-          "w-8 h-8 rounded flex items-center justify-center flex-shrink-0 text-xs font-semibold select-none",
-          isAssistant ? "bg-[#0C2340] text-white" : "bg-[#0C83FD] text-white"
+          "flex flex-col space-y-2",
+          isUser ? "items-end max-w-[82%]" : "items-start max-w-full flex-1 min-w-0"
         )}
       >
-        {isAssistant ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-      </div>
+        {isUser ? (
+          /* User Message Pill */
+          <div className="bg-zinc-900 text-white px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-xs text-sm font-normal leading-relaxed tracking-tight">
+            <p className="whitespace-pre-wrap">{content}</p>
+          </div>
+        ) : (
+          /* Assistant Editorial Block - No Box Borders */
+          <div className="w-full space-y-3">
+            <div className="text-[14.5px] leading-relaxed text-zinc-900 font-normal selection:bg-brand-500 selection:text-white">
+              <p className="whitespace-pre-wrap">{content}</p>
+            </div>
 
-      {/* Bubble */}
-      <div className="space-y-2">
-        <div
-          className={cn(
-            "p-4 rounded-md border text-sm leading-relaxed",
-            isUser
-              ? "bg-[#0C83FD] text-white border-[#0266D6]"
-              : "bg-white text-surface-900 border-surface-200"
-          )}
-        >
-          <p className="whitespace-pre-wrap">{content}</p>
-        </div>
-
-        {/* Embedded action/component if any */}
-        {children && <div className="pt-1">{children}</div>}
+            {/* Embedded Action Children (Chips / Sliders / Buttons in the middle) */}
+            {children && <div className="w-full pt-1">{children}</div>}
+          </div>
+        )}
 
         {timestamp && (
-          <p className={cn("text-[10px] text-surface-400 px-1", isUser ? "text-right" : "text-left")}>
+          <span className="text-[10px] text-zinc-400 px-1 font-mono tracking-tight">
             {timestamp}
-          </p>
+          </span>
         )}
       </div>
-    </div>
+
+      {/* User Avatar */}
+      {isUser && (
+        <div className="w-8 h-8 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold ring-1 ring-zinc-200">
+          <User className="w-3.5 h-3.5" />
+        </div>
+      )}
+    </motion.div>
   );
 }
+

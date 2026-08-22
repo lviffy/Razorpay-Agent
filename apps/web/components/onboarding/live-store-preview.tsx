@@ -2,139 +2,184 @@
 
 import React from "react";
 import { OnboardingState } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
-import { Store, Package, Zap, Smartphone, CreditCard, CheckCircle2 } from "lucide-react";
+import { Store, Package, Zap, Smartphone, CreditCard, CheckCircle2, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface LiveStorePreviewProps {
   state: OnboardingState;
+  className?: string;
 }
 
-export function LiveStorePreview({ state }: LiveStorePreviewProps) {
+export function LiveStorePreview({ state, className }: LiveStorePreviewProps) {
   const storeName = state.businessName || "Your Store";
   const providerLabel =
     state.provider === "SHOPIFY"
-      ? "Shopify Connected"
+      ? "Shopify Sync"
       : state.provider === "AGENTBRIDGE"
       ? "Native Catalog"
-      : "Not Selected";
+      : "Pending Selection";
+
+  const isComplete = state.completionPercentage === 100;
 
   return (
-    <div className="bg-white border border-surface-200 rounded-md p-5 flex flex-col h-full space-y-6 select-none">
-      {/* Header Banner */}
-      <div className="flex items-start justify-between pb-4 border-b border-surface-100">
+    <div className={`bg-white/80 backdrop-blur-md border border-zinc-200/80 rounded-2xl p-5 space-y-5 select-none ${className || ""}`}>
+      {/* Store Identity & Readiness */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#0C2340] text-white rounded flex items-center justify-center font-bold text-base">
-            <Store className="w-5 h-5 text-blue-300" />
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center shadow-xs">
+            <Store className="w-5 h-5 text-brand-300" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-surface-900 leading-tight truncate max-w-[180px]">
+            <h3 className="text-sm font-bold text-zinc-900 tracking-tight leading-tight truncate max-w-[160px]">
               {storeName}
             </h3>
-            <p className="text-[11px] text-surface-500">{providerLabel}</p>
+            <p className="text-[11px] text-zinc-500 font-medium">{providerLabel}</p>
           </div>
         </div>
-        <Badge variant={state.completionPercentage === 100 ? "success" : "brand"}>
-          {state.completionPercentage}% READY
-        </Badge>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100/90 border border-zinc-200/70">
+          <span className={`w-1.5 h-1.5 rounded-full ${isComplete ? "bg-emerald-500 animate-pulse" : "bg-brand-500"}`} />
+          <span className="text-[11px] font-mono font-bold text-zinc-800">
+            {state.completionPercentage}%
+          </span>
+        </div>
       </div>
 
-      {/* Setup Progress Bar (Flat, solid blue) */}
+      {/* Setup Progress Bar */}
       <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-surface-600 font-medium">
-          <span>AI Storefront Setup</span>
-          <span className="font-mono">{state.completionPercentage}%</span>
+        <div className="flex justify-between text-[11px] text-zinc-500 font-medium">
+          <span>AI Readiness Index</span>
+          <span className="font-mono text-zinc-700">{state.completionPercentage}%</span>
         </div>
-        <div className="h-2 w-full bg-surface-100 rounded-full overflow-hidden border border-surface-200">
-          <div
-            className="h-full bg-[#0C83FD] transition-all duration-300 rounded-full"
-            style={{ width: `${state.completionPercentage}%` }}
+        <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${state.completionPercentage}%` }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className={`h-full rounded-full transition-all duration-300 ${
+              isComplete ? "bg-emerald-500" : "bg-brand-600"
+            }`}
           />
         </div>
       </div>
 
-      {/* Live State Grid */}
-      <div className="space-y-3 flex-1">
-        <p className="text-[11px] font-semibold text-surface-500 uppercase tracking-wider">
-          Live Store Parameters
+      {/* Telemetry Parameters - Seamless Rows, No Clunky Boxes */}
+      <div className="space-y-1 pt-1">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-semibold px-1 pb-1">
+          Store Primitives
         </p>
 
-        {/* Products Card */}
-        <div className="p-3 bg-surface-50 border border-surface-200 rounded-md flex items-center justify-between">
+        {/* 1. Products */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-50/80 transition-colors">
           <div className="flex items-center gap-2.5">
-            <Package className="w-4 h-4 text-surface-600" />
+            <div className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center flex-shrink-0">
+              <Package className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <p className="text-xs font-semibold text-surface-900">Products Catalog</p>
-              <p className="text-[11px] text-surface-500">
+              <p className="text-xs font-semibold text-zinc-900 leading-none">Catalog</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
                 {state.productCount > 0
-                  ? `${state.productCount} products ready for AI`
-                  : "Awaiting catalog input"}
+                  ? `${state.productCount} SKU items indexed`
+                  : "Awaiting input"}
               </p>
             </div>
           </div>
-          <span className="text-sm font-bold font-mono text-surface-900">
+          <span className="font-mono text-xs font-bold text-zinc-800">
             {state.productCount}
           </span>
         </div>
 
-        {/* AI Seller Status */}
-        <div className="p-3 bg-surface-50 border border-surface-200 rounded-md flex items-center justify-between">
+        {/* 2. AI Seller */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-50/80 transition-colors">
           <div className="flex items-center gap-2.5">
-            <Zap className="w-4 h-4 text-surface-600" />
+            <div className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center flex-shrink-0">
+              <Zap className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <p className="text-xs font-semibold text-surface-900">AI Seller Agent</p>
-              <p className="text-[11px] text-surface-500">
-                {state.agentConfigured ? "Negotiation mandate configured" : "Pending setup"}
+              <p className="text-xs font-semibold text-zinc-900 leading-none">Negotiation Mandate</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                {state.agentConfigured ? "Floor & margin locked" : "Pending rules"}
               </p>
             </div>
           </div>
-          <Badge variant={state.agentConfigured ? "success" : "default"}>
-            {state.agentConfigured ? "● Configured" : "○ Idle"}
-          </Badge>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
+            state.agentConfigured
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+              : "bg-zinc-100 text-zinc-500"
+          }`}>
+            {state.agentConfigured ? "● Active" : "○ Idle"}
+          </span>
         </div>
 
-        {/* WhatsApp Channel */}
-        <div className="p-3 bg-surface-50 border border-surface-200 rounded-md flex items-center justify-between">
+        {/* 3. WhatsApp Commerce */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-50/80 transition-colors">
           <div className="flex items-center gap-2.5">
-            <Smartphone className="w-4 h-4 text-surface-600" />
+            <div className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <p className="text-xs font-semibold text-surface-900">WhatsApp Commerce</p>
-              <p className="text-[11px] text-surface-500">
-                {state.whatsappConnected ? "+91 98765 00000" : "Not connected"}
+              <p className="text-xs font-semibold text-zinc-900 leading-none">WhatsApp Channel</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                {state.whatsappConnected ? "+91 98765 00000" : "Disconnected"}
               </p>
             </div>
           </div>
-          <Badge variant={state.whatsappConnected ? "success" : "default"}>
-            {state.whatsappConnected ? "● Connected" : "○ Disconnected"}
-          </Badge>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
+            state.whatsappConnected
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+              : "bg-zinc-100 text-zinc-500"
+          }`}>
+            {state.whatsappConnected ? "● Live" : "○ Pending"}
+          </span>
         </div>
 
-        {/* Razorpay Payments */}
-        <div className="p-3 bg-surface-50 border border-surface-200 rounded-md flex items-center justify-between">
+        {/* 4. Razorpay */}
+        <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-zinc-50/80 transition-colors">
           <div className="flex items-center gap-2.5">
-            <CreditCard className="w-4 h-4 text-surface-600" />
+            <div className="w-7 h-7 rounded-lg bg-zinc-100 text-zinc-600 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-3.5 h-3.5" />
+            </div>
             <div>
-              <p className="text-xs font-semibold text-surface-900">Razorpay Payments</p>
-              <p className="text-[11px] text-surface-500">
-                {state.razorpayConnected ? "Test Mode & Links Active" : "Pending connection"}
+              <p className="text-xs font-semibold text-zinc-900 leading-none">Razorpay Settlement</p>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                {state.razorpayConnected ? "Test Mode Verified" : "Pending keys"}
               </p>
             </div>
           </div>
-          <Badge variant={state.razorpayConnected ? "brand" : "default"}>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
+            state.razorpayConnected
+              ? "bg-brand-50 text-brand-700 border border-brand-200/60"
+              : "bg-zinc-100 text-zinc-500"
+          }`}>
             {state.razorpayConnected ? "● Test Mode" : "○ Pending"}
-          </Badge>
+          </span>
         </div>
       </div>
 
-      {/* Footer Info Box */}
-      <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-900 space-y-1">
-        <div className="flex items-center gap-1.5 font-semibold">
-          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-          <span>Real-Time State Sync</span>
+      {/* Real-Time Pulse Footer */}
+      <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-500">
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-medium text-zinc-600">Real-Time State Sync</span>
         </div>
-        <p className="text-[11px] text-blue-800 leading-normal">
-          Every setting chosen in conversation updates your store instantly.
-        </p>
+        <span className="font-mono text-[10px] text-zinc-400">WebSocket / SSE</span>
       </div>
     </div>
   );
 }
+
+/**
+ * Sleek Top-Bar Status Capsule for Compact Display
+ */
+export function OnboardingStatusCapsule({ state }: { state: OnboardingState }) {
+  const isComplete = state.completionPercentage === 100;
+  return (
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-zinc-200/80 shadow-2xs backdrop-blur-sm text-xs text-zinc-700">
+      <span className={`w-2 h-2 rounded-full ${isComplete ? "bg-emerald-500 animate-pulse" : "bg-brand-500"}`} />
+      <span className="font-semibold text-zinc-900">{state.businessName || "Store"}</span>
+      <span className="text-zinc-300">•</span>
+      <span className="font-mono font-medium text-brand-600">{state.completionPercentage}% Ready</span>
+    </div>
+  );
+}
+

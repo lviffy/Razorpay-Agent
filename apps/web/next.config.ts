@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+    const backendUrl =
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "https://razorpay-agent-production.up.railway.app";
     return [
       {
         source: "/api/v1/:path*",
@@ -14,3 +16,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
