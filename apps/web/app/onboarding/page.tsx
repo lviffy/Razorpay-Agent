@@ -31,9 +31,11 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/lib/context/auth-context";
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -510,12 +512,19 @@ export default function OnboardingPage() {
                               });
                               if (res.ok) {
                                 const data = await res.json();
+                                if (data.token && typeof window !== "undefined") {
+                                  localStorage.setItem("zapai_auth_token", data.token);
+                                  document.cookie = `zapai_auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+                                }
                                 if (data.storeId && typeof window !== "undefined") {
                                   localStorage.setItem("zapai_selected_store_id", data.storeId);
                                 }
                               }
-                            } catch (e) {}
-                            router.push("/dashboard");
+                              await refreshUser();
+                            } catch (e) {
+                              console.error("Onboarding complete error:", e);
+                            }
+                            router.replace("/dashboard");
                           }}
                           className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
                         >
@@ -602,7 +611,37 @@ export default function OnboardingPage() {
 
               <div className="pt-5 sm:pt-6 border-t border-zinc-100">
                 <Button
-                  onClick={() => router.push("/dashboard")}
+                  onClick={async () => {
+                    try {
+                      const token = typeof window !== "undefined"
+                        ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
+                        : null;
+                      const headers: Record<string, string> = { "Content-Type": "application/json" };
+                      if (token) {
+                        headers["Authorization"] = `Bearer ${token}`;
+                      }
+                      const res = await fetch("/api/v1/onboarding/complete", {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify({
+                          businessName: state.businessName || "ZapAI Store",
+                          provider: state.provider || "ZAPAI",
+                        }),
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (data.token && typeof window !== "undefined") {
+                          localStorage.setItem("zapai_auth_token", data.token);
+                          document.cookie = `zapai_auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+                        }
+                        if (data.storeId && typeof window !== "undefined") {
+                          localStorage.setItem("zapai_selected_store_id", data.storeId);
+                        }
+                      }
+                      await refreshUser();
+                    } catch (e) {}
+                    router.replace("/dashboard");
+                  }}
                   variant="outline"
                   className="w-full text-xs font-semibold rounded-xl gap-1.5"
                 >

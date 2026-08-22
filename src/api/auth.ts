@@ -12,7 +12,7 @@ const JWT_SECRET =
   process.env.X402_SIGNING_SECRET ||
   "zapai_jwt_secret_neon_auth_2026";
 
-const DEFAULT_STORE_ID = "a0000000-0000-0000-0000-000000000001";
+const DEFAULT_STORE_ID = null;
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -567,9 +567,9 @@ router.get("/me", async (req: Request, res: Response) => {
         role: user.role,
         phone: user.phone || user.store_phone || "+91 98765 00000",
         avatarUrl: user.avatar_url,
-        storeId: user.store_id || DEFAULT_STORE_ID,
-        storeName: user.store_name || "ZapAI Store",
-        storeCity: user.store_city || "Bengaluru",
+        storeId: user.store_id || null,
+        storeName: user.store_name || null,
+        storeCity: user.store_city || null,
         merchantId: `merch_${user.id.slice(0, 8)}`,
         onboardingCompleted: Boolean(user.onboarding_completed),
       },

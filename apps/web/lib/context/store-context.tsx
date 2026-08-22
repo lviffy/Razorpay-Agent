@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuth } from "./auth-context";
 
 export interface ConnectedStore {
   id: string;
@@ -15,33 +16,6 @@ export interface ConnectedStore {
   tagline: string;
 }
 
-export const PRESET_STORES: ConnectedStore[] = [
-  {
-    id: "a0000000-0000-0000-0000-000000000001",
-    name: "RunFast Sports",
-    city: "Bengaluru",
-    phone: "+91 98765 00000",
-    email: "merchant@runfastsports.in",
-    role: "Store Owner & Admin",
-    currency: "INR",
-    isActive: true,
-    color: "#2563EB",
-    tagline: "Premium Road & Trail Running Equipment",
-  },
-  {
-    id: "b0000000-0000-0000-0000-000000000002",
-    name: "SpeedGear",
-    city: "Mumbai",
-    phone: "+91 98111 22334",
-    email: "support@speedgear.in",
-    role: "Regional Manager",
-    currency: "INR",
-    isActive: true,
-    color: "#7C3AED",
-    tagline: "Athletic Performance Wear & Marathons",
-  },
-];
-
 interface StoreContextType {
   currentStore: ConnectedStore;
   stores: ConnectedStore[];
@@ -49,33 +23,58 @@ interface StoreContextType {
   refreshTrigger: number;
 }
 
+const defaultStore: ConnectedStore = {
+  id: "store_default",
+  name: "My Store",
+  city: "Bengaluru",
+  phone: "+91 98765 00000",
+  email: "merchant@zapai.io",
+  role: "Store Owner & Admin",
+  currency: "INR",
+  isActive: true,
+  color: "#2563EB",
+  tagline: "AI-Powered Storefront",
+};
+
 const StoreContext = createContext<StoreContextType>({
-  currentStore: PRESET_STORES[0],
-  stores: PRESET_STORES,
+  currentStore: defaultStore,
+  stores: [defaultStore],
   switchStore: () => {},
   refreshTrigger: 0,
 });
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [currentStore, setCurrentStore] = useState<ConnectedStore>(PRESET_STORES[0]);
+  const { user } = useAuth();
+  const [currentStore, setCurrentStore] = useState<ConnectedStore>(defaultStore);
+  const [stores, setStores] = useState<ConnectedStore[]>([defaultStore]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    try {
-      const savedId =
-        localStorage.getItem("zapai_selected_store_id") ||
-        localStorage.getItem("agentbridge_selected_store_id");
-      if (savedId) {
-        const found = PRESET_STORES.find((s) => s.id === savedId);
-        if (found) setCurrentStore(found);
+    if (user) {
+      const userStore: ConnectedStore = {
+        id: user.storeId || "store_default",
+        name: user.storeName || "My Store",
+        city: user.storeCity || "Bengaluru",
+        phone: user.phone || "+91 98765 00000",
+        email: user.email,
+        role: "Store Owner & Admin",
+        currency: "INR",
+        isActive: true,
+        color: "#2563EB",
+        tagline: "Autonomous Agentic Commerce",
+      };
+
+      setStores([userStore]);
+      setCurrentStore(userStore);
+
+      if (user.storeId && typeof window !== "undefined") {
+        localStorage.setItem("zapai_selected_store_id", user.storeId);
       }
-    } catch (e) {
-      // ignore in SSR or restricted storage
     }
-  }, []);
+  }, [user]);
 
   const switchStore = (storeId: string) => {
-    const found = PRESET_STORES.find((s) => s.id === storeId);
+    const found = stores.find((s) => s.id === storeId);
     if (found) {
       setCurrentStore(found);
       try {
@@ -89,7 +88,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     <StoreContext.Provider
       value={{
         currentStore,
-        stores: PRESET_STORES,
+        stores,
         switchStore,
         refreshTrigger,
       }}

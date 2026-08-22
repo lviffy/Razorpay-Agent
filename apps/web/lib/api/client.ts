@@ -63,13 +63,12 @@ export const defaultMerchantProfile: MerchantProfile = {
 async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallback: T): Promise<T> {
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
-    let storeId = "a0000000-0000-0000-0000-000000000001";
+    let storeId: string | null = null;
     let token: string | null = null;
     if (typeof window !== "undefined") {
       storeId =
         localStorage.getItem("zapai_selected_store_id") ||
-        localStorage.getItem("agentbridge_selected_store_id") ||
-        storeId;
+        localStorage.getItem("agentbridge_selected_store_id");
       token =
         localStorage.getItem("zapai_auth_token") ||
         localStorage.getItem("agentbridge_auth_token");
@@ -80,12 +79,16 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
     if (token) {
       authHeaders["Authorization"] = `Bearer ${token}`;
     }
+    const storeHeaders: Record<string, string> = {};
+    if (storeId) {
+      storeHeaders["x-store-id"] = storeId;
+    }
     const res = await fetch(url, {
       ...options,
       signal: options.signal || controller.signal,
       headers: {
         "Content-Type": "application/json",
-        "x-store-id": storeId,
+        ...storeHeaders,
         ...authHeaders,
         ...(options.headers || {}),
       },
@@ -310,7 +313,7 @@ export const api = {
         },
         {
           id: `prod_${Date.now()}`,
-          storeId: "a0000000-0000-0000-0000-000000000001",
+          storeId: "",
           title: payload.title || "New Product",
           sku: payload.sku || `SKU-${Date.now().toString().slice(-4)}`,
           price: Number(payload.price) || 999,

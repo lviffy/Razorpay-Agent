@@ -6,19 +6,42 @@ import { useAuth } from "@/lib/context/auth-context";
 import { Sidebar, MobileSidebarDrawer } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { StoreProvider } from "@/lib/context/store-context";
+import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && user) {
-      if (user.onboardingCompleted === false) {
-        router.replace("/onboarding");
-      }
+    if (isLoading) return;
+
+    if (!isAuthenticated || !user) {
+      router.replace("/login");
+      return;
     }
-  }, [user, isLoading, router]);
+
+    if (user.onboardingCompleted === false) {
+      router.replace("/onboarding");
+    }
+  }, [user, isLoading, isAuthenticated, router]);
+
+  // Show loading screen while auth state is resolving
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <p className="text-xs text-slate-500 font-medium">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated or not onboarded yet (redirect pending)
+  if (!isAuthenticated || !user || user.onboardingCompleted === false) {
+    return null;
+  }
 
   return (
     <StoreProvider>
@@ -42,6 +65,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </StoreProvider>
   );
 }
-
-
-
