@@ -10,7 +10,7 @@ const router = Router();
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   process.env.X402_SIGNING_SECRET ||
-  "agentbridge_jwt_secret_neon_auth_2026";
+  "zapai_jwt_secret_neon_auth_2026";
 
 const DEFAULT_STORE_ID = "a0000000-0000-0000-0000-000000000001";
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -421,7 +421,7 @@ router.post("/google", async (req: Request, res: Response) => {
     }
 
     // Fallback email if simulated / test mode
-    const ssoEmail = (googleEmail || "google.merchant@agentbridge.io").toLowerCase().trim();
+    const ssoEmail = (googleEmail || "google.merchant@zapai.io").toLowerCase().trim();
     const ssoName = googleName || "Google Merchant";
 
     // Check if user already exists

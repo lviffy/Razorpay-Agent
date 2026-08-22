@@ -137,7 +137,7 @@ export default function HeroSection() {
             <div className="flex flex-wrap items-center gap-3.5">
               <Link href="/onboarding">
                 <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-8 h-12 text-sm sm:text-base gap-2 cursor-pointer shadow-xs transition-all hover:scale-[1.01] active:scale-[0.99]">
-                  <span>Start AgentBridge</span>
+                  <span>Start ZapAI</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
@@ -292,7 +292,7 @@ export default function HeroSection() {
                     <div className="max-w-[92%] bg-[#d9fdd3] rounded-2xl rounded-tr-xs p-3.5 border border-[#c4eec0] shadow-2xs space-y-3">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-[10px] font-bold text-[#008069] flex items-center gap-1">
-                          <Bot className="w-3 h-3" /> AgentBridge AI Seller
+                          <Bot className="w-3 h-3" /> ZapAI Seller
                         </span>
                         <div className="flex items-center gap-1 text-[9.5px] text-surface-500 font-mono">
                           <span>10:42 AM</span>
@@ -313,7 +313,7 @@ export default function HeroSection() {
                             </div>
                             <div>
                               <span className="font-bold text-xs text-white block">Razorpay Checkout</span>
-                              <span className="text-[9.5px] text-blue-200/80 font-mono">rzp.io/i/plink_agentbridge</span>
+                              <span className="text-[9.5px] text-blue-200/80 font-mono">rzp.io/i/plink_zapai</span>
                             </div>
                           </div>
                           <span className="text-[9px] font-mono bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">

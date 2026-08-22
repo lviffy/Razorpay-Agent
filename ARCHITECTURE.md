@@ -1,4 +1,4 @@
-# AgentBridge — Production Product & System Architecture
+# ZapAI — Production Product & System Architecture
 
 **Document Version:** 1.0 (Production Blueprint)  
 **Target:** Enterprise Production Deployment & Long-Term System Architecture  
@@ -8,7 +8,7 @@
 
 ## 1. Executive Product Architecture
 
-AgentBridge is an enterprise-grade agentic commerce middleware connecting e-commerce platforms (two seeded mock merchants for buildathon scope) to autonomous AI Buyer Agents and conversational surfaces (WhatsApp Business Cloud API). It operates on a **Fiat-Native x402 Protocol** using **Razorpay's Financial & Settlement Stack** as the core money movement and trust engine. The buildathon implementation uses **Bun + TypeScript 100%** with **Neon DB** (managed serverless Postgres) hosted on **Railway**.
+ZapAI is an enterprise-grade agentic commerce middleware connecting e-commerce platforms (two seeded mock merchants for buildathon scope) to autonomous AI Buyer Agents and conversational surfaces (WhatsApp Business Cloud API). It operates on a **Fiat-Native x402 Protocol** using **Razorpay's Financial & Settlement Stack** as the core money movement and trust engine. The buildathon implementation uses **Bun + TypeScript 100%** with **Neon DB** (managed serverless Postgres) hosted on **Railway**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -20,7 +20,7 @@ AgentBridge is an enterprise-grade agentic commerce middleware connecting e-comm
                 │                            │                         │
                 ▼ (x402 Fiat HTTP)           ▼ (WhatsApp Cloud API)    ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                         AGENTBRIDGE GATEWAY & ROUTER                             │
+│                            ZAPAI GATEWAY & ROUTER                                │
 │       • API Gateway (Envoy/Kong)         • Rate Limiting & Sybil Defense         │
 │       • TLS 1.3 Termination              • Auth & Identity Management (JWT)      │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
@@ -124,7 +124,7 @@ The production architecture decomposes into 7 decoupled, horizontally scalable s
   - `conversation_id` — persistent session identifier
   - `x402_transaction_id` — Fiat-Native HTTP 402 transaction reference
   - `razorpay_payment_id` — canonical money-movement proof
-  - `order_id` — AgentBridge order reference
+  - `order_id` — ZapAI order reference
   - `agent_reasoning_trace` — full AI tool call trace log
   - `event_checksum` — SHA256(prev_checksum + payload)
 
@@ -135,7 +135,7 @@ The production architecture decomposes into 7 decoupled, horizontally scalable s
 The system uses standard HTTP semantics for machine-to-machine commerce negotiation and settlement:
 
 ```
-Buyer Agent                                                   AgentBridge Gateway (Seller)
+Buyer Agent                                                   ZapAI Gateway (Seller)
     │                                                                      │
     │ ─── 1. POST /api/v1/a2a/negotiate {sku, target_price} ────────────► │
     │ ◄── 2. 200 OK {status: "OFFER_ACCEPTED", agreed_price: 379900} ─── │
@@ -270,7 +270,7 @@ CREATE TABLE orders (
     store_id UUID REFERENCES stores(id),
     razorpay_order_id VARCHAR(100) UNIQUE NOT NULL,
     razorpay_payment_id VARCHAR(100) UNIQUE,
-    order_id VARCHAR(100) UNIQUE,          -- AgentBridge order reference e.g. ORD-1042
+    order_id VARCHAR(100) UNIQUE,          -- ZapAI order reference e.g. ORD-1042
     x402_tx_hash VARCHAR(255) UNIQUE NOT NULL,
     mandate_id VARCHAR(100),               -- AP2-inspired mandate reference
     amount NUMERIC(12,2) NOT NULL,
@@ -378,4 +378,4 @@ CREATE INDEX idx_audit_lookup ON audit_ledger (x402_transaction_id, razorpay_pay
 (Redlock TTLs)       (PostgreSQL Multi-AZ)  (Append-Only Audit)
 ```
 
-This production architecture specification serves as the foundational engineering standard for the long-term enterprise deployment of AgentBridge.
+This production architecture specification serves as the foundational engineering standard for the long-term enterprise deployment of ZapAI.

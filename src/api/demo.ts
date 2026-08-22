@@ -73,7 +73,7 @@ function getDashboardHtml(): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AgentBridge — Live Demo Dashboard</title>
+  <title>ZapAI — Live Demo Dashboard</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -148,7 +148,7 @@ function getDashboardHtml(): string {
 </head>
 <body>
   <header>
-    <h1>🔗 AgentBridge</h1>
+    <h1>⚡ ZapAI</h1>
     <span class="badge">LIVE DEMO</span>
     <span id="status"><span class="dot"></span> Connecting...</span>
   </header>

@@ -125,11 +125,11 @@ export function Sidebar() {
       <div className="h-14 flex items-center px-5 border-b border-zinc-800 flex-shrink-0">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
-            A
+            Z
           </div>
           <div>
             <span className="font-semibold text-sm tracking-tight text-white block leading-none">
-              AgentBridge
+              ZapAI
             </span>
             <span className="text-[10px] text-zinc-500 block font-normal tracking-wide mt-1">
               RAZORPAY COMMERCE
@@ -199,11 +199,11 @@ export function MobileSidebarDrawer({
                 className="flex items-center gap-2.5"
               >
                 <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
-                  A
+                  Z
                 </div>
                 <div>
                   <span className="font-semibold text-sm tracking-tight text-white block leading-none">
-                    AgentBridge
+                    ZapAI
                   </span>
                   <span className="text-[10px] text-zinc-500 block font-normal tracking-wide mt-1">
                     RAZORPAY COMMERCE

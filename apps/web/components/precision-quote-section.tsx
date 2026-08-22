@@ -18,7 +18,7 @@ export default function PrecisionQuoteSection() {
 
         <div className="w-full space-y-4">
           <h3 className="font-display text-xl sm:text-2xl md:text-3xl font-extrabold text-surface-900 tracking-tight leading-snug [text-wrap:balance]">
-            Shoppers bargain on WhatsApp. AgentBridge turns conversational friction into closed sales — while{' '}
+            Shoppers bargain on WhatsApp. ZapAI turns conversational friction into closed sales — while{' '}
             <span className="text-brand-600">
               every rupee of your profit margin remains mathematically protected.
             </span>

@@ -1,4 +1,4 @@
-# AgentBridge — Product Requirements Document
+# ZapAI — Product Requirements Document
 **Version:** 5.0  
 **Date:** August 20, 2026  
 **Track:** Razorpay AI Buildathon — AI Growth & Agentic Commerce  
@@ -8,7 +8,7 @@
 
 ## One-Liner
 
-AgentBridge turns any Shopify store into an AI-native commerce endpoint — where Buyer Agents discover, negotiate, and pay Seller Agents autonomously in real time, with every rupee settled in INR through Razorpay's payment infrastructure.
+ZapAI turns any Shopify store into an AI-native commerce endpoint — where Buyer Agents discover, negotiate, and pay Seller Agents autonomously in real time, with every rupee settled in INR through Razorpay's payment infrastructure.
 
 ---
 
@@ -26,7 +26,7 @@ Here is what the agent actually encounters:
 
 **Result: The merchant loses a high-intent sale. The agent fails its task. The user wakes up to nothing. The agentic commerce channel — which Razorpay, NPCI, and global protocols like x402 are actively building — sits completely unused.**
 
-AgentBridge is the missing layer that fixes all five failures in a single integration.
+ZapAI is the missing layer that fixes all five failures in a single integration.
 
 ---
 
@@ -46,13 +46,13 @@ An AI Buyer Agent today can search the web, summarize product reviews, and recom
 
 The x402 protocol (HTTP 402 Payment Required) solves the agent-to-agent payment handshake elegantly: an agent requests a resource, the server responds with a payment challenge, the agent signs and pays, and the resource is unlocked. It is clean, programmable, and auditable. But for Indian commerce, x402 must be fiat-native. Merchants need INR in their bank accounts directly and instantly. They need Razorpay's regulatory cover, UPI-first routing, high-success optimization, and Instant Settlements (within 10–15 seconds). Meanwhile, Razorpay's existing payment surfaces — Orders API, Payment Links, Checkout — were designed for human-triggered flows and do not natively speak x402 or support agent-signed payment authorizations.
 
-**AgentBridge bridges this gap:** x402 handles the machine-readable HTTP challenge/response protocol; Razorpay handles everything from order creation to Instant INR settlement. Neither replaces the other. Together, they make agentic commerce real for Indian merchants.
+**ZapAI bridges this gap:** x402 handles the machine-readable HTTP challenge/response protocol; Razorpay handles everything from order creation to Instant INR settlement. Neither replaces the other. Together, they make agentic commerce real for Indian merchants.
 
 ---
 
 ## Solution Overview
 
-AgentBridge is a three-layer intelligent middleware that connects Shopify stores to the agentic commerce economy via WhatsApp, with Razorpay as the settlement and trust backbone.
+ZapAI is a three-layer intelligent middleware that connects Shopify stores to the agentic commerce economy via WhatsApp, with Razorpay as the settlement and trust backbone.
 
 ### Layer 1 — Merchant Catalog & Inventory Service
 
@@ -78,7 +78,7 @@ Two agents go live for every connected store. This is the core of the product.
 
 The Seller Agent can answer product queries, suggest alternatives based on buyer preferences, generate dynamic offers within the merchant's bounds, and critically — lock inventory atomically when a deal is agreed. It operates entirely within the guardrails the merchant defines. It never discounts more than allowed, never promises stock it has not confirmed, and never accepts payment instructions from outside the verified Buyer Agent protocol.
 
-**The Buyer Agent** operates on behalf of the end consumer. It is initialized with a natural language task and a pre-authorized spending limit. It can search across one or many AgentBridge-connected stores simultaneously, compare live offers side by side, conduct multi-turn price negotiations with Seller Agents, and execute a purchase when it finds a deal within budget. The Buyer Agent is bounded — it cannot spend more than the pre-authorized limit, cannot purchase from unverified stores, and produces a full reasoning trace for every decision it makes.
+**The Buyer Agent** operates on behalf of the end consumer. It is initialized with a natural language task and a pre-authorized spending limit. It can search across one or many ZapAI-connected stores simultaneously, compare live offers side by side, conduct multi-turn price negotiations with Seller Agents, and execute a purchase when it finds a deal within budget. The Buyer Agent is bounded — it cannot spend more than the pre-authorized limit, cannot purchase from unverified stores, and produces a full reasoning trace for every decision it makes.
 
 Both agents communicate over a defined Agent-to-Agent (A2A) protocol — structured and auditable, not freeform chat. Every offer, counter-offer, acceptance, and rejection is a signed, logged event. The Buyer Agent queries **both stores in parallel**, compares live offers, and selects the best deal within the spending mandate.
 
@@ -86,7 +86,7 @@ The Buyer Agent is initialized with an **AP2-inspired spending mandate**: `{ man
 
 ### Layer 3 — Payment and Settlement
 
-This is where AgentBridge makes money actions real. When the Buyer Agent and Seller Agent reach an agreed price and the inventory is locked, the payment flow begins:
+This is where ZapAI makes money actions real. When the Buyer Agent and Seller Agent reach an agreed price and the inventory is locked, the payment flow begins:
 
 ```
 [1] Buyer Agent signals: "Accepted — ₹3,799 for SKU-SHOE-001, QTY 1"
@@ -94,7 +94,7 @@ This is where AgentBridge makes money actions real. When the Buyer Agent and Sel
 [2] Seller Agent issues HTTP 402 Payment Required (x402 challenge)
     → Contains: amount, currency, recipient address, expiry (120 seconds)
          ↓
-[3] AgentBridge intercepts x402 challenge
+[3] ZapAI intercepts x402 challenge
     → Converts to Razorpay Order via Orders API
     → Order amount: ₹3,799 | currency: INR | receipt: {x402_hash}
          ↓
@@ -106,7 +106,7 @@ This is where AgentBridge makes money actions real. When the Buyer Agent and Sel
          ↓
 [6] User opens link → approves in Razorpay Test Checkout (explicit Success/Failure choice)
          ↓
-[7] Razorpay fires payment.captured webhook to AgentBridge
+[7] Razorpay fires payment.captured webhook to ZapAI
     → HMAC-SHA256 signature verified; idempotency key checked against processed_webhook_events
          ↓
 [8] Inventory state machine: PAYMENT_PENDING → PAID (Postgres)
@@ -123,17 +123,17 @@ The merchant never touches crypto. The agent never directly handles money. Every
 
 ---
 
-## How AgentBridge Uses Razorpay — The Deep Integration
+## How ZapAI Uses Razorpay — The Deep Integration
 
 This is not a wrapper around a payment link. Each Razorpay capability is used for a specific, intentional reason.
 
-| Feature / Category | Razorpay API / Product | Why This Specific API / What It Does for AgentBridge |
+| Feature / Category | Razorpay API / Product | Why This Specific API / What It Does for ZapAI |
 |---|---|---|
 | Create order before payment | **Orders API** | Idempotent order creation ensures no double-charge even if the agent retries; order ID is the immutable reference for the entire transaction lifecycle |
-| Route to highest-success method | **Razorpay Optimizer** | Analyzes method-level success rates in real time; routes UPI-first for amounts under ₹10,000; automatically downgrades to Card/Netbanking on UPI decline — all without any code change on AgentBridge's side |
+| Route to highest-success method | **Razorpay Optimizer** | Analyzes method-level success rates in real time; routes UPI-first for amounts under ₹10,000; automatically downgrades to Card/Netbanking on UPI decline — all without any code change on ZapAI's side |
 | Atomic payment confirmation | **Webhooks (`payment.captured`)** | Inventory is deducted and the Shopify order is created *only* on a confirmed `payment.captured` event — never on client-side callback, never on agent assertion. This is the anti-oversell guarantee. |
 | Tamper-proof event verification | **Webhook Signature (HMAC-SHA256)** | Every incoming webhook is verified with Razorpay's secret before any state change — prevents replay attacks and spoofed payment confirmations from malicious agents |
-| Human-in-the-loop fallback | **Payment Links API** | When merchant rules require human approval for orders above a threshold, AgentBridge generates a Payment Link and sends it to the merchant via WhatsApp — seamlessly bridging agent and human flows in the same session |
+| Human-in-the-loop fallback | **Payment Links API** | When merchant rules require human approval for orders above a threshold, ZapAI generates a Payment Link and sends it to the merchant via WhatsApp — seamlessly bridging agent and human flows in the same session |
 | Failure event handling | **Webhooks (`payment.failed`)** | On failure, inventory lock is released within 2 seconds; the Buyer Agent receives a structured failure reason and can retry or escalate — no silent failures, no stuck locks |
 | Fraud and anomaly signals | **Vulcan AI** | For high-value agent orders (above ₹10,000), Vulcan risk signals are checked before order confirmation; anomalous patterns (e.g., same agent buying 50 units of the same SKU in 10 minutes) trigger a hold and merchant alert |
 | Instant INR settlement to merchant | **Razorpay Instant Settlements** | Merchant receives funds in their existing bank account in ~10–15 seconds 24x7 via IMPS/UPI rails — zero waiting, no crypto friction, full compliance with Indian payment regulations |
@@ -147,7 +147,7 @@ This is not a wrapper around a payment link. Each Razorpay capability is used fo
 | Dynamic Negotiation Discounts | **Offers / Discount Engine** | Lets Seller Agents dynamically apply or validate limited-time offers and coupon rules during agent-to-agent negotiation |
 | Automated Post-Purchase Disputes | **Dispute / Chargeback Management** | Automated handling + agent notification when a payment is disputed after an autonomous agent purchase |
 | Advanced Marketplace Disbursement | **RazorpayX Payouts** | Instant or scheduled payouts to merchants or split commissions to affiliate agents |
-| Platform economics (post-v1) | **Route API** | Enables AgentBridge to collect a transparent percentage of agent-driven GMV as a platform fee, split cleanly at settlement across multi-store bundles |
+| Platform economics (post-v1) | **Route API** | Enables ZapAI to collect a transparent percentage of agent-driven GMV as a platform fee, split cleanly at settlement across multi-store bundles |
 | Instant Recovery Refunds | **Refunds API** | Programmatic instant refund triggered if inventory runs out in physical store during payment race condition |
 
 **The architectural principle:** x402 is the agent-to-agent handshake protocol. Razorpay is the trust, routing, and settlement engine that makes that handshake real money. They operate at different layers and are not in conflict.
@@ -179,7 +179,7 @@ Every completed agent purchase produces a four-way linked identifier set:
 
 This **5-field linkage** is stored in an append-only audit ledger with checksum chaining. Any party — the merchant, the end consumer, a regulator, or the agent itself — can query any of the five IDs and retrieve the complete transaction history: who negotiated what, when inventory was locked, when payment was captured, and the full agent reasoning trace.
 
-This is not a nice-to-have. In a world where AI agents are making purchasing decisions autonomously on behalf of humans, a complete, tamper-resistant audit trail is the feature that turns AgentBridge from a clever demo into a trustworthy financial system.
+This is not a nice-to-have. In a world where AI agents are making purchasing decisions autonomously on behalf of humans, a complete, tamper-resistant audit trail is the feature that turns ZapAI from a clever demo into a trustworthy financial system.
 
 ---
 
@@ -229,7 +229,7 @@ This is not a nice-to-have. In a world where AI agents are making purchasing dec
 
 ### F5 — Payment and Settlement Layer (Razorpay Core)
 - x402 challenge issuance by Seller Agent on deal agreement
-- AgentBridge x402-to-Razorpay conversion layer
+- ZapAI x402-to-Razorpay conversion layer
 - Razorpay Order creation with x402 hash as receipt reference
 - Optimizer-driven method selection (UPI-first, auto-fallback)
 - Webhook-based atomic confirmation (`payment.captured`)
@@ -256,7 +256,7 @@ One complete path, built to run without failure in front of judges.
 4. Store A Seller Agent returns ₹3,999 — within budget, but Buyer Agent pushes: *"Any room on price if I buy now?"*
 5. Store A Seller Agent checks rules → offers ₹3,799 with free shipping (within 8% discount bound)
 6. Buyer Agent accepts → Seller Agent locks inventory (5-minute Redis TTL) → x402 challenge issued
-7. AgentBridge converts to Razorpay test-mode Order → Optimizer routes to UPI
+7. ZapAI converts to Razorpay test-mode Order → Optimizer routes to UPI
 8. Judge approves mock UPI payment → `payment.captured` webhook fires
 9. Signature verified → inventory deducted → Shopify order created (Order #1042 shown live)
 10. WhatsApp confirmation sent: *"Done. Razorpay pay_Xyz123 | Shopify Order #1042 | x402 tx_abc | Thread ID wa_789"*
@@ -298,7 +298,7 @@ The following are real features that will be built in v2 — they are excluded f
 
 ### Path 1: UPI Payment Timeout
 - `payment.failed` webhook received with reason: `TRANSACTION_NOT_FOUND`
-- AgentBridge releases Redis inventory lock immediately
+- ZapAI releases Redis inventory lock immediately
 - Seller Agent sends: *"UPI payment timed out. Inventory is held for 3 more minutes. Want to retry or switch to card payment?"*
 - Buyer Agent retries via Razorpay Payment Link (Card/Netbanking)
 - On success: standard happy path resumes from step 7
@@ -330,7 +330,7 @@ The following are real features that will be built in v2 — they are excluded f
 └───────────────────────┬──────────────────────────────┘
                         │
 ┌───────────────────────▼──────────────────────────────┐
-│                  AgentBridge Core                     │
+│                     ZapAI Core                       │
 │                                                       │
 │   ┌─────────────┐       ┌──────────────────────┐     │
 │   │ Seller Agent│       │    Buyer Agent        │     │
@@ -387,13 +387,13 @@ The following are real features that will be built in v2 — they are excluded f
 | Too ambitious for a buildathon | Complex systems break under demo pressure | Scope is locked. One happy path. One failure path. Both run 10 times before the pitch. |
 | WhatsApp Business API setup | Production numbers require Meta review (days) | Use WhatsApp test credentials throughout. Show the API calls explicitly — judges understand. |
 | Shopify API rate limits | Sync + negotiation + order creation under load | Webhook-first sync (not polling). Order creation is a single API call. Rate limits are not a risk at demo scale. |
-| "Why not just use Razorpay Payment Links?" | Simplest objection from judges | Answer: A payment link requires a human. AgentBridge's entire point is autonomous agent-to-agent transactions with no human in the payment loop. Payment Links are the *fallback*, not the path. |
+| "Why not just use Razorpay Payment Links?" | Simplest objection from judges | Answer: A payment link requires a human. ZapAI's entire point is autonomous agent-to-agent transactions with no human in the payment loop. Payment Links are the *fallback*, not the path. |
 
 ---
 
 ## Why This Wins on the Razorpay Track
 
-Most buildathon submissions use Razorpay as a checkout page — the last mile of a human purchase flow. AgentBridge uses Razorpay as core infrastructure for a new category of commerce.
+Most buildathon submissions use Razorpay as a checkout page — the last mile of a human purchase flow. ZapAI uses Razorpay as core infrastructure for a new category of commerce.
 
 Specifically:
 
@@ -401,6 +401,6 @@ Specifically:
 
 **Webhooks are the trust layer.** Every state change — inventory deduction, order creation, lock release — is gated on a Razorpay-signed webhook event. This is not engineering caution; it is the architecture that makes money actions auditable and safe.
 
-**INR settlement is the business model unlock.** The reason AgentBridge can target Indian Shopify merchants — and not just crypto-native platforms — is that Razorpay handles the entire conversion and settlement chain. Merchants get rupees. That is the market.
+**INR settlement is the business model unlock.** The reason ZapAI can target Indian Shopify merchants — and not just crypto-native platforms — is that Razorpay handles the entire conversion and settlement chain. Merchants get rupees. That is the market.
 
 **The audit trail is Razorpay's Payment ID at its center.** The four-way linkage only works because Razorpay's payment ID is the canonical reference that anchors a WhatsApp conversation, an x402 transaction, and a Shopify order into a single queryable record.

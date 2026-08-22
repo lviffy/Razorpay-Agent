@@ -103,7 +103,7 @@ export default function AnalyticsPage() {
           <CardHeader className="p-6 pb-4">
             <CardTitle className="text-sm font-bold text-zinc-900">Revenue Contribution by Sourced Channel</CardTitle>
             <CardDescription className="text-xs text-zinc-500 mt-0.5">
-              Settlement volume split between Native AgentBridge catalog and connected Shopify store.
+              Settlement volume split between Native ZapAI catalog and connected Shopify store.
             </CardDescription>
           </CardHeader>
 
@@ -111,7 +111,7 @@ export default function AnalyticsPage() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-xs mb-1.5 font-medium">
-                  <span className="text-zinc-800">AgentBridge Native Catalog</span>
+                  <span className="text-zinc-800">ZapAI Native Catalog</span>
                   <span className="font-mono font-bold text-zinc-900">62% ({formatINR(51143)})</span>
                 </div>
                 <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">

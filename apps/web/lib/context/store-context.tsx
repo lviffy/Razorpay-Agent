@@ -62,7 +62,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
-      const savedId = localStorage.getItem("agentbridge_selected_store_id");
+      const savedId =
+        localStorage.getItem("zapai_selected_store_id") ||
+        localStorage.getItem("agentbridge_selected_store_id");
       if (savedId) {
         const found = PRESET_STORES.find((s) => s.id === savedId);
         if (found) setCurrentStore(found);
@@ -77,7 +79,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (found) {
       setCurrentStore(found);
       try {
-        localStorage.setItem("agentbridge_selected_store_id", storeId);
+        localStorage.setItem("zapai_selected_store_id", storeId);
       } catch (e) {}
       setRefreshTrigger((prev) => prev + 1);
     }

@@ -38,7 +38,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AgentBridge — Turn WhatsApp Chats into Instant Razorpay Sales",
+  title: "ZapAI — Turn WhatsApp Chats into Instant Razorpay Sales",
   description:
     "Autonomous AI seller agents that discover products, negotiate within your strict margin mandates, lock live stock, and collect instant payments on WhatsApp through Razorpay.",
   keywords: [

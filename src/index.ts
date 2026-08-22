@@ -47,7 +47,7 @@ app.use(express.json());
 app.get("/health", (_req, res) => {
   res.json({
     status: "ok",
-    service: "agentbridge",
+    service: "zapai",
     timestamp: new Date().toISOString(),
   });
 });
@@ -79,8 +79,8 @@ app.get("/auth/callback", (req, res) => {
     try {
       const token = ${JSON.stringify(token)};
       if (token) {
-        localStorage.setItem("agentbridge_auth_token", token);
-        document.cookie = "agentbridge_auth_token=" + token + "; path=/; max-age=2592000; SameSite=Lax";
+        localStorage.setItem("zapai_auth_token", token);
+        document.cookie = "zapai_auth_token=" + token + "; path=/; max-age=2592000; SameSite=Lax";
       }
       // Redirect to local Next.js frontend or current host /dashboard
       const target = window.location.port === "3000" ? "/dashboard" : "http://localhost:3000/dashboard";
@@ -126,7 +126,7 @@ app.use("/api/v1/onboarding", onboardingRouter);
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`\n🚀 AgentBridge running on port ${PORT}`);
+    console.log(`\n🚀 ZapAI running on port ${PORT}`);
     console.log(`   Health:      http://0.0.0.0:${PORT}/health`);
     console.log(`   Dashboard:   http://0.0.0.0:${PORT}/api/v1/dashboard/overview`);
     console.log(`   Products:    http://0.0.0.0:${PORT}/api/v1/products`);

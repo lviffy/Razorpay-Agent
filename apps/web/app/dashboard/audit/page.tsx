@@ -407,7 +407,7 @@ export default function AuditExplorerPage() {
                   {/* Order Reference */}
                   <div className="p-2.5 bg-zinc-50 rounded-lg border border-zinc-200/80 flex items-center justify-between gap-2">
                     <div>
-                      <span className="text-[10px] text-zinc-500 block">AgentBridge Merchant Order ID</span>
+                      <span className="text-[10px] text-zinc-500 block">ZapAI Merchant Order ID</span>
                       <span className="font-mono text-zinc-900 font-bold">
                         {active.orderId || "ORD-1042"}
                       </span>

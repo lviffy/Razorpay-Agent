@@ -86,7 +86,7 @@ export default function IntegrationSection() {
             Connected Across Six Core Technologies
           </h2>
           <p className="text-base text-surface-600 leading-relaxed font-normal">
-            AgentBridge unifies messaging, inventory, intelligence, and banking rails into a cohesive
+            ZapAI unifies messaging, inventory, intelligence, and banking rails into a cohesive
             agentic commerce pipeline.
           </p>
         </div>

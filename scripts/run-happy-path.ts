@@ -10,7 +10,7 @@ import { logEvent, queryAudit } from "../src/services/audit.ts";
 
 async function main() {
   console.log("=================================================");
-  console.log("🚀 AgentBridge — Happy Path End-to-End Simulation");
+  console.log("🚀 ZapAI — Happy Path End-to-End Simulation");
   console.log("=================================================\n");
 
   // Verify DB & Redis

@@ -1,4 +1,4 @@
-# AgentBridge — AI-Native Agentic Commerce Middleware
+# ZapAI — AI-Native Agentic Commerce Middleware
 
 > **Track:** Razorpay AI Buildathon 2026 — AI Growth & Agentic Commerce  
 > **Status:** Final Submission Draft  
@@ -9,7 +9,7 @@
 
 ## ⚡ One-Liner
 
-**AgentBridge turns any Shopify store into an AI-native commerce endpoint — where AI Buyer Agents discover, negotiate, reserve inventory, and pay Seller Agents autonomously in real time, with every rupee settled in INR through Razorpay's payment infrastructure.**
+**ZapAI turns any Shopify store into an AI-native commerce endpoint — where AI Buyer Agents discover, negotiate, reserve inventory, and pay Seller Agents autonomously in real time, with every rupee settled in INR through Razorpay's payment infrastructure.**
 
 ---
 
@@ -19,7 +19,7 @@
 - [Solution Overview](#-solution-overview)
 - [System Architecture](#-system-architecture)
 - [Dual AI Agent System](#-dual-ai-agent-system)
-- [How AgentBridge Uses Razorpay](#-how-agentbridge-uses-razorpay)
+- [How ZapAI Uses Razorpay](#-how-zapai-uses-razorpay)
 - [5-Field Tamper-Proof Audit Trail](#-5-field-tamper-proof-audit-trail)
 - [Tech Stack & Infrastructure](#-tech-stack--infrastructure)
 - [Environment Variables](#-environment-variables)
@@ -44,13 +44,13 @@ Here is what the agent actually encounters on existing e-commerce systems:
 4. **No Programmable Payment Path:** Checkout requires human interaction (e.g., clicking a UPI deep-link or entering OTPs). The agent cannot programmatically pay within a pre-authorized mandate and receive a cryptographic receipt.
 5. **Settlement & Fiat Gap:** Global protocols like x402 are often tied to web3 or non-fiat tokens. Indian Shopify merchants require **instant bank settlement in INR** compliant with Indian banking regulations.
 
-**Result:** The merchant loses a high-intent sale. The agent fails its mandate. The consumer wakes up empty-handed. **AgentBridge bridges all five failures in a single integration layer.**
+**Result:** The merchant loses a high-intent sale. The agent fails its mandate. The consumer wakes up empty-handed. **ZapAI bridges all five failures in a single integration layer.**
 
 ---
 
-##💡 Solution Overview
+## 💡 Solution Overview
 
-AgentBridge operates as a three-layer intelligent middleware connecting e-commerce platforms to the agentic economy, backed by Razorpay as the financial and trust engine.
+ZapAI operates as a three-layer intelligent middleware connecting e-commerce platforms to the agentic economy, backed by Razorpay as the financial and trust engine.ay as the financial and trust engine.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -62,7 +62,7 @@ AgentBridge operates as a three-layer intelligent middleware connecting e-commer
                 │                            │                         │
                 ▼ (x402 Fiat HTTP)           ▼ (WhatsApp Cloud API)    ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                          AGENTBRIDGE GATEWAY & ROUTER                            │
+│                             ZAPAI GATEWAY & ROUTER                               │
 │       • API Gateway (Express/Bun)        • HMAC Webhook Verification             │
 │       • Async Job Queue (Redis)          • Dual-Agent Orchestration Engine       │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
@@ -112,7 +112,7 @@ AgentBridge operates as a three-layer intelligent middleware connecting e-commer
 
 ## 🤖 Dual AI Agent System
 
-AgentBridge implements two specialized LLM agents built on **Autonomous AI Reasoning** with function calling:
+ZapAI implements two specialized LLM agents built on **Autonomous AI Reasoning** with function calling:
 
 ```
 [Buyer Agent] ──── (1) Search & Request Offer ────► [Store A Seller Agent]
@@ -153,11 +153,11 @@ AgentBridge implements two specialized LLM agents built on **Autonomous AI Reaso
 
 ---
 
-## 💳 How AgentBridge Uses Razorpay
+## 💳 How ZapAI Uses Razorpay
 
-AgentBridge does not treat Razorpay as just a checkout button — it relies on Razorpay as the foundational trust, payment routing, and settlement infrastructure for autonomous agents.
+ZapAI does not treat Razorpay as just a checkout button — it relies on Razorpay as the foundational trust, payment routing, and settlement infrastructure for autonomous agents.
 
-| Razorpay API / Feature | Purpose in AgentBridge | Architectural Impact |
+| Razorpay API / Feature | Purpose in ZapAI | Architectural Impact |
 |---|---|---|
 | **Orders API** | Idempotent order creation for agent payments | Prevents double-charging during agent retries; provides the immutable anchor for the 5-field audit trail. |
 | **Razorpay Optimizer** | Dynamic payment method routing | Analyzes method success rates in real time; routes UPI-first for small transactions and auto-falls back to Card/Netbanking on declines. |
@@ -168,14 +168,14 @@ AgentBridge does not treat Razorpay as just a checkout button — it relies on R
 | **Vulcan AI Scoring** | Autonomous fraud detection | Evaluates risk vectors on high-value agent transactions before order finalization. |
 | **Instant Settlements** | Real-time merchant bank payout | Settles INR directly into merchant bank accounts in 10–15 seconds via IMPS/UPI rails. |
 | **Smart Collect 2.0** | Agent virtual accounts & VPAs | Generates dynamic VPAs for multi-store bundle payments and bank transfer reconciliations. |
-| **Route API** | Platform commission splits | Enables AgentBridge to collect automated platform fees on agent-driven GMV. |
+| **Route API** | Platform commission splits | Enables ZapAI to collect automated platform fees on agent-driven GMV. |
 | **Refunds API** | Race condition mitigation | Automatically issues instant refunds if physical store inventory collapses during payment transit. |
 
 ---
 
 ## 🔒 5-Field Tamper-Proof Audit Trail
 
-Every transaction processed through AgentBridge generates a 5-way linked audit record stored in an append-only Postgres ledger:
+Every transaction processed through ZapAI generates a 5-way linked audit record stored in an append-only Postgres ledger:
 
 ```
 ┌───────────────────────────────────┐         ┌───────────────────────────────────┐
@@ -231,7 +231,7 @@ cp .env.example .env
 | `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Business Phone Number ID | `1006...` |
 | `WHATSAPP_ACCESS_TOKEN` | Meta Graph API Permanent Token | `EAAG...` |
 | `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Custom verification token for Meta webhook | `random_verify_token` |
-| `DATABASE_URL` | Neon Postgres Connection String (pooled) | `postgresql://user:pass@ep-xxx.neon.tech/agentbridge?sslmode=require` |
+| `DATABASE_URL` | Neon Postgres Connection String (pooled) | `postgresql://user:pass@ep-xxx.neon.tech/zapai?sslmode=require` |
 | `REDIS_URL` | Redis instance connection string | `redis://localhost:6379` |
 | `APP_URL` | Public server URL (Railway / ngrok) | `https://your-app.up.railway.app` |
 | `PORT` | Local HTTP server port | `3000` |
@@ -292,7 +292,7 @@ curl http://localhost:3000/health
 
 ## 🧪 Demo Execution & Test Scripts
 
-AgentBridge includes automated demo scripts to execute complete end-to-end purchasing flows without manual UI input.
+ZapAI includes automated demo scripts to execute complete end-to-end purchasing flows without manual UI input.
 
 ### 1. Happy Path Demo Execution
 
@@ -400,7 +400,7 @@ Razorpay-Agent/
 
 ## 🛡 Failure Recovery & Resiliency
 
-AgentBridge is architected for zero-downtime inventory integrity and fault-tolerant financial execution:
+ZapAI is architected for zero-downtime inventory integrity and fault-tolerant financial execution:
 
 1. **UPI Timeout Handling:** If a UPI payment times out or drops, `payment.failed` immediately clears the Redis lock key (`lock:inventory:{store_id}:{variant_id}`), making stock available to other buyers in under 2 seconds.
 2. **Idempotent Webhooks:** Razorpay webhooks are tracked in the `processed_webhook_events` table by event ID to guarantee exactly-once processing regardless of network retries.

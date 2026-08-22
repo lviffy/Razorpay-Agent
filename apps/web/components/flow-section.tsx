@@ -35,7 +35,7 @@ export default function FlowSection() {
               <span>How It Works</span>
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-[1.12]">
-              How AgentBridge Executes Sales
+              How ZapAI Executes Sales
             </h2>
           </div>
 

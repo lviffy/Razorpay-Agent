@@ -22,8 +22,8 @@ function AuthCallbackContent() {
 
     if (token) {
       try {
-        localStorage.setItem("agentbridge_auth_token", token);
-        document.cookie = `agentbridge_auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+        localStorage.setItem("zapai_auth_token", token);
+        document.cookie = `zapai_auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
         refreshUser().then(() => {
           router.replace("/dashboard");
         });

@@ -9,7 +9,7 @@ import { logEvent, queryAudit } from "../src/services/audit.ts";
 
 async function main() {
   console.log("=================================================");
-  console.log("⚠️  AgentBridge — Payment Failure & Recovery Simulation");
+  console.log("⚠️  ZapAI — Payment Failure & Recovery Simulation");
   console.log("=================================================\n");
 
   await db.query("SELECT 1");

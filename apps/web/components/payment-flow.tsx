@@ -37,10 +37,10 @@ const flowSteps = [
   },
   {
     step: '03',
-    actor: 'AgentBridge',
+    actor: 'ZapAI',
     badge: 'Protocol Adapter',
     title: 'Bridge Maps to Razorpay Order',
-    desc: 'AgentBridge intercepts x402 challenge and creates an idempotent order on Razorpay Orders API.',
+    desc: 'ZapAI intercepts x402 challenge and creates an idempotent order on Razorpay Orders API.',
     payload: 'POST /v1/orders { amount: 379900, currency: "INR", receipt: "x402_9f1a" }',
     accent: 'text-blue-700 bg-blue-50 border-blue-200',
   },
@@ -50,7 +50,7 @@ const flowSteps = [
     badge: 'Instant Intent',
     title: '1-Tap UPI / Card Checkout',
     desc: 'Razorpay Optimizer routes payment through highest-success UPI rails (Google Pay, PhonePe, Paytm).',
-    payload: 'rzp.io/i/plink_agentbridge_3799 | deep_link: upi://pay?pa=razorpay@icici',
+    payload: 'rzp.io/i/plink_zapai_3799 | deep_link: upi://pay?pa=razorpay@icici',
     accent: 'text-brand-700 bg-brand-50 border-brand-200',
   },
   {

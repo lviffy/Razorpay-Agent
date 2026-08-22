@@ -1,7 +1,7 @@
 {
-  "name": "agentbridge",
+  "name": "zapai",
   "version": "0.1.0",
-  "description": "Agentic commerce middleware — two-merchant demo with AI, Razorpay, WhatsApp & x402",
+  "description": "ZapAI — AI-native agentic commerce middleware with Razorpay, WhatsApp & x402",
   "module": "src/index.ts",
   "type": "module",
   "scripts": {

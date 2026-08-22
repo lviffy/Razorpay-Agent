@@ -1,4 +1,4 @@
-export type StoreProvider = "AGENTBRIDGE" | "SHOPIFY";
+export type StoreProvider = "ZAPAI" | "AGENTBRIDGE" | "SHOPIFY";
 
 export type OnboardingStep =
   | "WELCOME"

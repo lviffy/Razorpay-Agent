@@ -110,13 +110,13 @@ router.post("/chat", async (req: Request, res: Response) => {
 
         const plink = (await createStandardPaymentLink({
           amountInPaise: rupeesToPaise(offeredPrice),
-          description: `${matched.title} via AgentBridge | ${orderRef}`,
+          description: `${matched.title} via ZapAI | ${orderRef}`,
           callbackUrl: `${process.env.APP_URL || "http://localhost:3000"}/payment-complete`,
           referenceId: orderRef,
           customerPhone,
         })) as unknown as { short_url: string; id: string };
 
-        paymentUrl = plink.short_url || `https://rzp.io/i/agentbridge_${razorpayOrderId.slice(-8)}`;
+        paymentUrl = plink.short_url || `https://rzp.io/i/zapai_${razorpayOrderId.slice(-8)}`;
         logs.push(`[${timestamp()}] Razorpay Standard Payment Link Created: ${plink.id || razorpayOrderId} (₹${offeredPrice})`);
       } catch (rzpErr) {
         logs.push(`[${timestamp()}] Razorpay API simulation fallback (Using Test Gateway: ${razorpayOrderId})`);

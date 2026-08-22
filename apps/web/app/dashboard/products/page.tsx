@@ -54,7 +54,7 @@ export default function ProductsPage() {
     if (filter === "IN_STOCK") return p.inventory > 0;
     if (filter === "AI_ENABLED") return p.aiSellingEnabled;
     if (filter === "SHOPIFY") return p.provider === "SHOPIFY";
-    if (filter === "AGENTBRIDGE") return p.provider === "AGENTBRIDGE";
+    if (filter === "ZAPAI" || filter === "AGENTBRIDGE") return p.provider === "ZAPAI" || p.provider === "AGENTBRIDGE";
     return true;
   });
 
@@ -73,7 +73,7 @@ export default function ProductsPage() {
             </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
-            Omnichannel inventory synced across AgentBridge Native database and connected Shopify stores.
+            Omnichannel inventory synced across ZapAI Native database and connected Shopify stores.
           </p>
         </div>
         <Button
@@ -128,7 +128,7 @@ export default function ProductsPage() {
                   { id: "ALL", label: "All Products" },
                   { id: "AI_ENABLED", label: "AI Active" },
                   { id: "IN_STOCK", label: "In Stock" },
-                  { id: "AGENTBRIDGE", label: "Native" },
+                  { id: "ZAPAI", label: "Native" },
                   { id: "SHOPIFY", label: "Shopify" },
                 ].map((tab) => (
                   <TabsTrigger key={tab.id} value={tab.id} className="text-xs py-1 px-2.5">
@@ -174,7 +174,7 @@ export default function ProductsPage() {
                     <td className="py-3.5 px-4 font-mono text-zinc-600">{p.sku}</td>
                     <td className="py-3.5 px-4">
                       <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
-                        {p.provider === "SHOPIFY" ? "Shopify Live" : "AgentBridge Native"}
+                        {p.provider === "SHOPIFY" ? "Shopify Live" : "ZapAI Native"}
                       </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-zinc-900">

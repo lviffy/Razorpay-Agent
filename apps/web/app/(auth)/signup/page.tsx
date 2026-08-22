@@ -277,7 +277,7 @@ export default function SignupPage() {
 
         {/* Legal Disclaimer */}
         <p className="text-[11px] text-surface-500 leading-relaxed pt-1">
-          By continuing, you agree to AgentBridge&apos;s{" "}
+          By continuing, you agree to ZapAI&apos;s{" "}
           <a href="#terms" className="text-brand-600 underline underline-offset-2">
             Terms of Service
           </a>{" "}

@@ -113,7 +113,7 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-zinc-500 font-mono">
         <div className="flex items-center gap-2.5">
           <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-ping" />
-          <span className="font-medium text-zinc-700">Connecting to AgentBridge Setup Assistant...</span>
+          <span className="font-medium text-zinc-700">Connecting to ZapAI Setup Assistant...</span>
         </div>
       </div>
     );
@@ -274,7 +274,7 @@ export default function OnboardingPage() {
                             description: "Fast in-browser setup with instant price floor & discount mandates.",
                             badge: "Recommended",
                             icon: <Store className="w-4 h-4" />,
-                            onClick: () => handleSelectProvider("AGENTBRIDGE"),
+                            onClick: () => handleSelectProvider("ZAPAI"),
                           },
                           {
                             id: "shopify",
@@ -497,8 +497,8 @@ export default function OnboardingPage() {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
                                 body: JSON.stringify({
-                                  businessName: state.businessName || "AgentBridge Store",
-                                  provider: state.provider || "AGENTBRIDGE",
+                                  businessName: state.businessName || "ZapAI Store",
+                                  provider: state.provider || "ZAPAI",
                                 }),
                               });
                             } catch (e) {}
@@ -520,7 +520,7 @@ export default function OnboardingPage() {
           {loading && (
             <div className="flex items-center gap-2.5 text-xs text-zinc-500 pl-11 py-2">
               <div className="w-2 h-2 rounded-full bg-brand-500 animate-ping" />
-              <span className="font-mono">AgentBridge AI is configuring parameters...</span>
+              <span className="font-mono">ZapAI is configuring parameters...</span>
             </div>
           )}
         </div>

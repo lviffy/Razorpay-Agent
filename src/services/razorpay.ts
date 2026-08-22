@@ -36,7 +36,7 @@ export async function createOrder(opts: CreateOrderOptions) {
     notes: {
       x402_tx_hash: opts.receipt,
       session_id: opts.sessionId,
-      source: "agentbridge",
+      source: "zapai",
     },
   });
 
@@ -70,7 +70,7 @@ export async function createStandardPaymentLink(opts: CreatePaymentLinkOptions) 
     notify: { sms: false, email: false },
     reminder_enable: false,
     notes: {
-      source: "agentbridge",
+      source: "zapai",
       reference_id: opts.referenceId,
     },
   }) as { short_url: string; id: string };

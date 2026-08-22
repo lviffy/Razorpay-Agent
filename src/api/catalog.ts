@@ -33,7 +33,7 @@ router.get("/", async (req: Request, res: Response) => {
         scheme: challenge.scheme,
         amount: challenge.amount,
         currency: "INR",
-        description: "AgentBridge catalog access",
+        description: "ZapAI catalog access",
         challenge: challenge.challenge,
         expiresAt: challenge.expiry,
       },

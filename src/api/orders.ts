@@ -75,7 +75,7 @@ router.get("/", async (req: Request, res: Response) => {
         discountApplied,
         paymentStatus,
         orderStatus: paymentStatus === "paid" ? "fulfilled" : paymentStatus === "failed" ? "cancelled" : "processing",
-        provider: "AGENTBRIDGE",
+        provider: "ZAPAI",
         razorpayPaymentId: r.razorpay_payment_id || undefined,
         razorpayOrderId: r.razorpay_order_id,
         x402TxHash: r.x402_tx_hash,

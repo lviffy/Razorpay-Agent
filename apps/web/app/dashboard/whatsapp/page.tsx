@@ -506,7 +506,7 @@ export default function WhatsAppPage() {
                   <div>
                     <p className="text-[11px] font-semibold text-zinc-700">Verify Token</p>
                     <p className="font-mono text-[11px] bg-zinc-50 border border-zinc-200 p-2 rounded-md mt-1 text-zinc-800">
-                      agentbridge_secret
+                      zapai_secret
                     </p>
                   </div>
                   <div>

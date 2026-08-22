@@ -16,7 +16,7 @@ let sessionStore: OnboardingState = {
     {
       id: "msg_init",
       sender: "assistant",
-      content: "Welcome to AgentBridge! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+      content: "Welcome to ZapAI! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
       step: "WELCOME",
       createdAt: new Date().toISOString(),
     },
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
           {
             id: `msg_init_${Date.now()}`,
             sender: "assistant",
-            content: "Welcome to AgentBridge! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+            content: "Welcome to ZapAI! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
             step: "WELCOME",
             createdAt: new Date().toISOString(),
           },

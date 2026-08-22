@@ -62,7 +62,7 @@ export function Logo({
             textSizes[size]
           )}
         >
-          Agent<span className="text-[#195adc]">Bridge</span>
+          Zap<span className="text-[#195adc]">AI</span>
         </span>
       )}
     </Link>

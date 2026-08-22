@@ -63,7 +63,7 @@ async function handleJob(job: WorkerJob): Promise<void> {
   if (!spendingLimit) {
     await sendText(
       msg.from,
-      "Hi! I'm AgentBridge 🤖\n\nTell me what you'd like to buy and your budget.\n\nExample: *\"Buy running shoes under ₹4,000\"*"
+      "Hi! I'm ZapAI 🤖\n\nTell me what you'd like to buy and your budget.\n\nExample: *\"Buy running shoes under ₹4,000\"*"
     );
     return;
   }
@@ -196,7 +196,7 @@ async function handleJob(job: WorkerJob): Promise<void> {
   const store = await getStore(storeId);
   const paymentLink = await createStandardPaymentLink({
     amountInPaise: rupeesToPaise(offer.offeredPrice),
-    description: `AgentBridge: ${offer.product.title} | ${orderId}`,
+    description: `ZapAI: ${offer.product.title} | ${orderId}`,
     callbackUrl: `${process.env.APP_URL}/payment-complete`,
     referenceId: orderId,
   }) as unknown as { short_url: string; id: string };
@@ -205,7 +205,7 @@ async function handleJob(job: WorkerJob): Promise<void> {
     msg.from,
     offer.offeredPrice,
     paymentLink.short_url,
-    store?.name ?? "AgentBridge Store"
+    store?.name ?? "ZapAI Store"
   );
 
   console.log(`[Worker] Payment link sent for ${orderId}: ${paymentLink.short_url}`);
@@ -228,7 +228,7 @@ async function handleRetryPayment(conversationId: string, from: string): Promise
   const order = rows[0];
   const paymentLink = (await createStandardPaymentLink({
     amountInPaise: rupeesToPaise(parseFloat(order.amount)),
-    description: `AgentBridge Retry: ${order.order_id}`,
+    description: `ZapAI Retry: ${order.order_id}`,
     callbackUrl: `${process.env.APP_URL}/payment-complete`,
     referenceId: order.order_id,
   })) as unknown as { short_url: string; id: string };

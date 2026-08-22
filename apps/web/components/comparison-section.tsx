@@ -58,7 +58,7 @@ export default function ComparisonSection() {
           </h2>
           <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal">
             Shopping agents cannot click buttons, solve CAPTCHAs, or wait for static email recovery.
-            AgentBridge provides the 5 machine-native primitives required for autonomous commerce.
+            ZapAI provides the 5 machine-native primitives required for autonomous commerce.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function ComparisonSection() {
             </div>
             <div className="col-span-4 p-4 sm:p-5 text-brand-700 bg-brand-50/40 flex items-center gap-2 border-l border-black/[0.06]">
               <CheckCircle2 className="w-4 h-4 text-brand-600" />
-              <span>AgentBridge Layer</span>
+              <span>ZapAI Layer</span>
             </div>
           </div>
 
@@ -102,10 +102,10 @@ export default function ComparisonSection() {
                     <span>{row.humanStore}</span>
                   </div>
 
-                  {/* AgentBridge Side */}
+                  {/* ZapAI Side */}
                   <div className="md:col-span-4 p-4 sm:p-5 text-surface-900 font-medium bg-brand-50/20 border-t md:border-t-0 md:border-l border-black/[0.06] leading-relaxed font-sans flex flex-col md:flex-row md:items-start gap-1 md:gap-2.5">
                     <span className="md:hidden text-[10px] font-mono font-bold text-brand-600 uppercase tracking-wider mb-1">
-                      AgentBridge:
+                      ZapAI:
                     </span>
                     <div className="flex items-start gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />

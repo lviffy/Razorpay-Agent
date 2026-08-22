@@ -43,7 +43,7 @@ let activeSession: OnboardingSession = {
     {
       id: "msg_init",
       sender: "assistant",
-      content: "Welcome to AgentBridge! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+      content: "Welcome to ZapAI! Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
       step: "WELCOME",
       createdAt: new Date().toISOString(),
     },
@@ -85,7 +85,7 @@ router.post("/message", async (req: Request, res: Response) => {
         },
       });
 
-      const prompt = `You are AgentBridge Onboarding AI Assistant. You help e-commerce merchants set up their autonomous WhatsApp seller agent & Razorpay instant checkout.
+      const prompt = `You are ZapAI Onboarding AI Assistant. You help e-commerce merchants set up their autonomous WhatsApp seller agent & Razorpay instant checkout.
 
 CURRENT STATE:
 - Step: ${activeSession.currentStep}
@@ -113,7 +113,7 @@ Return ONLY valid JSON:
 {
   "reply": "string",
   "businessName": "string or null",
-  "provider": "AGENTBRIDGE or SHOPIFY or null",
+  "provider": "ZAPAI or SHOPIFY or null",
   "nextStep": "WELCOME | STORE_SOURCE | CATALOG_SETUP | AGENT_SETUP | WHATSAPP_CONNECT | RAZORPAY_CONNECT | READY",
   "completionPercentage": number
 }`;
@@ -150,7 +150,7 @@ Return ONLY valid JSON:
           activeSession.completionPercentage = 50;
           botReply = "Connected Shopify store catalog. Real-time SKU prices and stock levels are indexed! Now, let's configure your AI Seller's negotiation boundaries.";
         } else {
-          activeSession.provider = "AGENTBRIDGE";
+          activeSession.provider = "ZAPAI";
           nextStep = "CATALOG_SETUP";
           activeSession.completionPercentage = 45;
           botReply = "Awesome! Native catalog selected. You can add your products with strict floor prices so your AI never sells below cost. What products do you want to list?";
@@ -209,8 +209,8 @@ Return ONLY valid JSON:
 router.post("/complete", async (req: Request, res: Response) => {
   try {
     const {
-      businessName = activeSession.businessName || "AgentBridge Store",
-      provider = activeSession.provider || "AGENTBRIDGE",
+      businessName = activeSession.businessName || "ZapAI Store",
+      provider = activeSession.provider || "ZAPAI",
       products = [],
       maxDiscountPercent = 12,
       phone = "+91 98765 00000",

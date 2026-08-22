@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// AgentBridge — Shared TypeScript Types
+// ZapAI — Shared TypeScript Types
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── Inventory ────────────────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ export interface Order {
   storeId: string;
   razorpayOrderId: string;
   razorpayPaymentId?: string;
-  orderId?: string;           // AgentBridge order ref e.g. ORD-1042
+  orderId?: string;           // ZapAI order ref e.g. ORD-1042
   x402TxHash: string;
   mandateId?: string;
   amount: number;

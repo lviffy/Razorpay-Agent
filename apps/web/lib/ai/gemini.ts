@@ -23,7 +23,7 @@ export interface OnboardingAIOutput {
   nextStep: string;
   extracted: {
     businessName?: string;
-    provider?: "AGENTBRIDGE" | "SHOPIFY";
+    provider?: "ZAPAI" | "AGENTBRIDGE" | "SHOPIFY";
     product?: {
       title: string;
       price: number;
@@ -59,7 +59,7 @@ export async function generateOnboardingAIResponse(
         },
       });
 
-      const prompt = `You are the intelligent onboarding AI setup assistant for AgentBridge — an autonomous AI agent platform that turns WhatsApp chats into instant Razorpay UPI sales.
+      const prompt = `You are the intelligent onboarding AI setup assistant for ZapAI — an autonomous AI agent platform that turns WhatsApp chats into instant Razorpay UPI sales.
 
 CURRENT ONBOARDING STATE:
 - Current Step: ${currentState.currentStep}
@@ -91,7 +91,7 @@ STEP ORDER IN ONBOARDING:
 
 TASK:
 1. Analyze the user's message in context.
-2. Answer any question they have intelligently, concisely, and warmly. Explain AgentBridge features (like floor price barriers, Razorpay instant checkout, UPI deep links) if asked.
+2. Answer any question they have intelligently, concisely, and warmly. Explain ZapAI features (like floor price barriers, Razorpay instant checkout, UPI deep links) if asked.
 3. If they provided a business name, product, discount rule, or clicked a preset, extract the structured data accurately.
 4. Advance the step appropriately to guide them toward 100% launch readiness.
 5. Provide a crisp, friendly, conversational reply (1-3 sentences).
@@ -102,7 +102,7 @@ Return ONLY valid JSON matching this schema:
   "nextStep": "WELCOME | STORE_SOURCE | CATALOG_SETUP | AGENT_SETUP | WHATSAPP_CONNECT | RAZORPAY_CONNECT | READY",
   "extracted": {
     "businessName": "string or null",
-    "provider": "AGENTBRIDGE or SHOPIFY or null",
+    "provider": "ZAPAI or SHOPIFY or null",
     "product": {
       "title": "string",
       "price": 0,
@@ -170,7 +170,7 @@ function fallbackHeuristicAI(
       progress = 50;
       reply = `Connected Shopify store catalog. Real-time SKU prices and stock levels are indexed! Now, let's configure your AI Seller's negotiation boundaries.`;
     } else {
-      extracted.provider = "AGENTBRIDGE";
+      extracted.provider = "ZAPAI";
       nextStep = "CATALOG_SETUP";
       progress = 45;
       reply = `Native catalog selected. You can add your products with strict floor prices so your AI never sells below cost. What products do you want to list?`;

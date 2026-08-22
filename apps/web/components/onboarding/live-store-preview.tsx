@@ -15,8 +15,8 @@ export function LiveStorePreview({ state, className }: LiveStorePreviewProps) {
   const providerLabel =
     state.provider === "SHOPIFY"
       ? "Shopify Sync"
-      : state.provider === "AGENTBRIDGE"
-      ? "Native Catalog"
+      : state.provider === "ZAPAI" || state.provider === "AGENTBRIDGE"
+      ? "ZapAI Native"
       : "Pending Selection";
 
   const isComplete = state.completionPercentage === 100;

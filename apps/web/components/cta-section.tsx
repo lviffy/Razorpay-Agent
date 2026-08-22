@@ -29,7 +29,7 @@ export default function CTASection() {
         <div className="pt-2">
           <Link href="/onboarding">
             <Button className="group bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-full px-9 h-14 text-base gap-2 cursor-pointer shadow-lg shadow-brand-600/20 transition-all hover:scale-[1.02] active:scale-[0.99]">
-              <span>Start AgentBridge</span>
+              <span>Start ZapAI</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>

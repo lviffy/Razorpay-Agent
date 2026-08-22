@@ -1,5 +1,5 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- AgentBridge — Seed Data
+-- ZapAI — Seed Data
 -- Full realistic merchant, product, conversation, order, and audit ledger seed
 -- ─────────────────────────────────────────────────────────────────────────────
 

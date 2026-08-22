@@ -52,10 +52,10 @@ export const defaultAgentProfile: AgentProfile = {
 
 export const defaultMerchantProfile: MerchantProfile = {
   name: "Store Admin",
-  email: "admin@agentbridge.io",
+  email: "admin@zapai.io",
   phone: "+91 98765 00000",
   merchantId: "merch_01",
-  storeName: "AgentBridge Store",
+  storeName: "ZapAI Store",
   role: "Store Owner",
   status: "active",
 };
@@ -66,8 +66,13 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
     let storeId = "a0000000-0000-0000-0000-000000000001";
     let token: string | null = null;
     if (typeof window !== "undefined") {
-      storeId = localStorage.getItem("agentbridge_selected_store_id") || storeId;
-      token = localStorage.getItem("agentbridge_auth_token");
+      storeId =
+        localStorage.getItem("zapai_selected_store_id") ||
+        localStorage.getItem("agentbridge_selected_store_id") ||
+        storeId;
+      token =
+        localStorage.getItem("zapai_auth_token") ||
+        localStorage.getItem("agentbridge_auth_token");
     }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -121,7 +126,7 @@ let clientOnboardingSession: OnboardingState = {
     {
       id: "msg_init",
       sender: "assistant",
-      content: "Welcome to AgentBridge. Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+      content: "Welcome to ZapAI. Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
       step: "WELCOME",
       createdAt: new Date().toISOString(),
     },
@@ -158,7 +163,7 @@ function advanceFallbackStep(content: string): { reply: string; state: Onboardin
         clientOnboardingSession.completionPercentage = 50;
         botReply = "Connected Shopify store catalog. Real-time SKU prices and stock levels are indexed! Now, let's configure your AI Seller's negotiation boundaries.";
       } else {
-        clientOnboardingSession.provider = "AGENTBRIDGE";
+        clientOnboardingSession.provider = "ZAPAI";
         nextStep = "CATALOG_SETUP";
         clientOnboardingSession.completionPercentage = 45;
         botReply = "Native catalog selected. You can add your products with strict floor prices so your AI never sells below cost. What products do you want to list?";
@@ -310,7 +315,7 @@ export const api = {
           sku: payload.sku || `SKU-${Date.now().toString().slice(-4)}`,
           price: Number(payload.price) || 999,
           inventory: Number(payload.inventory) || 10,
-          provider: payload.provider || "AGENTBRIDGE",
+          provider: payload.provider || "ZAPAI",
           aiSellingEnabled: payload.aiSellingEnabled ?? true,
           minPrice: Number(payload.minPrice) || Math.round(Number(payload.price || 999) * 0.85),
           maxDiscountPercent: Number(payload.maxDiscountPercent) || 15,
@@ -615,7 +620,7 @@ export const api = {
           {
             id: "msg_init",
             sender: "assistant",
-            content: "Welcome to AgentBridge. Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
+            content: "Welcome to ZapAI. Let's get your AI-native storefront ready in 3 minutes. What is your business called?",
             step: "WELCOME",
             createdAt: new Date().toISOString(),
           },

@@ -201,7 +201,7 @@ export default function AuditTrailSection() {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed font-sans font-normal">
-              Recorded immutably in the AgentBridge append-only audit ledger with SHA-256 checksum chaining.
+              Recorded immutably in the ZapAI append-only audit ledger with SHA-256 checksum chaining.
             </p>
           </div>
 

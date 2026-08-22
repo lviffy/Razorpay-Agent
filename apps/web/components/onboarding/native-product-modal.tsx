@@ -29,7 +29,7 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
       inventory: Number(inventory),
       sku,
       maxDiscountPercent: Number(maxDiscountPercent),
-      provider: "AGENTBRIDGE",
+      provider: "ZAPAI",
       aiSellingEnabled: true,
     });
     onOpenChange(false);
@@ -41,7 +41,7 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
         <DialogHeader>
           <DialogTitle>Add Native Product</DialogTitle>
           <DialogDescription>
-            Add a product directly to the AgentBridge catalog with negotiation limits.
+            Add a product directly to the ZapAI catalog with negotiation limits.
           </DialogDescription>
         </DialogHeader>
 

@@ -57,10 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(newToken);
     if (typeof window !== "undefined") {
       if (newToken) {
-        localStorage.setItem("agentbridge_auth_token", newToken);
-        document.cookie = `agentbridge_auth_token=${newToken}; path=/; max-age=2592000; SameSite=Lax`;
+        localStorage.setItem("zapai_auth_token", newToken);
+        document.cookie = `zapai_auth_token=${newToken}; path=/; max-age=2592000; SameSite=Lax`;
       } else {
+        localStorage.removeItem("zapai_auth_token");
         localStorage.removeItem("agentbridge_auth_token");
+        document.cookie = "zapai_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         document.cookie = "agentbridge_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
       }
     }
@@ -68,7 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const storedToken = typeof window !== "undefined" ? localStorage.getItem("agentbridge_auth_token") : null;
+      const storedToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
+          : null;
       if (!storedToken) {
         setIsLoading(false);
         return;
@@ -79,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res && res.user) {
         setUser(res.user);
         if (res.user.storeId && typeof window !== "undefined") {
-          localStorage.setItem("agentbridge_selected_store_id", res.user.storeId);
+          localStorage.setItem("zapai_selected_store_id", res.user.storeId);
         }
       } else {
         // Token invalid / expired
@@ -105,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         saveToken(res.token);
         setUser(res.user);
         if (res.user.storeId && typeof window !== "undefined") {
-          localStorage.setItem("agentbridge_selected_store_id", res.user.storeId);
+          localStorage.setItem("zapai_selected_store_id", res.user.storeId);
         }
         return res;
       }
@@ -128,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         saveToken(res.token);
         setUser(res.user);
         if (res.user.storeId && typeof window !== "undefined") {
-          localStorage.setItem("agentbridge_selected_store_id", res.user.storeId);
+          localStorage.setItem("zapai_selected_store_id", res.user.storeId);
         }
         return res;
       }
@@ -167,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         saveToken(res.token);
         setUser(res.user);
         if (res.user.storeId && typeof window !== "undefined") {
-          localStorage.setItem("agentbridge_selected_store_id", res.user.storeId);
+          localStorage.setItem("zapai_selected_store_id", res.user.storeId);
         }
         return res;
       }

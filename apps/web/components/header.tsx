@@ -69,7 +69,7 @@ export function HeroHeader() {
               href="/onboarding"
               className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
             >
-              <span>Start AgentBridge</span>
+              <span>Start ZapAI</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
@@ -132,7 +132,7 @@ export function HeroHeader() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-center py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors shadow-xs"
               >
-                Start AgentBridge
+                Start ZapAI
               </Link>
             </div>
           </motion.div>

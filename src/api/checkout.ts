@@ -211,7 +211,7 @@ router.post("/pay", async (req: Request, res: Response) => {
     // Create Standard Payment Link
     const paymentLink = (await createStandardPaymentLink({
       amountInPaise,
-      description: `AgentBridge: ${order.product_title || "Purchase"} | ${order.order_id}`,
+      description: `ZapAI: ${order.product_title || "Purchase"} | ${order.order_id}`,
       callbackUrl: `${process.env.APP_URL || "http://localhost:3000"}/payment-complete`,
       referenceId: order.order_id,
       customerPhone,

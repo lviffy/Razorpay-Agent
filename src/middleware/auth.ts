@@ -5,7 +5,7 @@ import { db } from "../db/migrate.ts";
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   process.env.X402_SIGNING_SECRET ||
-  "agentbridge_jwt_secret_neon_auth_2026";
+  "zapai_jwt_secret_neon_auth_2026";
 
 export interface AuthenticatedUser {
   id: string;
