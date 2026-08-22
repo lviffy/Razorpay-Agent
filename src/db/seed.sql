@@ -4,7 +4,7 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 
 -- ── Seed Authenticated Merchant Users ─────────────────────────────────────────
-INSERT INTO users (id, email, password_hash, name, role, store_id, phone, provider, is_active)
+INSERT INTO users (id, email, password_hash, name, role, store_id, phone, provider, is_active, onboarding_completed)
 VALUES 
     (
         '10000000-0000-0000-0000-000000000001',
@@ -15,6 +15,7 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         '+91 98765 00000',
         'credentials',
+        true,
         true
     ),
     (
@@ -26,6 +27,7 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         '+91 98765 00000',
         'credentials',
+        true,
         true
     ),
     (
@@ -37,6 +39,7 @@ VALUES
         'b0000000-0000-0000-0000-000000000002',
         '+91 98111 22334',
         'credentials',
+        true,
         true
     )
 ON CONFLICT (email) DO UPDATE SET
@@ -44,7 +47,8 @@ ON CONFLICT (email) DO UPDATE SET
     name = EXCLUDED.name,
     role = EXCLUDED.role,
     store_id = EXCLUDED.store_id,
-    phone = EXCLUDED.phone;
+    phone = EXCLUDED.phone,
+    onboarding_completed = EXCLUDED.onboarding_completed;
 
 -- ── Store A: RunFast Sports (Bengaluru) ───────────────────────────────────────
 INSERT INTO stores (id, name, city, phone, email, role, razorpay_account_id, currency, is_active, agent_settings)

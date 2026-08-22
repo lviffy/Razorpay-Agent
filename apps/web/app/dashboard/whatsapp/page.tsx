@@ -34,50 +34,36 @@ interface ChatMessage {
   paymentUrl?: string;
 }
 
-const defaultMessages: ChatMessage[] = [
-  {
-    id: "m1",
-    sender: "user",
-    text: "Hi! Do you have the Nike Air Zoom Pegasus in Size 10?",
-    time: "10:14 AM",
-  },
-  {
-    id: "m2",
-    sender: "agent",
-    text: "Hey there! 👋 Yes, we have 18 pairs of Nike Air Zoom Pegasus 41 (Size 10) in stock ready to ship today! Retail price is ₹3,999. Would you like me to reserve a pair for you?",
-    time: "10:14 AM",
-  },
-  {
-    id: "m3",
-    sender: "user",
-    text: "Can you do ₹3,600 and ship today?",
-    time: "10:15 AM",
-  },
-  {
-    id: "m4",
-    sender: "agent",
-    text: "I can offer you our exclusive flash deal: ₹3,799 with 100% Free Express Shipping! (That saves you ₹200 + ₹150 delivery). Here is your instant Razorpay UPI checkout link:",
-    time: "10:15 AM",
-    isPaymentLink: true,
-    paymentAmount: 3799,
-    paymentUrl: "https://rzp.io/i/mock_checkout_link",
-  },
-];
-
 export default function WhatsAppPage() {
   const [testPrompt, setTestPrompt] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(defaultMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("simulator");
+  const [testLog, setTestLog] = useState<string[]>([]);
 
-  const [testLog, setTestLog] = useState<string[]>([
-    `[10:14:02 AM] Inbound POST /api/webhooks/whatsapp HTTP/1.1 200 OK (38ms)`,
-    `[10:14:02 AM] X-Hub-Signature-256 HMAC verified successfully`,
-    `[10:14:03 AM] Intent extracted: 'check_inventory' -> SKU 'SKU-SHOE-001' (18 in stock)`,
-    `[10:15:10 AM] Inbound buyer offer: ₹3,600 (Threshold Floor: ₹3,500)`,
-    `[10:15:11 AM] Counter-offer formulated: ₹3,799 (5% discount concession, 95% margin preserved)`,
-    `[10:15:12 AM] Razorpay Payment Link generated: plink_K9x182749a`,
-  ]);
+  React.useEffect(() => {
+    async function loadLiveConversations() {
+      try {
+        const threads = await api.conversations.list();
+        if (threads && threads.length > 0) {
+          const first = threads[0];
+          const mappedMsgs: ChatMessage[] = (first.messages || []).map((m: any, idx: number) => ({
+            id: m.id || `m_${idx}`,
+            sender: m.sender === "seller_agent" ? "agent" : m.sender === "system" ? "system" : "user",
+            text: m.content || "",
+            time: m.timestamp || "Just now",
+            isPaymentLink: m.metadata?.isPaymentLink,
+            paymentAmount: m.metadata?.offerAmount,
+            paymentUrl: m.metadata?.paymentLinkId ? `https://rzp.io/i/${m.metadata.paymentLinkId}` : undefined,
+          }));
+          setMessages(mappedMsgs);
+        }
+      } catch (err) {
+        console.error("Failed to load live conversations:", err);
+      }
+    }
+    loadLiveConversations();
+  }, []);
 
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [activeCheckoutData, setActiveCheckoutData] = useState<{

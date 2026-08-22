@@ -36,17 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: async () => {},
 });
 
-export const DEFAULT_DEMO_USER: AuthUser = {
-  id: "10000000-0000-0000-0000-000000000001",
-  email: "merchant@runfast.in",
-  name: "Rahul Mehta",
-  role: "merchant_owner",
-  phone: "+91 98765 00000",
-  storeId: "a0000000-0000-0000-0000-000000000001",
-  storeName: "RunFast Sports",
-  storeCity: "Bengaluru",
-  merchantId: "merch_runfast",
-};
+
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);

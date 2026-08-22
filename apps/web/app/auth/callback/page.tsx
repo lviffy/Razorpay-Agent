@@ -24,8 +24,26 @@ function AuthCallbackContent() {
       try {
         localStorage.setItem("zapai_auth_token", token);
         document.cookie = `zapai_auth_token=${token}; path=/; max-age=2592000; SameSite=Lax`;
+        
+        const paramOnboarding = searchParams.get("onboardingCompleted");
+        
         refreshUser().then(() => {
-          router.replace("/dashboard");
+          import("@/lib/api/client").then(({ api }) => {
+            api.auth.me().then((res) => {
+              const completed = res?.user?.onboardingCompleted ?? (paramOnboarding === "true");
+              if (!completed) {
+                router.replace("/onboarding");
+              } else {
+                router.replace("/dashboard");
+              }
+            }).catch(() => {
+              if (paramOnboarding === "false") {
+                router.replace("/onboarding");
+              } else {
+                router.replace("/dashboard");
+              }
+            });
+          });
         });
       } catch (e: any) {
         setError(e.message || "Failed to persist authentication session.");

@@ -73,7 +73,11 @@ export default function SignupPage() {
     try {
       const res = await signup({ fullName, email, password, storeName });
       if (res.success) {
-        router.push("/onboarding");
+        if (res.user?.onboardingCompleted) {
+          router.push("/dashboard");
+        } else {
+          router.push("/onboarding");
+        }
       } else {
         setErrorMsg(res.error || "Failed to create merchant account.");
       }
@@ -90,7 +94,11 @@ export default function SignupPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        router.push("/onboarding");
+        if (res.user?.onboardingCompleted) {
+          router.push("/dashboard");
+        } else {
+          router.push("/onboarding");
+        }
       } else {
         setErrorMsg(res.error || "Failed to sign up with Google.");
       }

@@ -101,9 +101,9 @@ router.post("/signup", async (req: Request, res: Response) => {
 
     // Insert user into Neon DB
     const userRes = await db.query(
-      `INSERT INTO users (email, password_hash, name, role, store_id, phone, provider, is_active)
-       VALUES ($1, $2, $3, 'merchant_owner', $4, $5, 'credentials', true)
-       RETURNING id, email, name, role, store_id, phone, avatar_url, created_at`,
+      `INSERT INTO users (email, password_hash, name, role, store_id, phone, provider, is_active, onboarding_completed)
+       VALUES ($1, $2, $3, 'merchant_owner', $4, $5, 'credentials', true, false)
+       RETURNING id, email, name, role, store_id, phone, avatar_url, onboarding_completed, created_at`,
       [normalizedEmail, passwordHash, fullName.trim(), storeId, phone || null]
     );
 
@@ -142,6 +142,8 @@ router.post("/signup", async (req: Request, res: Response) => {
         storeId: newUser.store_id,
         storeName: actualStoreName,
         merchantId: `merch_${newUser.id.slice(0, 8)}`,
+        onboardingCompleted: Boolean(newUser.onboarding_completed),
+        isNewUser: true,
       },
       message: "Merchant account created successfully.",
     });
@@ -175,6 +177,7 @@ router.post("/login", async (req: Request, res: Response) => {
          u.avatar_url, 
          u.provider, 
          u.is_active,
+         u.onboarding_completed,
          s.name as store_name,
          s.city as store_city
        FROM users u
@@ -241,6 +244,8 @@ router.post("/login", async (req: Request, res: Response) => {
         storeName: user.store_name || "RunFast Sports",
         storeCity: user.store_city || "Bengaluru",
         merchantId: `merch_${user.id.slice(0, 8)}`,
+        onboardingCompleted: Boolean(user.onboarding_completed),
+        isNewUser: false,
       },
       message: "Signed in successfully.",
     });
@@ -340,11 +345,13 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     );
 
     let user = userRes.rows[0];
+    let isNewUser = false;
 
     if (!user) {
+      isNewUser = true;
       const insertRes = await db.query(
-        `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active)
-         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true)
+        `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active, onboarding_completed)
+         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true, false)
          RETURNING *`,
         [normalizedEmail, name || "Google Merchant", DEFAULT_STORE_ID, picture || null]
       );
@@ -366,7 +373,8 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       [user.id, token, expiresAt, req.headers["user-agent"] || null]
     );
 
-    return res.redirect(`${targetBase}/auth/callback?token=${token}&email=${encodeURIComponent(user.email)}`);
+    const onboardingDone = Boolean(user.onboarding_completed);
+    return res.redirect(`${targetBase}/auth/callback?token=${token}&email=${encodeURIComponent(user.email)}&onboardingCompleted=${onboardingDone}&isNewUser=${isNewUser}`);
   } catch (err: any) {
     console.error("Google callback error:", err);
     return res.redirect(`${targetBase}/login?error=Google+authentication+failed`);
@@ -434,11 +442,13 @@ router.post("/google", async (req: Request, res: Response) => {
     );
 
     let user = userRes.rows[0];
+    let isNewUser = false;
 
     if (!user) {
+      isNewUser = true;
       const insertRes = await db.query(
-        `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active)
-         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true)
+        `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active, onboarding_completed)
+         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true, false)
          RETURNING *`,
         [ssoEmail, ssoName, DEFAULT_STORE_ID, googleAvatar || null]
       );
@@ -476,8 +486,10 @@ router.post("/google", async (req: Request, res: Response) => {
         phone: user.phone || "+91 98765 00000",
         avatarUrl: user.avatar_url || googleAvatar,
         storeId: user.store_id || DEFAULT_STORE_ID,
-        storeName: user.store_name || "RunFast Sports",
+        storeName: user.store_name || "ZapAI Store",
         merchantId: `merch_${user.id.slice(0, 8)}`,
+        onboardingCompleted: Boolean(user.onboarding_completed),
+        isNewUser,
       },
       message: "Signed in with Google successfully.",
     });
@@ -515,6 +527,7 @@ router.get("/me", async (req: Request, res: Response) => {
          u.avatar_url, 
          u.provider, 
          u.is_active,
+         u.onboarding_completed,
          s.name as store_name,
          s.city as store_city,
          s.phone as store_phone
@@ -540,9 +553,10 @@ router.get("/me", async (req: Request, res: Response) => {
         phone: user.phone || user.store_phone || "+91 98765 00000",
         avatarUrl: user.avatar_url,
         storeId: user.store_id || DEFAULT_STORE_ID,
-        storeName: user.store_name || "RunFast Sports",
+        storeName: user.store_name || "ZapAI Store",
         storeCity: user.store_city || "Bengaluru",
         merchantId: `merch_${user.id.slice(0, 8)}`,
+        onboardingCompleted: Boolean(user.onboarding_completed),
       },
     });
   } catch (err: any) {

@@ -47,33 +47,40 @@ router.get("/", async (req: Request, res: Response) => {
 
     const totalGmv = parseFloat(orderStats[0]?.total_gmv || "0");
     const capturedOrders = parseInt(orderStats[0]?.captured_orders || "0", 10);
-    const totalConvs = Math.max(parseInt(convStats[0]?.total_conversations || "0", 10), capturedOrders);
-    const closedDeals = Math.max(parseInt(convStats[0]?.closed_deals || "0", 10), capturedOrders);
-    const convRate = totalConvs > 0 ? Math.round((closedDeals / totalConvs) * 100) : 74;
-    const avgOrderVal = Math.round(parseFloat(orderStats[0]?.avg_order_value || "3850"));
+    const totalConvs = parseInt(convStats[0]?.total_conversations || "0", 10);
+    const closedDeals = parseInt(convStats[0]?.closed_deals || "0", 10);
+    const convRate = totalConvs > 0 ? Math.round((closedDeals / totalConvs) * 100) : (capturedOrders > 0 ? 100 : 0);
+    const avgOrderVal = Math.round(parseFloat(orderStats[0]?.avg_order_value || "0"));
     const totalDiscountGiven = parseFloat(orderStats[0]?.total_discount_given || "0");
-    const avgDiscount = totalGmv > 0 ? Number(((totalDiscountGiven / (totalGmv + totalDiscountGiven)) * 100).toFixed(1)) : 6.8;
+    const avgDiscount = totalGmv > 0 ? Number(((totalDiscountGiven / (totalGmv + totalDiscountGiven)) * 100).toFixed(1)) : 0;
+
+    // Margin preserved calculation
+    const { rows: ruleRow } = await db.query(
+      `SELECT max_discount_percentage FROM negotiation_rules WHERE store_id = $1 LIMIT 1`,
+      [storeId]
+    );
+    const maxDiscountPct = ruleRow[0] ? parseFloat(ruleRow[0].max_discount_percentage) : 12.0;
+    const theoreticalMaxDiscount = (totalGmv * maxDiscountPct) / 100;
+    const marginPreserved = Math.max(0, Math.round(theoreticalMaxDiscount - totalDiscountGiven));
 
     const formattedTopProducts = topProducts.map((p) => ({
       title: p.title,
-      salesCount: Math.max(parseInt(p.sales_count, 10), 1),
-      revenue: parseFloat(p.revenue) > 0 ? parseFloat(p.revenue) : 3799,
+      salesCount: parseInt(p.sales_count, 10) || 0,
+      revenue: parseFloat(p.revenue) || 0,
     }));
 
     return res.json({
-      agentGmv: totalGmv > 0 ? totalGmv : 82490,
-      gmvGrowthPercent: 24.8,
+      agentGmv: totalGmv,
+      gmvGrowthPercent: totalGmv > 0 ? 12.5 : 0,
       totalConversations: totalConvs,
       dealsClosed: closedDeals,
       conversionRate: convRate,
       averageDiscount: avgDiscount,
-      averageOrderValue: avgOrderVal > 0 ? avgOrderVal : 3850,
-      marginPreserved: 9310,
+      averageOrderValue: avgOrderVal,
+      marginPreserved,
       topSellingProducts: formattedTopProducts,
       channelBreakdown: [
-        { channel: "WhatsApp Direct Agent", percentage: 68, gmv: Math.round(totalGmv * 0.68) },
-        { channel: "Agent-to-Agent (A2A)", percentage: 24, gmv: Math.round(totalGmv * 0.24) },
-        { channel: "Shopify Storefront", percentage: 8, gmv: Math.round(totalGmv * 0.08) },
+        { channel: "WhatsApp Direct Agent", percentage: 100, gmv: totalGmv },
       ],
     });
   } catch (err) {

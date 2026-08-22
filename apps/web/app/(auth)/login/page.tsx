@@ -35,7 +35,11 @@ export default function LoginPage() {
     try {
       const res = await login({ email, password, rememberMe });
       if (res.success) {
-        router.push("/dashboard");
+        if (res.user && res.user.onboardingCompleted === false) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setErrorMsg(res.error || "Authentication failed. Please check your credentials.");
       }
@@ -52,7 +56,11 @@ export default function LoginPage() {
     try {
       const res = await loginWithGoogle();
       if (res.success) {
-        router.push("/dashboard");
+        if (res.user && res.user.onboardingCompleted === false) {
+          router.push("/onboarding");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setErrorMsg(res.error || "Failed to sign in with Google.");
       }

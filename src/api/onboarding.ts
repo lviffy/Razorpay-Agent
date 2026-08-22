@@ -218,7 +218,7 @@ router.post("/complete", async (req: Request, res: Response) => {
 
     const { db } = await import("../db/migrate.ts");
 
-    // 1. Create or find store record
+    // 1. Create store record in Neon DB
     const { rows: storeRows } = await db.query(
       `INSERT INTO stores (name, city, phone, is_active)
        VALUES ($1, 'Bengaluru', $2, true)
@@ -235,6 +235,25 @@ router.post("/complete", async (req: Request, res: Response) => {
        ON CONFLICT DO NOTHING`,
       [storeId, Number(maxDiscountPercent)]
     );
+
+    // 3. Extract user from Authorization header if present and update user's store_id & onboarding_completed
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      try {
+        const jwt = await import("jsonwebtoken");
+        const token = authHeader.split(" ")[1];
+        const JWT_SECRET = process.env.JWT_SECRET || process.env.X402_SIGNING_SECRET || "zapai_jwt_secret_neon_auth_2026";
+        const decoded: any = jwt.default.verify(token, JWT_SECRET);
+        if (decoded?.userId) {
+          await db.query(
+            `UPDATE users SET store_id = $1, onboarding_completed = true, updated_at = NOW() WHERE id = $2`,
+            [storeId, decoded.userId]
+          );
+        }
+      } catch (jwtErr) {
+        console.warn("Could not extract user from token during onboarding completion:", jwtErr);
+      }
+    }
 
     activeSession.currentStep = "READY";
     activeSession.completionPercentage = 100;

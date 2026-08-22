@@ -53,51 +53,11 @@ export default function AuditExplorerPage() {
     setLoading(true);
     try {
       const data = await api.audit.search("");
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data)) {
         setRecords(data as any);
-        setSelectedRecord((curr) => curr || (data[0] as any));
-      } else {
-        // Fallback default sample records if DB audit is fresh
-        const sample: AuditRecord[] = [
-          {
-            id: "act_101",
-            eventType: "PAYMENT_CAPTURED",
-            whatsappMessageId: "wamid.ABG984129038",
-            conversationId: "conv_9876543210",
-            x402TransactionId: "x402_9d8f7e6a5b4c3d2e1f",
-            razorpayPaymentId: "pay_RzpInstant89412",
-            orderId: "ORD-1042",
-            payload: {
-              amount: 379900,
-              method: "UPI (Google Pay)",
-              storeName: "RunFast Sports (Bengaluru)",
-              sku: "SKU-SHOE-001",
-              razorpayOrderId: "order_Q98x192849",
-            },
-            checksum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-          },
-          {
-            id: "act_100",
-            eventType: "INVENTORY_LOCKED",
-            whatsappMessageId: "wamid.ABG984129038",
-            conversationId: "conv_9876543210",
-            x402TransactionId: "x402_9d8f7e6a5b4c3d2e1f",
-            razorpayPaymentId: undefined,
-            orderId: "ORD-1042",
-            payload: {
-              price: 3799,
-              variantId: "mock-var-001",
-              sku: "SKU-SHOE-001",
-              storeId: "a0000000-0000-0000-0000-000000000001",
-              ttlSeconds: 120,
-            },
-            checksum: "8f4803227447050a60ab517535ecd716e41e4649b934ca495991b7852b855aa",
-            timestamp: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
-          },
-        ];
-        setRecords(sample);
-        setSelectedRecord(sample[0]);
+        if (data.length > 0) {
+          setSelectedRecord((curr) => curr || (data[0] as any));
+        }
       }
     } catch (err) {
       console.error("Audit load error:", err);

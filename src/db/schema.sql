@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url          TEXT,
     provider            VARCHAR(50) DEFAULT 'credentials',
     is_active           BOOLEAN DEFAULT TRUE,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );

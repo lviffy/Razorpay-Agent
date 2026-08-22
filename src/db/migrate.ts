@@ -69,6 +69,7 @@ async function migrate() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT 'credentials';
       ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
     `);
 
     console.log("✅ Schema applied and verified");

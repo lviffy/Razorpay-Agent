@@ -493,14 +493,27 @@ export default function OnboardingPage() {
                         <Button
                           onClick={async () => {
                             try {
-                              await fetch("/api/v1/onboarding/complete", {
+                              const token = typeof window !== "undefined"
+                                ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
+                                : null;
+                              const headers: Record<string, string> = { "Content-Type": "application/json" };
+                              if (token) {
+                                headers["Authorization"] = `Bearer ${token}`;
+                              }
+                              const res = await fetch("/api/v1/onboarding/complete", {
                                 method: "POST",
-                                headers: { "Content-Type": "application/json" },
+                                headers,
                                 body: JSON.stringify({
                                   businessName: state.businessName || "ZapAI Store",
                                   provider: state.provider || "ZAPAI",
                                 }),
                               });
+                              if (res.ok) {
+                                const data = await res.json();
+                                if (data.storeId && typeof window !== "undefined") {
+                                  localStorage.setItem("zapai_selected_store_id", data.storeId);
+                                }
+                              }
                             } catch (e) {}
                             router.push("/dashboard");
                           }}

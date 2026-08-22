@@ -36,8 +36,8 @@ router.get("/", async (_req: Request, res: Response) => {
       return {
         id: r.conversation_id || `conv_${r.id.slice(0, 8)}`,
         customerPhone: r.phone_number,
-        customerName: r.customer_name || "Aarav Patel",
-        lastMessage: lastMsgObj ? lastMsgObj.content : "Inbound WhatsApp negotiation",
+        customerName: r.customer_name || "Customer",
+        lastMessage: lastMsgObj ? lastMsgObj.content : "Inbound WhatsApp message",
         lastMessageAt: lastMsgObj ? lastMsgObj.timestamp : new Date(r.updated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: (r.status || "active") as "active" | "negotiating" | "deal_closed" | "escalated",
         unread: false,
@@ -46,7 +46,7 @@ router.get("/", async (_req: Request, res: Response) => {
           ? r.products_discussed
           : typeof r.products_discussed === "string"
           ? JSON.parse(r.products_discussed)
-          : ["Nike Air Zoom Pegasus 41 (Running Shoes)"],
+          : [],
         messages: transcript.map((m: any, idx: number) => ({
           id: m.id || `msg_${idx}`,
           conversationId: r.conversation_id,

@@ -184,6 +184,8 @@ export interface AuthUser {
   storeName?: string;
   storeCity?: string;
   merchantId?: string;
+  onboardingCompleted?: boolean;
+  isNewUser?: boolean;
 }
 
 export interface AuthResponse {

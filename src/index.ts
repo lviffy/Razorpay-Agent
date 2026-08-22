@@ -82,8 +82,10 @@ app.get("/auth/callback", (req, res) => {
         localStorage.setItem("zapai_auth_token", token);
         document.cookie = "zapai_auth_token=" + token + "; path=/; max-age=2592000; SameSite=Lax";
       }
-      // Redirect to local Next.js frontend or current host /dashboard
-      const target = window.location.port === "3000" ? "/dashboard" : "http://localhost:3000/dashboard";
+      // Redirect to local Next.js frontend /auth/callback page
+      const target = window.location.port === "3000"
+        ? "/auth/callback?token=" + encodeURIComponent(token)
+        : "http://localhost:3000/auth/callback?token=" + encodeURIComponent(token);
       setTimeout(function() {
         window.location.href = target;
       }, 300);
