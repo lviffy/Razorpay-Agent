@@ -13,6 +13,7 @@ import {
   Sliders,
   Settings,
   Zap,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +29,7 @@ const mainNavItems = [
 ];
 
 const configNavItems = [
+  { href: "/dashboard/audit", label: "Audit Ledger", icon: ShieldCheck },
   { href: "/dashboard/settings/agent", label: "AI Seller Agent", icon: Zap },
   { href: "/dashboard/settings", label: "Store & Rules", icon: Settings },
 ];

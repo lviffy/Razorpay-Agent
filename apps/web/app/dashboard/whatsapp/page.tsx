@@ -21,6 +21,7 @@ import {
   ExternalLink,
   MessageSquare,
   Sparkles,
+  CreditCard,
 } from "lucide-react";
 
 interface ChatMessage {
@@ -78,12 +79,75 @@ export default function WhatsAppPage() {
     `[10:15:12 AM] Razorpay Payment Link generated: plink_K9x182749a`,
   ]);
 
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [activeCheckoutData, setActiveCheckoutData] = useState<{
+    orderId?: string;
+    amount?: number;
+    paymentUrl?: string;
+  } | null>(null);
+  const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
+
   const quickPrompts = [
     "Can you do ₹3,600 for Nike Pegasus 41?",
     "Do you have Adidas Ultraboost in UK 9?",
     "Is shipping free to Mumbai?",
     "Can I get a discount on Puma Velocity Nitro?",
   ];
+
+  const handleOpenCheckoutModal = (amount: number = 3799, orderId: string = "ORD-1042", url?: string) => {
+    setActiveCheckoutData({ amount, orderId, paymentUrl: url });
+    setCheckoutModalOpen(true);
+  };
+
+  const handleExecutePaymentSimulation = async (status: "captured" | "failed") => {
+    if (!activeCheckoutData) return;
+    setIsSimulatingPayment(true);
+    try {
+      const res = await api.simulator.simulatePayment({
+        orderId: activeCheckoutData.orderId || "ORD-1042",
+        status,
+        method: "UPI (Google Pay)",
+      });
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      if (status === "captured") {
+        const confirmMsg: ChatMessage = {
+          id: `sys_${Date.now()}`,
+          sender: "agent",
+          text: `✅ *Payment Confirmed! (Razorpay ${res.paymentId || "pay_mock123"})*\n\nAmount: ₹${(activeCheckoutData.amount || 3799).toLocaleString("en-IN")}\nStore: RunFast Sports (Bengaluru)\n\n*Audit Trail Verified:*\n• 📱 Message ID: \`wamid.ABG984129\`\n• 💬 Conversation: \`conv_wa_user_01\`\n• 🔗 x402 Hash: \`${res.x402TransactionId || "x402_tx_verified"}\`\n• 💳 Razorpay ID: \`${res.paymentId || "pay_rzp_instant"}\`\n• 📦 Order ID: \`${res.orderId || "ORD-1042"}\`\n\nInstant settlement to merchant bank account completed in 12s via IMPS.`,
+          time: timeStr,
+        };
+        setMessages((prev) => [...prev, confirmMsg]);
+        setTestLog((prev) => [
+          ...prev,
+          `[${timeStr}] Razorpay Webhook: 'payment.captured' (HMAC SHA-256 Verified)`,
+          `[${timeStr}] Inventory state transition: PAYMENT_PENDING -> PAID (Postgres)`,
+          `[${timeStr}] Redis lock released: lock:inventory:a0000000-0000-0000-0000-000000000001:mock-var-001`,
+          `[${timeStr}] Instant settlement: ₹${activeCheckoutData.amount || 3799} routed to IMPS node in 11.4s`,
+        ]);
+      } else {
+        const failMsg: ChatMessage = {
+          id: `sys_${Date.now()}`,
+          sender: "agent",
+          text: `❌ *UPI Payment Timed Out / Declined*\n\nInventory lock was released immediately (< 1.8s). The Nike Pegasus 41 is held in temporary reserve for 90 seconds. Would you like to retry with Card/Netbanking or switch payment methods?`,
+          time: timeStr,
+        };
+        setMessages((prev) => [...prev, failMsg]);
+        setTestLog((prev) => [
+          ...prev,
+          `[${timeStr}] Razorpay Webhook: 'payment.failed' (Error: TRANSACTION_NOT_FOUND)`,
+          `[${timeStr}] Atomic recovery: Redis inventory lock deleted in 1.4s`,
+          `[${timeStr}] Restored stock level in Neon DB (AVAILABLE -> 18 units)`,
+        ]);
+      }
+    } catch (err) {
+      console.error("Simulation failure:", err);
+    } finally {
+      setIsSimulatingPayment(false);
+      setCheckoutModalOpen(false);
+    }
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || testPrompt;
@@ -256,7 +320,7 @@ export default function WhatsAppPage() {
                     <p>{m.text}</p>
 
                     {m.isPaymentLink && (
-                      <div className="mt-2.5 p-2.5 bg-zinc-50 border border-zinc-200 rounded-md space-y-2">
+                      <div className="mt-2.5 p-2.5 bg-zinc-50 border border-zinc-200 rounded-md space-y-2.5">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-semibold text-zinc-800">Razorpay Payment Link</span>
                           <span className="font-mono font-bold text-zinc-900">
@@ -266,19 +330,29 @@ export default function WhatsAppPage() {
                         <div className="text-[10px] text-zinc-500">
                           Instant UPI, Google Pay, PhonePe, Cards accepted
                         </div>
-                        <div className="pt-1.5 border-t border-zinc-200 flex items-center justify-between">
+                        <div className="pt-1.5 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
                             Verified Merchant
                           </span>
-                          <a
-                            href={m.paymentUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5"
-                          >
-                            Pay Now <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCheckoutModal(m.paymentAmount || 3799, "ORD-1042", m.paymentUrl)}
+                              className="text-[10px] font-bold px-2 py-1 bg-zinc-900 text-white hover:bg-zinc-800 rounded-md cursor-pointer flex items-center gap-1 shadow-2xs transition-colors"
+                            >
+                              <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                              <span>Simulate Outcome</span>
+                            </button>
+                            <a
+                              href={m.paymentUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5"
+                            >
+                              Pay Link <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -448,6 +522,117 @@ export default function WhatsAppPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Embedded Razorpay Test Checkout Simulation Modal */}
+      {checkoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden space-y-0 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-zinc-900 text-white p-5 space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-200 font-mono">
+                    Razorpay Test Checkout
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutModalOpen(false)}
+                  className="text-xs text-zinc-400 hover:text-white p-1 rounded-md transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-xl font-bold font-mono text-white mt-1">
+                {formatINR(activeCheckoutData?.amount || 3799)}
+              </p>
+              <p className="text-[11px] text-zinc-400">
+                Order Reference: <span className="font-mono text-blue-300">{activeCheckoutData?.orderId || "ORD-1042"}</span>
+              </p>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-zinc-600 leading-relaxed">
+                Test the autonomous financial state machine. Choose an outcome to fire real Razorpay webhook verification:
+              </p>
+
+              <div className="space-y-2.5">
+                {/* 1. Happy Path: Instant UPI Capture */}
+                <button
+                  type="button"
+                  disabled={isSimulatingPayment}
+                  onClick={() => handleExecutePaymentSimulation("captured")}
+                  className="w-full p-3.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-left transition-all flex items-start justify-between gap-3 group cursor-pointer"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-900">
+                        Approve via UPI (100% Instant Capture)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-700 leading-relaxed pl-3.5">
+                      Fires <code className="font-mono bg-emerald-200/60 px-1 rounded text-[10px]">payment.captured</code> webhook. Deducts stock & creates 5-field audit ledger entry.
+                    </p>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5 group-hover:scale-110 transition-transform" />
+                </button>
+
+                {/* 2. Failure Path: UPI Timeout / Decline */}
+                <button
+                  type="button"
+                  disabled={isSimulatingPayment}
+                  onClick={() => handleExecutePaymentSimulation("failed")}
+                  className="w-full p-3.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-200 text-left transition-all flex items-start justify-between gap-3 group cursor-pointer"
+                >
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      <span className="text-xs font-bold text-red-900">
+                        Simulate UPI Timeout / Decline (Failure)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-red-700 leading-relaxed pl-3.5">
+                      Fires <code className="font-mono bg-red-200/60 px-1 rounded text-[10px]">payment.failed</code> webhook. Verifies atomic Redis lock release in &lt; 2 seconds.
+                    </p>
+                  </div>
+                  <RefreshCw className="w-4 h-4 text-red-600 shrink-0 mt-0.5 group-hover:rotate-180 transition-transform duration-300" />
+                </button>
+              </div>
+
+              {/* Direct payment link option */}
+              {activeCheckoutData?.paymentUrl && (
+                <div className="pt-2 border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500">
+                  <span>Open live gateway in new tab:</span>
+                  <a
+                    href={activeCheckoutData.paymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>Razorpay Standard Link</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-zinc-50 border-t border-zinc-100 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCheckoutModalOpen(false)}
+                className="text-xs h-8"
+              >
+                Close Simulator
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

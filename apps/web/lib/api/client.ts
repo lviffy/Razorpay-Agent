@@ -59,6 +59,10 @@ export const defaultMerchantProfile: MerchantProfile = {
 async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallback: T): Promise<T> {
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
+    let storeId = "a0000000-0000-0000-0000-000000000001";
+    if (typeof window !== "undefined") {
+      storeId = localStorage.getItem("agentbridge_selected_store_id") || storeId;
+    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(url, {
@@ -66,6 +70,7 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
       signal: options.signal || controller.signal,
       headers: {
         "Content-Type": "application/json",
+        "x-store-id": storeId,
         ...(options.headers || {}),
       },
     });
@@ -373,6 +378,88 @@ export const api = {
           logs: [],
           traces: [],
         }
+      );
+    },
+    simulatePayment: async (opts: { orderId?: string; razorpayOrderId?: string; status: "captured" | "failed"; method?: string }) => {
+      return fetchJson<{
+        success: boolean;
+        status: string;
+        paymentId?: string;
+        orderId?: string;
+        x402TransactionId?: string;
+        amount?: number;
+        message: string;
+      }>(
+        "/simulator/simulate-payment",
+        {
+          method: "POST",
+          body: JSON.stringify(opts),
+        },
+        {
+          success: opts.status === "captured",
+          status: opts.status === "captured" ? "CAPTURED" : "FAILED",
+          paymentId: `pay_sim_${Date.now()}`,
+          orderId: opts.orderId || "ORD-1042",
+          x402TransactionId: `x402_sim_${Date.now()}`,
+          amount: 3799,
+          message: opts.status === "captured" ? "₹3,799 settled via Razorpay Instant Settlement. Inventory deducted." : "Payment timed out. Inventory lock released in <2s.",
+        }
+      );
+    },
+  },
+
+  a2a: {
+    runBuyerTask: async (task: string, budget: number) => {
+      return fetchJson<{
+        sessionId: string;
+        task: string;
+        budget: number;
+        decision: any;
+        storesScanned: Array<{ id: string; name: string; city: string }>;
+        executionTimeMs: number;
+        timestamp: string;
+      }>(
+        "/a2a/buyer-task",
+        {
+          method: "POST",
+          body: JSON.stringify({ task, budget }),
+        },
+        {
+          sessionId: `a2a_${Date.now()}`,
+          task,
+          budget,
+          decision: {
+            accepted: true,
+            reasoning: "Best deal found from RunFast Sports: ₹3,799 (saved ₹200).",
+          },
+          storesScanned: [
+            { id: "a0000000-0000-0000-0000-000000000001", name: "RunFast Sports", city: "Bengaluru" },
+            { id: "b0000000-0000-0000-0000-000000000002", name: "SpeedGear", city: "Mumbai" },
+          ],
+          executionTimeMs: 1420,
+          timestamp: new Date().toISOString(),
+        }
+      );
+    },
+  },
+
+  audit: {
+    search: async (term: string) => {
+      return fetchJson<Array<{
+        id: string;
+        eventType: string;
+        whatsappMessageId?: string;
+        conversationId?: string;
+        x402TransactionId: string;
+        razorpayPaymentId?: string;
+        orderId?: string;
+        payload: any;
+        checksum: string;
+        timestamp: string;
+      }>>(
+        `/activity?limit=50`,
+        {},
+        []
       );
     },
   },

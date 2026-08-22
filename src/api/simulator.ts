@@ -99,30 +99,24 @@ router.post("/chat", async (req: Request, res: Response) => {
     const x402TxId = issueTransactionId();
 
     if (isPaymentLink) {
+      const sessionId = `sim_${uuidv4().slice(0, 8)}`;
       try {
-        const rzpOrder = await createOrder({
-          amount: rupeesToPaise(offeredPrice),
-          currency: "INR",
+        const rzpOrder = (await createOrder({
+          amountInPaise: rupeesToPaise(offeredPrice),
           receipt: x402TxId,
-          notes: {
-            sku: matched.sku,
-            productTitle: matched.title,
-            simulation: "true",
-          },
-        });
+          sessionId,
+        })) as unknown as { id: string };
         razorpayOrderId = rzpOrder.id;
 
-        const plink = await createStandardPaymentLink({
-          orderId: razorpayOrderId,
-          amount: rupeesToPaise(offeredPrice),
-          currency: "INR",
-          description: `${matched.title} via AgentBridge`,
-          customer: {
-            name: "Aarav Patel (Simulation)",
-            contact: customerPhone,
-          },
-        });
-        paymentUrl = plink.short_url || plink.url || `https://rzp.io/i/agentbridge_${razorpayOrderId.slice(-8)}`;
+        const plink = (await createStandardPaymentLink({
+          amountInPaise: rupeesToPaise(offeredPrice),
+          description: `${matched.title} via AgentBridge | ${orderRef}`,
+          callbackUrl: `${process.env.APP_URL || "http://localhost:3000"}/payment-complete`,
+          referenceId: orderRef,
+          customerPhone,
+        })) as unknown as { short_url: string; id: string };
+
+        paymentUrl = plink.short_url || `https://rzp.io/i/agentbridge_${razorpayOrderId.slice(-8)}`;
         logs.push(`[${timestamp()}] Razorpay Standard Payment Link Created: ${plink.id || razorpayOrderId} (₹${offeredPrice})`);
       } catch (rzpErr) {
         logs.push(`[${timestamp()}] Razorpay API simulation fallback (Using Test Gateway: ${razorpayOrderId})`);
@@ -211,6 +205,7 @@ router.post("/chat", async (req: Request, res: Response) => {
       paymentAmount: isPaymentLink ? offeredPrice : undefined,
       paymentUrl: isPaymentLink ? paymentUrl : undefined,
       orderId: isPaymentLink ? orderRef : undefined,
+      razorpayOrderId: isPaymentLink ? razorpayOrderId : undefined,
       logs,
       traces,
       durationMs: Date.now() - startTime,
@@ -219,6 +214,130 @@ router.post("/chat", async (req: Request, res: Response) => {
     console.error("Simulator chat error:", err);
     logs.push(`[${timestamp()}] ❌ Simulator error: ${err}`);
     return res.status(500).json({ error: "Failed to process simulation", logs });
+  }
+});
+
+// POST /api/v1/simulator/simulate-payment — Trigger interactive payment outcome (Capture / Failure)
+router.post("/simulate-payment", async (req: Request, res: Response) => {
+  try {
+    const {
+      orderId,
+      razorpayOrderId,
+      status = "captured", // "captured" | "failed"
+      method = "upi",
+    } = req.body;
+
+    // Find order
+    const { rows: orderRows } = await db.query(
+      `SELECT o.*, s.name as store_name
+       FROM orders o
+       JOIN stores s ON o.store_id = s.id
+       WHERE o.order_id = $1 OR o.razorpay_order_id = $2 OR o.id::text = $1
+       ORDER BY o.created_at DESC LIMIT 1`,
+      [orderId, razorpayOrderId]
+    );
+
+    if (!orderRows[0]) {
+      return res.status(404).json({ error: "Order not found for simulation" });
+    }
+
+    const order = orderRows[0];
+    const paymentId = `pay_${uuidv4().replace(/-/g, "").slice(0, 14)}`;
+    const isSuccess = status.toLowerCase() === "captured" || status.toLowerCase() === "success";
+
+    if (isSuccess) {
+      // 1. Update order
+      await db.query(
+        `UPDATE orders
+         SET status = 'CAPTURED', razorpay_payment_id = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [paymentId, order.id]
+      );
+
+      // 2. Update inventory: PAYMENT_PENDING -> PAID
+      const { rows: products } = await db.query(
+        "SELECT id, store_id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING')",
+        [order.store_id]
+      );
+
+      for (const p of products) {
+        await setInventoryState(p.id, "PAID", { reservedDelta: -1 });
+      }
+
+      // 3. Log audit event
+      await logEvent(
+        "PAYMENT_CAPTURED",
+        {
+          x402TransactionId: order.x402_tx_hash,
+          razorpayPaymentId: paymentId,
+          orderId: order.order_id,
+        },
+        {
+          amount: Math.round(parseFloat(order.amount) * 100),
+          method: "UPI (Google Pay)",
+          storeName: order.store_name,
+          razorpayOrderId: order.razorpay_order_id,
+          status: "CAPTURED",
+        }
+      );
+
+      return res.json({
+        success: true,
+        status: "CAPTURED",
+        paymentId,
+        orderId: order.order_id,
+        x402TransactionId: order.x402_tx_hash,
+        amount: parseFloat(order.amount),
+        message: `₹${order.amount} settled via Razorpay Instant Settlement. Inventory deducted.`,
+      });
+    } else {
+      // Failure path: release lock and restore inventory
+      await db.query(
+        `UPDATE orders
+         SET status = 'FAILED', updated_at = NOW()
+         WHERE id = $1`,
+        [order.id]
+      );
+
+      const { rows: products } = await db.query(
+        "SELECT id, store_id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING')",
+        [order.store_id]
+      );
+
+      for (const p of products) {
+        await setInventoryState(p.id, "AVAILABLE", {
+          reservedDelta: -1,
+          availableDelta: 1,
+          reservationExpiresAt: null,
+        });
+      }
+
+      await logEvent(
+        "PAYMENT_FAILED",
+        {
+          x402TransactionId: order.x402_tx_hash,
+          razorpayPaymentId: paymentId,
+          orderId: order.order_id,
+        },
+        {
+          amount: Math.round(parseFloat(order.amount) * 100),
+          reason: "UPI_TIMEOUT",
+          description: "Transaction timed out or declined by user in test checkout",
+          status: "FAILED",
+        }
+      );
+
+      return res.json({
+        success: false,
+        status: "FAILED",
+        orderId: order.order_id,
+        x402TransactionId: order.x402_tx_hash,
+        message: "Payment timed out. Inventory lock released in <2s.",
+      });
+    }
+  } catch (err) {
+    console.error("Simulate payment error:", err);
+    return res.status(500).json({ error: "Failed to simulate payment" });
   }
 });
 

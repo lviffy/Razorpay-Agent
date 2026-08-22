@@ -109,10 +109,10 @@ async function main() {
   console.log(`\n[Step 5] Audit ledger verification:`);
   const events = await queryAudit({ conversationId });
   for (const ev of events) {
-    const eventType = ev.event_type ?? ev.eventType;
-    const x402 = ev.x402_transaction_id ?? ev.x402TransactionId;
-    const pay = ev.razorpay_payment_id ?? ev.razorpayPaymentId;
-    const order = ev.order_id ?? ev.orderId;
+    const eventType = (ev as any).event_type ?? ev.eventType;
+    const x402 = (ev as any).x402_transaction_id ?? ev.x402TransactionId;
+    const pay = (ev as any).razorpay_payment_id ?? ev.razorpayPaymentId;
+    const order = (ev as any).order_id ?? ev.orderId;
 
     console.log(`   [${eventType}] x402: ${x402} | Pay: ${pay || "N/A"} | Order: ${order || "N/A"}`);
   }

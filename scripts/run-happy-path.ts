@@ -137,13 +137,14 @@ async function main() {
   console.log(`   - Total audit records found: ${auditEvents.length}`);
 
   for (const ev of auditEvents) {
-    const eventType = ev.event_type ?? ev.eventType;
-    const wa = ev.whatsapp_message_id ?? ev.whatsappMessageId;
-    const conv = ev.conversation_id ?? ev.conversationId;
-    const x402 = ev.x402_transaction_id ?? ev.x402TransactionId;
-    const pay = ev.razorpay_payment_id ?? ev.razorpayPaymentId;
-    const order = ev.order_id ?? ev.orderId;
-    const checksum = (ev.event_checksum ?? ev.eventChecksum ?? "").slice(0, 16);
+    const raw = ev as any;
+    const eventType = raw.event_type ?? ev.eventType;
+    const wa = raw.whatsapp_message_id ?? ev.whatsappMessageId;
+    const conv = raw.conversation_id ?? ev.conversationId;
+    const x402 = raw.x402_transaction_id ?? ev.x402TransactionId;
+    const pay = raw.razorpay_payment_id ?? ev.razorpayPaymentId;
+    const order = raw.order_id ?? ev.orderId;
+    const checksum = (raw.event_checksum ?? ev.eventChecksum ?? "").slice(0, 16);
 
     console.log(`     [${eventType}] WA: ${wa} | Conv: ${conv} | x402: ${x402} | Pay: ${pay || "N/A"} | Order: ${order || "N/A"}`);
     console.log(`     Checksum: ${checksum}...`);

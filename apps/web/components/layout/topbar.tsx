@@ -56,9 +56,11 @@ import {
 import { ProfileDialog } from "@/components/layout/profile-dialog";
 import { api, defaultMerchantProfile } from "@/lib/api/client";
 import { MerchantProfile } from "@/lib/types";
+import { useStore } from "@/lib/context/store-context";
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
+  const { currentStore, stores, switchStore } = useStore();
   const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
   const [profileOpen, setProfileOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -134,15 +136,68 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-zinc-50 border border-zinc-200/80 px-2 sm:px-2.5 py-1 rounded-lg min-w-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20 shrink-0" />
-            <span className="font-semibold text-xs text-zinc-900 truncate max-w-[110px] sm:max-w-[180px]">
-              {profile.storeName}
-            </span>
-            <span className="text-[10px] text-zinc-500 font-mono font-medium hidden xs:inline">
-              (Sandbox)
-            </span>
-          </div>
+          {/* Interactive Store Switcher Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 sm:gap-2 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 px-2 sm:px-2.5 py-1 rounded-lg min-w-0 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0 animate-pulse"
+                  style={{ backgroundColor: currentStore.color || "#10B981" }}
+                />
+                <div className="text-left min-w-0">
+                  <span className="font-bold text-xs text-zinc-900 truncate block max-w-[110px] sm:max-w-[160px]">
+                    {currentStore.name}
+                  </span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="text-[9px] font-mono px-1 py-0 bg-white text-zinc-600 border-zinc-200 hidden sm:inline-flex"
+                >
+                  {currentStore.city}
+                </Badge>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 shrink-0 transition-transform" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" sideOffset={6} className="w-64 p-1.5 rounded-xl border-zinc-200 shadow-xl bg-white">
+              <DropdownMenuLabel className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-2 py-1">
+                Connected Merchant Stores
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {stores.map((s) => {
+                const isSelected = s.id === currentStore.id;
+                return (
+                  <DropdownMenuItem
+                    key={s.id}
+                    onClick={() => switchStore(s.id)}
+                    className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${
+                      isSelected ? "bg-blue-50/70 text-blue-900" : "hover:bg-zinc-50 text-zinc-800"
+                    }`}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-full mt-1 shrink-0"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-xs">{s.name}</p>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                      </div>
+                      <p className="text-[10px] text-zinc-500 truncate">{s.tagline}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-mono bg-zinc-100 text-zinc-600 px-1 rounded">
+                          {s.city}
+                        </span>
+                        <span className="text-[9px] text-emerald-600 font-medium">● Razorpay Live</span>
+                      </div>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 pl-3 border-l border-zinc-200">
             <span className="text-zinc-600 font-medium text-[11px]">AI Seller: Online</span>

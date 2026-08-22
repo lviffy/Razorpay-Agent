@@ -32,6 +32,7 @@ export default function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary>(emptyAnalytics);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<string>("ALL");
+  const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
   useEffect(() => {
     async function load() {
@@ -45,6 +46,74 @@ export default function DashboardOverviewPage() {
       }
     }
     load();
+
+    // Live Server-Sent Events (SSE) stream listener for real-time order & payment capture
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://razorpay-agent-production.up.railway.app";
+    const sseUrl = `${backendUrl}/demo/events`;
+    let eventSource: EventSource | null = null;
+
+    try {
+      eventSource = new EventSource(sseUrl);
+
+      eventSource.onopen = () => {
+        setIsLiveConnected(true);
+      };
+
+      eventSource.onmessage = (e) => {
+        try {
+          if (!e.data || e.data.startsWith(":")) return;
+          const ev = JSON.parse(e.data);
+          const p = ev.payload || {};
+          const ids = ev.ids || {};
+
+          let title = ev.type?.replace(/_/g, " ") || "System Event";
+          let description = "Cryptographic audit event verified.";
+
+          if (ev.type === "PAYMENT_CAPTURED") {
+            title = "Instant UPI Payment Captured";
+            const amt = p.amount ? p.amount / 100 : 3799;
+            description = `₹${amt.toLocaleString("en-IN")} settled via Razorpay UPI (${p.method || "UPI"})`;
+
+            setAnalytics((prev) => ({
+              ...prev,
+              agentGmv: prev.agentGmv + amt,
+              dealsClosed: prev.dealsClosed + 1,
+            }));
+          } else if (ev.type === "INVENTORY_LOCKED") {
+            title = "Autonomous Inventory Reservation";
+            description = `Locked 1 unit for ${p.sku || "SKU-SHOE-001"} (Redis Redlock TTL 120s)`;
+          } else if (ev.type === "PAYMENT_FAILED") {
+            title = "Payment Timeout / Lock Released";
+            description = `Inventory restored in <2s. Reason: ${p.reason || "UPI_DECLINE"}`;
+          }
+
+          const newActivityItem: ActivityEvent = {
+            id: `sse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            type: ev.type || "PAYMENT_CAPTURED",
+            title,
+            description,
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+            metadata: { ...p, ...ids },
+          };
+
+          setActivity((prev) => [newActivityItem, ...prev.slice(0, 25)]);
+        } catch (parseErr) {
+          // ignore non-JSON pings
+        }
+      };
+
+      eventSource.onerror = () => {
+        setIsLiveConnected(false);
+      };
+    } catch (sseErr) {
+      console.warn("SSE connection error:", sseErr);
+    }
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
   }, []);
 
   const filteredActivity = activity.filter((item) => {

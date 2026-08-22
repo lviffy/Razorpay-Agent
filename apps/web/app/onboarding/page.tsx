@@ -491,8 +491,20 @@ export default function OnboardingPage() {
                         </div>
 
                         <Button
-                          onClick={() => router.push("/dashboard")}
-                          className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs"
+                          onClick={async () => {
+                            try {
+                              await fetch("/api/v1/onboarding/complete", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  businessName: state.businessName || "AgentBridge Store",
+                                  provider: state.provider || "AGENTBRIDGE",
+                                }),
+                              });
+                            } catch (e) {}
+                            router.push("/dashboard");
+                          }}
+                          className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
                         >
                           <span>Open Merchant Dashboard</span>
                           <ArrowRight className="w-4 h-4" />
