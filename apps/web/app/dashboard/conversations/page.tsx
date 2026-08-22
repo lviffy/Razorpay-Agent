@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { ConversationThread } from "@/lib/types";
-import { initialMockConversations } from "@/lib/api/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,8 +19,8 @@ import {
 } from "lucide-react";
 
 export default function ConversationsPage() {
-  const [threads, setThreads] = useState<ConversationThread[]>(initialMockConversations);
-  const [selectedId, setSelectedId] = useState<string>("conv_1");
+  const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"threads" | "chat" | "trace">("chat");
 
   useEffect(() => {
@@ -30,7 +29,7 @@ export default function ConversationsPage() {
         const list = await api.conversations.list();
         if (list && list.length > 0) {
           setThreads(list);
-          setSelectedId((curr) => (list.some((t) => t.id === curr) ? curr : list[0].id));
+          setSelectedId((curr) => (curr && list.some((t) => t.id === curr) ? curr : list[0].id));
         }
       } catch (err) {
         console.error("Failed to load conversations", err);
@@ -39,7 +38,7 @@ export default function ConversationsPage() {
     load();
   }, []);
 
-  const selectedThread = threads.find((t) => t.id === selectedId) || threads[0] || initialMockConversations[0];
+  const selectedThread = threads.find((t) => t.id === selectedId) || threads[0] || null;
 
   return (
     <div className="space-y-4">
@@ -88,28 +87,39 @@ export default function ConversationsPage() {
       </div>
 
       {/* 3-Pane Layout */}
-      <Card className="border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs p-0">
-        {/* Pane 1: Conversation List (3 cols) */}
-        <div
-          className={`lg:col-span-3 border-r border-zinc-200 flex flex-col ${
-            mobileTab !== "threads" ? "hidden lg:flex" : "flex"
-          }`}
-        >
-          <div className="p-3 border-b border-zinc-200 bg-zinc-50">
-            <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs">
-              <Search className="w-3.5 h-3.5 text-zinc-400" />
-              <input
-                type="text"
-                aria-label="Search conversations"
-                placeholder="Search leads, phone, deals..."
-                className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
-              />
-            </div>
+      {!selectedThread ? (
+        <Card className="p-12 border-zinc-200 text-center flex flex-col items-center justify-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400">
+            <MessageSquare className="w-6 h-6" />
           </div>
+          <h3 className="text-sm font-bold text-zinc-900">No active conversations yet</h3>
+          <p className="text-xs text-zinc-500 max-w-sm">
+            When buyers message your connected WhatsApp Business number, their live negotiation transcripts and AI reasoning traces will appear here.
+          </p>
+        </Card>
+      ) : (
+        <Card className="border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs p-0">
+          {/* Pane 1: Conversation List (3 cols) */}
+          <div
+            className={`lg:col-span-3 border-r border-zinc-200 flex flex-col ${
+              mobileTab !== "threads" ? "hidden lg:flex" : "flex"
+            }`}
+          >
+            <div className="p-3 border-b border-zinc-200 bg-zinc-50">
+              <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs">
+                <Search className="w-3.5 h-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  aria-label="Search conversations"
+                  placeholder="Search leads, phone, deals..."
+                  className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
+                />
+              </div>
+            </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
-            {threads.map((t) => {
-              const isSelected = t.id === selectedThread.id;
+            <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
+              {threads.map((t) => {
+                const isSelected = t.id === selectedThread.id;
               return (
                 <button
                   key={t.id}
@@ -294,6 +304,7 @@ export default function ConversationsPage() {
           </div>
         </div>
       </Card>
+      )}
     </div>
   );
 }

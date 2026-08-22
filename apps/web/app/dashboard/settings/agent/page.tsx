@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { api } from "@/lib/api/client";
+import { api, defaultAgentProfile } from "@/lib/api/client";
 import { AgentProfile } from "@/lib/types";
-import { defaultAgentProfile } from "@/lib/api/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -26,7 +25,7 @@ import {
 export default function AgentSettingsPage() {
   const [profile, setProfile] = useState<AgentProfile>(defaultAgentProfile);
   const [customRules, setCustomRules] = useState(
-    "Always highlight that running shoes feature dual Zoom Air cushioning. If buyer is unsure of sizing, advise that Pegasus models fit true-to-size."
+    "Highlight product features and advise on sizing or specifications when buyers ask."
   );
   const [saved, setSaved] = useState(false);
 

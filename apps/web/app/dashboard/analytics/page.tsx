@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { api } from "@/lib/api/client";
+import { api, emptyAnalytics } from "@/lib/api/client";
 import { AnalyticsSummary } from "@/lib/types";
-import { initialMockAnalytics } from "@/lib/api/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ import {
 } from "lucide-react";
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsSummary>(initialMockAnalytics);
+  const [data, setData] = useState<AnalyticsSummary>(emptyAnalytics);
 
   useEffect(() => {
     async function load() {

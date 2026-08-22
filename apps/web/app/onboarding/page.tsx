@@ -10,7 +10,6 @@ import { ActionCard } from "@/components/onboarding/action-card";
 import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import { ShopifySyncCard } from "@/components/onboarding/shopify-sync-card";
-import { SimulatorModal } from "@/components/onboarding/simulator-modal";
 import { Button } from "@/components/ui/button";
 import {
   Send,
@@ -39,7 +38,6 @@ export default function OnboardingPage() {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [nativeModalOpen, setNativeModalOpen] = useState(false);
-  const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +125,6 @@ export default function OnboardingPage() {
     { key: "AGENT_SETUP", label: "Mandate" },
     { key: "WHATSAPP_CONNECT", label: "Channel" },
     { key: "RAZORPAY_CONNECT", label: "Razorpay" },
-    { key: "TEST", label: "Simulate" },
     { key: "READY", label: "Launch" },
   ];
 
@@ -470,40 +467,7 @@ export default function OnboardingPage() {
                     )}
 
                     {/* Step: TEST */}
-                    {state.currentStep === "TEST" && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="w-full p-4 sm:p-5 rounded-2xl bg-blue-50/50 border border-blue-200/80 space-y-3.5"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-blue-100 text-brand-700 flex items-center justify-center">
-                              <Zap className="w-4 h-4" />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold text-zinc-900">
-                                Storefront Interactive Verification
-                              </p>
-                              <p className="text-[11px] text-zinc-600">
-                                Test how your AI Seller negotiates and issues real Razorpay links.
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
-                            PRE-FLIGHT
-                          </span>
-                        </div>
 
-                        <Button
-                          onClick={() => setSimulatorOpen(true)}
-                          className="w-full text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2 shadow-xs"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Run Live Storefront Simulation</span>
-                        </Button>
-                      </motion.div>
-                    )}
 
                     {/* Step: READY / COMPLETED */}
                     {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
@@ -631,12 +595,6 @@ export default function OnboardingPage() {
         open={nativeModalOpen}
         onOpenChange={setNativeModalOpen}
         onSave={handleSaveNativeProduct}
-      />
-
-      <SimulatorModal
-        open={simulatorOpen}
-        onOpenChange={setSimulatorOpen}
-        onSuccess={() => handleSendMessage("Simulation completed and verified")}
       />
     </div>
   );

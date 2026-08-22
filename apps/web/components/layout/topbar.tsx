@@ -53,9 +53,8 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { ProfileDialog } from "@/components/layout/profile-dialog";
-import { api } from "@/lib/api/client";
+import { api, defaultMerchantProfile } from "@/lib/api/client";
 import { MerchantProfile } from "@/lib/types";
-import { defaultMerchantProfile } from "@/lib/api/mock-data";
 
 export function Topbar() {
   const router = useRouter();
@@ -63,33 +62,15 @@ export function Topbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(3);
-  const [notifications, setNotifications] = useState([
-    {
-      id: "notif_1",
-      title: "UPI Payment Captured",
-      description: "₹3,519 received for Order #RB-9102 via Razorpay UPI.",
-      time: "2 mins ago",
-      read: false,
-      type: "payment",
-    },
-    {
-      id: "notif_2",
-      title: "AI Deal Closed on WhatsApp",
-      description: "Auto-conceded 8% discount to close Nike Pegasus 40 lead.",
-      time: "14 mins ago",
-      read: false,
-      type: "deal",
-    },
-    {
-      id: "notif_3",
-      title: "Low Inventory Alert",
-      description: "Adidas Ultraboost Light has only 4 units remaining in stock.",
-      time: "1 hour ago",
-      read: false,
-      type: "inventory",
-    },
-  ]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    title: string;
+    description: string;
+    time: string;
+    read: boolean;
+    type: string;
+  }>>([]);
 
   // Load profile state & live notifications
   useEffect(() => {
@@ -97,7 +78,7 @@ export function Topbar() {
       if (p) setProfile(p);
     });
     api.analytics.getNotifications().then((notifs) => {
-      if (notifs && notifs.length > 0) {
+      if (notifs) {
         setNotifications(notifs);
         setUnreadNotifications(notifs.filter((n) => !n.read).length);
       }

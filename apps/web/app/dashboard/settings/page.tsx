@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { api } from "@/lib/api/client";
+import { api, defaultNegotiationRules } from "@/lib/api/client";
 import { NegotiationRules } from "@/lib/types";
-import { defaultNegotiationRules } from "@/lib/api/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -25,8 +24,8 @@ import {
 
 export default function GeneralSettingsPage() {
   const [rules, setRules] = useState<NegotiationRules>(defaultNegotiationRules);
-  const [businessName, setBusinessName] = useState("RunFast Sports");
-  const [supportPhone, setSupportPhone] = useState("+91 98765 00000");
+  const [businessName, setBusinessName] = useState("");
+  const [supportPhone, setSupportPhone] = useState("");
   const [saved, setSaved] = useState(false);
   const [showKey, setShowKey] = useState(false);
 

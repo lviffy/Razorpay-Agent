@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api/client";
+import { api, emptyAnalytics } from "@/lib/api/client";
 import { AnalyticsSummary, ActivityEvent } from "@/lib/types";
-import { initialMockAnalytics, initialMockActivity } from "@/lib/api/mock-data";
 import { formatINR, formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -30,8 +29,8 @@ import {
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 
 export default function DashboardOverviewPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsSummary>(initialMockAnalytics);
-  const [activity, setActivity] = useState<ActivityEvent[]>(initialMockActivity);
+  const [analytics, setAnalytics] = useState<AnalyticsSummary>(emptyAnalytics);
+  const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<string>("ALL");
 
   useEffect(() => {

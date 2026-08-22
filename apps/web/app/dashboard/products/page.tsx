@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { Product } from "@/lib/types";
-import { initialMockProducts } from "@/lib/api/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -21,7 +20,7 @@ import {
 } from "lucide-react";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>(initialMockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);

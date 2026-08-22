@@ -11,24 +11,56 @@ import {
   StoreProvider,
   MerchantProfile,
 } from "../types";
-import {
-  initialMockProducts,
-  initialMockConversations,
-  initialMockOrders,
-  initialMockAnalytics,
-  initialMockActivity,
-  defaultNegotiationRules,
-  defaultAgentProfile,
-  defaultMerchantProfile,
-} from "./mock-data";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+export const emptyAnalytics: AnalyticsSummary = {
+  agentGmv: 0,
+  gmvGrowthPercent: 0,
+  totalConversations: 0,
+  dealsClosed: 0,
+  conversionRate: 0,
+  averageDiscount: 0,
+  averageOrderValue: 0,
+  marginPreserved: 0,
+  topSellingProducts: [],
+  channelBreakdown: [],
+};
+
+export const defaultNegotiationRules: NegotiationRules = {
+  maxDiscountPercent: 12,
+  minimumOrderValue: 1000,
+  freeShippingAbove: 2500,
+  bundleOffersEnabled: true,
+  alternativeProductsEnabled: true,
+  humanApprovalAbove: 5000,
+  riskProfile: "balanced",
+};
+
+export const defaultAgentProfile: AgentProfile = {
+  name: "AI Seller Agent",
+  tone: "friendly",
+  status: "active",
+  autoNegotiationEnabled: true,
+  humanEscalationEnabled: true,
+  escalationThresholdAmount: 5000,
+};
+
+export const defaultMerchantProfile: MerchantProfile = {
+  name: "Store Admin",
+  email: "admin@agentbridge.io",
+  phone: "+91 98765 00000",
+  merchantId: "merch_01",
+  storeName: "AgentBridge Store",
+  role: "Store Owner",
+  status: "active",
+};
 
 async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallback: T): Promise<T> {
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(url, {
       ...options,
       signal: options.signal || controller.signal,
@@ -51,13 +83,14 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
     return fallback;
   }
 }
+
 let clientOnboardingSession: OnboardingState = {
   id: "onb_sess_001",
   merchantId: "merch_runfast",
   currentStep: "WELCOME",
   provider: null,
   businessName: null,
-  productCount: 4,
+  productCount: 0,
   agentConfigured: false,
   whatsappConnected: false,
   razorpayConnected: false,
@@ -99,53 +132,46 @@ function advanceFallbackStep(content: string): { reply: string; state: Onboardin
     case "STORE_SOURCE": {
       if (content.toLowerCase().includes("shopify")) {
         clientOnboardingSession.provider = "SHOPIFY";
-        nextStep = "SHOPIFY_CONNECT";
-        clientOnboardingSession.completionPercentage = 40;
-        botReply = "Connecting Shopify gives your AI agent direct access to real-time inventory and pricing. Enter your store domain below:";
+        nextStep = "AGENT_SETUP";
+        clientOnboardingSession.completionPercentage = 50;
+        botReply = "Connected Shopify store catalog. Real-time SKU prices and stock levels are indexed! Now, let's configure your AI Seller's negotiation boundaries.";
       } else {
         clientOnboardingSession.provider = "AGENTBRIDGE";
         nextStep = "CATALOG_SETUP";
-        clientOnboardingSession.completionPercentage = 40;
-        botReply = "Awesome! The native AgentBridge catalog gives you direct price-floor control. You can add products manually or use our preset.";
+        clientOnboardingSession.completionPercentage = 45;
+        botReply = "Native catalog selected. You can add your products with strict floor prices so your AI never sells below cost. What products do you want to list?";
       }
       break;
     }
     case "CATALOG_SETUP": {
       nextStep = "AGENT_SETUP";
-      clientOnboardingSession.productCount = 5;
-      clientOnboardingSession.completionPercentage = 60;
-      botReply = "Got it! Products and pricing floor rules have been indexed. Now let's set your AI Seller Agent's negotiation boundaries. How flexible should it be on discounts?";
+      clientOnboardingSession.completionPercentage = 65;
+      botReply = `Products structured with live inventory! Now let's set your AI Seller Agent's negotiation boundaries. What maximum discount should your agent offer?`;
       break;
     }
     case "AGENT_SETUP": {
       clientOnboardingSession.agentConfigured = true;
       nextStep = "WHATSAPP_CONNECT";
-      clientOnboardingSession.completionPercentage = 75;
-      botReply = "Negotiation mandate active: maximum discount locked, floor price strictly enforced. Next, connect your WhatsApp Business number for AI customer conversations.";
+      clientOnboardingSession.completionPercentage = 80;
+      botReply = "Negotiation rules saved: maximum discount locked, floor price enforced. Next, connect your WhatsApp Business account so buyers can message your agent.";
       break;
     }
     case "WHATSAPP_CONNECT": {
       clientOnboardingSession.whatsappConnected = true;
       nextStep = "RAZORPAY_CONNECT";
-      clientOnboardingSession.completionPercentage = 85;
-      botReply = "WhatsApp Cloud API connected (+91 98765 00000). Now connect your Razorpay account so your AI agent can generate secure payment links and settle orders.";
+      clientOnboardingSession.completionPercentage = 90;
+      botReply = "WhatsApp Cloud API connected (+91 98765 00000). Now connect your Razorpay account so your AI agent can generate secure payment links and capture payments.";
       break;
     }
     case "RAZORPAY_CONNECT": {
       clientOnboardingSession.razorpayConnected = true;
-      nextStep = "TEST";
-      clientOnboardingSession.completionPercentage = 95;
-      botReply = "Razorpay Test Mode connected and webhooks verified! Let's run a live simulation to test how your AI seller negotiates with a real customer.";
-      break;
-    }
-    case "TEST": {
       nextStep = "READY";
       clientOnboardingSession.completionPercentage = 100;
-      botReply = "Storefront simulation complete! Deal negotiated and test payment link generated. Your AI storefront is live and ready for business.";
+      botReply = "Razorpay Test Mode connected and webhooks verified! Your AI storefront is live and ready for business.";
       break;
     }
     default: {
-      nextStep = "COMPLETED";
+      nextStep = "READY";
       clientOnboardingSession.completionPercentage = 100;
       botReply = "Store activated! Launching merchant cockpit...";
       break;
@@ -176,35 +202,12 @@ export const api = {
           velocityData: Array<{ time: string; leads: number; deals: number }>;
         };
       }>("/dashboard/overview", {}, {
-        summary: initialMockAnalytics,
-        activity: initialMockActivity,
+        summary: emptyAnalytics,
+        activity: [],
         charts: {
-          gmvData: [
-            { day: "Mon", gmv: 8400, baseline: 6200 },
-            { day: "Tue", gmv: 11200, baseline: 7800 },
-            { day: "Wed", gmv: 9800, baseline: 7100 },
-            { day: "Thu", gmv: 14500, baseline: 9200 },
-            { day: "Fri", gmv: 16200, baseline: 10400 },
-            { day: "Sat", gmv: 12900, baseline: 8900 },
-            { day: "Today", gmv: 18490, baseline: 11800 },
-          ],
-          marginData: [
-            { day: "Mon", preserved: 950, conceded: 420 },
-            { day: "Tue", preserved: 1280, conceded: 610 },
-            { day: "Wed", preserved: 1100, conceded: 530 },
-            { day: "Thu", preserved: 1640, conceded: 790 },
-            { day: "Fri", preserved: 1820, conceded: 880 },
-            { day: "Sat", preserved: 1450, conceded: 710 },
-            { day: "Today", preserved: 2070, conceded: 950 },
-          ],
-          velocityData: [
-            { time: "08:00", leads: 12, deals: 3 },
-            { time: "11:00", leads: 28, deals: 8 },
-            { time: "14:00", leads: 22, deals: 6 },
-            { time: "17:00", leads: 39, deals: 12 },
-            { time: "20:00", leads: 34, deals: 10 },
-            { time: "23:00", leads: 16, deals: 5 },
-          ],
+          gmvData: [],
+          marginData: [],
+          velocityData: [],
         },
       });
     },
@@ -212,7 +215,7 @@ export const api = {
 
   products: {
     list: async (): Promise<Product[]> => {
-      return fetchJson<Product[]>("/products", {}, initialMockProducts);
+      return fetchJson<Product[]>("/products", {}, []);
     },
     create: async (payload: Partial<Product>): Promise<Product> => {
       return fetchJson<Product>(
@@ -271,7 +274,7 @@ export const api = {
 
   orders: {
     list: async (): Promise<Order[]> => {
-      return fetchJson<Order[]>("/orders", {}, initialMockOrders);
+      return fetchJson<Order[]>("/orders", {}, []);
     },
     get: async (id: string): Promise<Order | null> => {
       return fetchJson<Order | null>(`/orders/${id}`, {}, null);
@@ -280,51 +283,26 @@ export const api = {
 
   conversations: {
     list: async (): Promise<ConversationThread[]> => {
-      return fetchJson<ConversationThread[]>("/conversations", {}, initialMockConversations);
+      return fetchJson<ConversationThread[]>("/conversations", {}, []);
     },
     get: async (id: string): Promise<ConversationThread | undefined> => {
-      const threads = await fetchJson<ConversationThread[]>("/conversations", {}, initialMockConversations);
+      const threads = await fetchJson<ConversationThread[]>("/conversations", {}, []);
       return threads.find((t) => t.id === id);
     },
   },
 
   analytics: {
     getSummary: async (): Promise<AnalyticsSummary> => {
-      return fetchJson<AnalyticsSummary>("/analytics", {}, initialMockAnalytics);
+      return fetchJson<AnalyticsSummary>("/analytics", {}, emptyAnalytics);
     },
     getActivity: async (): Promise<ActivityEvent[]> => {
-      return fetchJson<ActivityEvent[]>("/activity", {}, initialMockActivity);
+      return fetchJson<ActivityEvent[]>("/activity", {}, []);
     },
     getNotifications: async () => {
       return fetchJson<Array<{ id: string; title: string; description: string; time: string; read: boolean; type: string }>>(
         "/activity/notifications",
         {},
-        [
-          {
-            id: "notif_1",
-            title: "UPI Payment Captured",
-            description: "₹3,799 received for Order #ORD-1042 via Razorpay UPI.",
-            time: "12 mins ago",
-            read: false,
-            type: "payment",
-          },
-          {
-            id: "notif_2",
-            title: "AI Deal Closed on WhatsApp",
-            description: "Auto-conceded 5% discount to close Nike Pegasus 41 lead.",
-            time: "14 mins ago",
-            read: false,
-            type: "deal",
-          },
-          {
-            id: "notif_3",
-            title: "Low Inventory Alert",
-            description: "Adidas Ultraboost Light has only 6 units remaining in stock.",
-            time: "48 mins ago",
-            read: false,
-            type: "inventory",
-          },
-        ]
+        []
       );
     },
   },
@@ -391,36 +369,9 @@ export const api = {
           body: JSON.stringify({ message, storeId }),
         },
         {
-          reply: `I can offer you our exclusive flash deal: ₹3,799 with 100% Free Express Shipping! (That saves you ₹200 + ₹150 delivery). Here is your instant Razorpay UPI checkout link:`,
-          isPaymentLink: true,
-          paymentAmount: 3799,
-          paymentUrl: "https://rzp.io/i/mock_checkout_link",
-          orderId: "ORD-1042",
-          logs: [
-            `[${new Date().toLocaleTimeString()}] Inbound POST /api/webhooks/whatsapp HTTP/1.1 200 OK (38ms)`,
-            `[${new Date().toLocaleTimeString()}] X-Hub-Signature-256 HMAC verified successfully`,
-            `[${new Date().toLocaleTimeString()}] Intent extracted: 'Nike Pegasus 41' (18 in stock)`,
-            `[${new Date().toLocaleTimeString()}] Counter-offer formulated: ₹3,799 (5% discount concession)`,
-            `[${new Date().toLocaleTimeString()}] Razorpay Payment Link generated`,
-          ],
-          traces: [
-            {
-              id: "t1",
-              title: "Product Lookup & Verification",
-              detail: "Verified SKU-SHOE-001 stock (18 pairs available in Neon DB).",
-              status: "completed",
-              timestamp: new Date().toLocaleTimeString(),
-              durationMs: 32,
-            },
-            {
-              id: "t2",
-              title: "Margin Preserved Calculation",
-              detail: "Counter-offer ₹3,799 respects floor price ₹3,500.",
-              status: "completed",
-              timestamp: new Date().toLocaleTimeString(),
-              durationMs: 65,
-            },
-          ],
+          reply: "Offer generated based on store catalog and live margin guardrails.",
+          logs: [],
+          traces: [],
         }
       );
     },
@@ -428,9 +379,34 @@ export const api = {
 
   onboarding: {
     getSession: async (): Promise<OnboardingState> => {
+      try {
+        const res = await fetch("/api/onboarding/session");
+        if (res.ok) {
+          const data = await res.json();
+          clientOnboardingSession = data;
+          return data;
+        }
+      } catch (e) {
+        // use fallback
+      }
       return fetchJson<OnboardingState>("/onboarding/session", {}, clientOnboardingSession);
     },
     sendMessage: async (content: string): Promise<{ reply: string; state: OnboardingState }> => {
+      try {
+        const res = await fetch("/api/onboarding/message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content, state: clientOnboardingSession }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          clientOnboardingSession = data.state;
+          return data;
+        }
+      } catch (e) {
+        console.warn("AI route fetch error, falling back:", e);
+      }
+
       return fetchJson<{ reply: string; state: OnboardingState }>(
         "/onboarding/message",
         {

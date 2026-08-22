@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { Order } from "@/lib/types";
-import { initialMockOrders } from "@/lib/api/mock-data";
 import { formatINR, formatDate } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(initialMockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -25,7 +24,7 @@ export default function OrdersPage() {
     async function load() {
       try {
         const list = await api.orders.list();
-        if (list && list.length > 0) setOrders(list);
+        if (list) setOrders(list);
       } catch (err) {
         console.error("Failed to load orders", err);
       }
