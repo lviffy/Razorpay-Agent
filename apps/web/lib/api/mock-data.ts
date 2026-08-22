@@ -1,4 +1,4 @@
-import { Product, ConversationThread, Order, AnalyticsSummary, ActivityEvent, NegotiationRules, AgentProfile } from "../types";
+import { Product, ConversationThread, Order, AnalyticsSummary, ActivityEvent, NegotiationRules, AgentProfile, MerchantProfile } from "../types";
 
 export const initialMockProducts: Product[] = [
   {
@@ -390,3 +390,14 @@ export const defaultAgentProfile: AgentProfile = {
   humanEscalationEnabled: true,
   escalationThresholdAmount: 10000,
 };
+
+export const defaultMerchantProfile: MerchantProfile = {
+  name: "Merchant Admin",
+  email: "merchant@runfast.in",
+  phone: "+91 98765 00000",
+  merchantId: "merchant_01",
+  storeName: "RunFast Sports",
+  role: "Store Owner & Admin",
+  status: "active",
+};
+

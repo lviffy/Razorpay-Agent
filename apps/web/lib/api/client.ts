@@ -9,6 +9,7 @@ import {
   OnboardingState,
   OnboardingStep,
   StoreProvider,
+  MerchantProfile,
 } from "../types";
 import {
   initialMockProducts,
@@ -18,7 +19,9 @@ import {
   initialMockActivity,
   defaultNegotiationRules,
   defaultAgentProfile,
+  defaultMerchantProfile,
 } from "./mock-data";
+
 
 // In-browser state store for smooth simulation across refresh
 class LocalStateStore {
@@ -131,7 +134,30 @@ class LocalStateStore {
     const saved = this.get<ActivityEvent[]>("activity", initialMockActivity);
     return Array.isArray(saved) && saved.length > 0 ? saved : initialMockActivity;
   }
+
+  getProfile(): MerchantProfile {
+    const saved = this.get<MerchantProfile>("merchant_profile", defaultMerchantProfile);
+    return {
+      ...defaultMerchantProfile,
+      ...(saved || {}),
+      email: defaultMerchantProfile.email, // Email is immutable
+      merchantId: defaultMerchantProfile.merchantId, // ID is immutable
+    };
+  }
+
+  saveProfile(profile: Partial<MerchantProfile>): MerchantProfile {
+    const current = this.getProfile();
+    const updated: MerchantProfile = {
+      ...current,
+      ...profile,
+      email: defaultMerchantProfile.email, // Never allow changing email
+      merchantId: defaultMerchantProfile.merchantId, // Never allow changing ID
+    };
+    this.set("merchant_profile", updated);
+    return updated;
+  }
 }
+
 
 export const localStore = new LocalStateStore();
 
@@ -383,4 +409,12 @@ export const api = {
       return agent;
     },
   },
+
+  profile: {
+    get: async (): Promise<MerchantProfile> => localStore.getProfile(),
+    save: async (profile: Partial<MerchantProfile>): Promise<MerchantProfile> => {
+      return localStore.saveProfile(profile);
+    },
+  },
 };
+

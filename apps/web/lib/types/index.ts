@@ -156,3 +156,14 @@ export interface ActivityEvent {
   timestamp: string;
   metadata?: Record<string, any>;
 }
+
+export interface MerchantProfile {
+  name: string;
+  email: string;
+  phone: string;
+  merchantId: string;
+  storeName: string;
+  role: string;
+  status: "active" | "inactive";
+}
+

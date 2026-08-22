@@ -1,71 +1,411 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, Bell, ExternalLink, Sparkles, Shield, ChevronDown, Radio } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  Bell,
+  Radio,
+  ChevronDown,
+  User,
+  Sliders,
+  Sparkles,
+  ShoppingBag,
+  LogOut,
+  Mail,
+  Copy,
+  Check,
+  ShieldCheck,
+  Store,
+  ExternalLink,
+  Package,
+  MessageSquare,
+  BarChart3,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "@/components/ui/command";
+import { ProfileDialog } from "@/components/layout/profile-dialog";
+import { api } from "@/lib/api/client";
+import { MerchantProfile } from "@/lib/types";
+import { defaultMerchantProfile } from "@/lib/api/mock-data";
 
 export function Topbar() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [notifications, setNotifications] = useState([
+    {
+      id: "notif_1",
+      title: "UPI Payment Captured",
+      description: "₹3,519 received for Order #RB-9102 via Razorpay UPI.",
+      time: "2 mins ago",
+      read: false,
+      type: "payment",
+    },
+    {
+      id: "notif_2",
+      title: "AI Deal Closed on WhatsApp",
+      description: "Auto-conceded 8% discount to close Nike Pegasus 40 lead.",
+      time: "14 mins ago",
+      read: false,
+      type: "deal",
+    },
+    {
+      id: "notif_3",
+      title: "Low Inventory Alert",
+      description: "Adidas Ultraboost Light has only 4 units remaining in stock.",
+      time: "1 hour ago",
+      read: false,
+      type: "inventory",
+    },
+  ]);
+
+  // Load profile state
+  useEffect(() => {
+    api.profile.get().then(setProfile);
+  }, []);
+
+  // Keyboard shortcut for Command Palette (⌘K / Ctrl+K)
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setCommandOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(profile.merchantId);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const handleLogout = () => {
+    router.push("/login");
+  };
+
+  const handleMarkAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setUnreadNotifications(0);
+  };
+
+  const handleNavigate = (path: string) => {
+    setCommandOpen(false);
+    router.push(path);
+  };
+
   return (
-    <header className="h-14 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 select-none flex-shrink-0">
-      {/* Left: Active Store + Environment Pill */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-          <span className="font-semibold text-xs text-zinc-900">RunFast Sports</span>
-          <span className="text-[10px] text-zinc-500 font-mono font-medium">
-            (Sandbox)
+    <>
+      <header className="h-14 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 select-none flex-shrink-0">
+        {/* Left: Active Store + Environment Pill */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-zinc-50 border border-zinc-200/80 px-2.5 py-1 rounded-lg">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+            <span className="font-semibold text-xs text-zinc-900">{profile.storeName}</span>
+            <span className="text-[10px] text-zinc-500 font-mono font-medium">
+              (Sandbox)
+            </span>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 pl-3 border-l border-zinc-200">
+            <span className="text-zinc-600 font-medium text-[11px]">AI Seller: Online</span>
+          </div>
+        </div>
+
+        {/* Center: Quick Search Simulator with Keyboard Shortcut */}
+        <div
+          onClick={() => setCommandOpen(true)}
+          className="hidden md:flex items-center gap-2.5 w-80 bg-zinc-50/80 hover:bg-zinc-100/80 transition-all border border-zinc-200/80 rounded-xl px-3 py-1.5 text-xs text-zinc-500 cursor-pointer group hover:border-zinc-300"
+        >
+          <Search className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-colors" />
+          <span className="flex-1 text-xs text-zinc-400 group-hover:text-zinc-600 select-none">
+            Search products, orders, rules...
           </span>
+          <kbd className="hidden sm:inline-flex items-center text-[10px] font-mono text-zinc-400 bg-white border border-zinc-200 px-1.5 py-0.5 rounded-md shadow-2xs group-hover:border-zinc-300">
+            ⌘K
+          </kbd>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 pl-3 border-l border-zinc-200">
-          <span className="text-zinc-600 font-medium text-[11px]">AI Seller: Online</span>
+        {/* Right: Quick Actions & Profile */}
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/dashboard/whatsapp"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
+          >
+            <Radio className="w-3.5 h-3.5 text-blue-600" />
+            <span>Simulate Lead</span>
+          </Link>
+
+          {/* Notifications Popover */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Notifications"
+                className="text-zinc-500 hover:text-zinc-800 p-2 rounded-lg hover:bg-zinc-100/80 relative cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadNotifications > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-blue-600 absolute top-1.5 right-1.5 ring-2 ring-white animate-pulse" />
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" sideOffset={8} className="w-80 p-0 rounded-2xl shadow-2xl border-zinc-200/90 bg-white">
+              <div className="p-3.5 border-b border-zinc-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-zinc-900 font-display">Notifications</span>
+                  {unreadNotifications > 0 && (
+                    <Badge className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5 py-0">
+                      {unreadNotifications} new
+                    </Badge>
+                  )}
+                </div>
+                {unreadNotifications > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleMarkAllRead}
+                    className="text-[10px] text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+              <div className="divide-y divide-zinc-100 max-h-72 overflow-y-auto">
+                {notifications.map((n) => (
+                  <div key={n.id} className={`p-3 text-xs space-y-1 transition-colors ${n.read ? "bg-white" : "bg-blue-50/20"}`}>
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-zinc-900 text-xs">{n.title}</p>
+                      <span className="text-[10px] text-zinc-400 font-mono">{n.time}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">{n.description}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="p-2.5 bg-zinc-50/70 border-t border-zinc-100 text-center">
+                <Link
+                  href="/dashboard/analytics"
+                  className="text-[11px] text-blue-600 hover:text-blue-700 font-medium hover:underline inline-flex items-center gap-1"
+                >
+                  <span>View live store activity</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* User Profile Dropdown Menu Trigger */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="User Account Menu"
+                className="flex items-center gap-2.5 pl-3 border-l border-zinc-200 hover:bg-zinc-50 py-1 px-2 rounded-xl transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
+              >
+                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+                  RF
+                </div>
+                <div className="hidden lg:block text-left">
+                  <p className="text-xs font-semibold text-zinc-900 leading-none">{profile.name}</p>
+                  <p className="text-[10px] text-zinc-500 font-mono leading-none mt-1">{profile.merchantId}</p>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              className="w-68 p-1.5 rounded-2xl shadow-2xl border-zinc-200/90 bg-white/95 backdrop-blur-md"
+            >
+              {/* User Profile Summary Header */}
+              <div className="p-3 bg-zinc-50/80 rounded-xl border border-zinc-100/80 mb-1 space-y-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-xs shrink-0">
+                    RF
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-zinc-900 truncate leading-none">{profile.name}</p>
+                    <p className="text-[11px] text-zinc-500 truncate mt-1 flex items-center gap-1">
+                      <Mail className="w-3 h-3 text-zinc-400 shrink-0" />
+                      <span className="truncate font-mono">{profile.email}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-[10px] font-mono border-t border-zinc-200/60">
+                  <span className="text-zinc-500">ID: {profile.merchantId}</span>
+                  <button
+                    type="button"
+                    onClick={handleCopyId}
+                    className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium cursor-pointer"
+                  >
+                    {copiedId ? (
+                      <Check className="w-3 h-3 text-emerald-600" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-blue-600" />
+                    )}
+                    <span>{copiedId ? "Copied" : "Copy ID"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Navigation Options with Clean SVG Icons */}
+              <DropdownMenuGroup className="space-y-0.5">
+                <DropdownMenuItem
+                  onClick={() => setProfileOpen(true)}
+                  className="px-2.5 py-2 text-xs font-medium text-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100/80 hover:text-zinc-900 flex items-center gap-2.5"
+                >
+                  <User className="w-4 h-4 text-zinc-500 shrink-0" />
+                  <span>My Profile & Details</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dashboard/settings"
+                    className="px-2.5 py-2 text-xs font-medium text-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100/80 hover:text-zinc-900 flex items-center gap-2.5"
+                  >
+                    <Sliders className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <span>Store Mandates & Rules</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dashboard/settings/agent"
+                    className="px-2.5 py-2 text-xs font-medium text-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100/80 hover:text-zinc-900 flex items-center gap-2.5"
+                  >
+                    <Sparkles className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <span>AI Seller Agent</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild>
+                  <Link
+                    href="/dashboard/orders"
+                    className="px-2.5 py-2 text-xs font-medium text-zinc-700 rounded-xl cursor-pointer hover:bg-zinc-100/80 hover:text-zinc-900 flex items-center gap-2.5"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-zinc-500 shrink-0" />
+                    <span>Orders & Invoices</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator className="my-1 bg-zinc-100" />
+
+              {/* Log Out Action */}
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="px-2.5 py-2 text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-xl cursor-pointer flex items-center gap-2.5 transition-colors focus:bg-red-50 focus:text-red-700"
+              >
+                <LogOut className="w-4 h-4 text-red-500 shrink-0" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
+      </header>
 
-      {/* Center: Quick Search Simulator with Keyboard Shortcut */}
-      <div className="hidden md:flex items-center gap-2.5 w-80 bg-zinc-50 hover:bg-zinc-100 transition-colors border border-zinc-200 rounded-lg px-3 py-1.5 text-xs text-zinc-500 focus-within:bg-white focus-within:border-zinc-300">
-        <Search className="w-3.5 h-3.5 text-zinc-400" />
-        <input
-          type="text"
-          aria-label="Quick search products, orders, conversations"
-          placeholder="Search products, orders, conversations..."
-          className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
-          readOnly
-        />
-        <kbd className="hidden sm:inline-flex items-center text-[10px] font-mono text-zinc-400 bg-white border border-zinc-200 px-1.5 py-0.5 rounded">
-          ⌘K
-        </kbd>
-      </div>
+      {/* Interactive Command Palette (⌘K) */}
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+        <CommandInput placeholder="Type a command or search..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Store Navigation">
+            <CommandItem onSelect={() => handleNavigate("/dashboard")}>
+              <Store className="w-4 h-4 text-zinc-500" />
+              <span>Dashboard Overview</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/products")}>
+              <Package className="w-4 h-4 text-zinc-500" />
+              <span>Products & Catalog</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/whatsapp")}>
+              <Radio className="w-4 h-4 text-blue-600" />
+              <span>WhatsApp AI Simulation</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/conversations")}>
+              <MessageSquare className="w-4 h-4 text-zinc-500" />
+              <span>Customer Conversations</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/orders")}>
+              <ShoppingBag className="w-4 h-4 text-zinc-500" />
+              <span>Orders & Invoices</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/analytics")}>
+              <BarChart3 className="w-4 h-4 text-zinc-500" />
+              <span>Revenue & GMV Analytics</span>
+            </CommandItem>
+          </CommandGroup>
 
-      {/* Right: Quick Actions & Profile */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard/whatsapp"
-          className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 px-3 py-1.5 rounded-md transition-colors"
-        >
-          <Radio className="w-3 h-3 text-zinc-600" />
-          <span>Simulate Lead</span>
-        </Link>
+          <CommandSeparator />
 
-        <button
-          aria-label="Notifications"
-          className="text-zinc-500 hover:text-zinc-700 p-2 rounded-md hover:bg-zinc-100 relative cursor-pointer transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 absolute top-1.5 right-1.5" />
-        </button>
+          <CommandGroup heading="Settings & Account">
+            <CommandItem
+              onSelect={() => {
+                setCommandOpen(false);
+                setProfileOpen(true);
+              }}
+            >
+              <User className="w-4 h-4 text-zinc-500" />
+              <span>My Profile & Account</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/settings")}>
+              <Sliders className="w-4 h-4 text-zinc-500" />
+              <span>Store Rules & Mandates</span>
+            </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/settings/agent")}>
+              <Sparkles className="w-4 h-4 text-zinc-500" />
+              <span>AI Seller Configuration</span>
+            </CommandItem>
+            <CommandItem onSelect={handleLogout} className="text-red-600 aria-selected:text-red-600 aria-selected:bg-red-50">
+              <LogOut className="w-4 h-4 text-red-500" />
+              <span>Sign Out</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
 
-        <div className="flex items-center gap-2.5 pl-3 border-l border-zinc-200">
-          <div className="w-7 h-7 rounded-md bg-zinc-900 text-white text-xs font-semibold flex items-center justify-center">
-            RF
-          </div>
-          <div className="hidden lg:block text-left">
-            <p className="text-xs font-semibold text-zinc-900 leading-none">Merchant Admin</p>
-            <p className="text-[10px] text-zinc-500 font-mono leading-none mt-1">merchant_01</p>
-          </div>
-        </div>
-      </div>
-    </header>
+      {/* Profile Dialog */}
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        onProfileUpdated={setProfile}
+      />
+    </>
   );
 }

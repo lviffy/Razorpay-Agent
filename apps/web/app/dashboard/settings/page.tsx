@@ -25,14 +25,23 @@ import {
 
 export default function GeneralSettingsPage() {
   const [rules, setRules] = useState<NegotiationRules>(defaultNegotiationRules);
+  const [businessName, setBusinessName] = useState("RunFast Sports");
+  const [supportPhone, setSupportPhone] = useState("+91 98765 00000");
   const [saved, setSaved] = useState(false);
   const [showKey, setShowKey] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const r = await api.settings.getRules();
+        const [r, p] = await Promise.all([
+          api.settings.getRules(),
+          api.profile.get(),
+        ]);
         if (r) setRules(r);
+        if (p) {
+          if (p.storeName) setBusinessName(p.storeName);
+          if (p.phone) setSupportPhone(p.phone);
+        }
       } catch (err) {
         console.error("Failed to load settings", err);
       }
@@ -43,10 +52,14 @@ export default function GeneralSettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rules) return;
-    await api.settings.saveRules(rules);
+    await Promise.all([
+      api.settings.saveRules(rules),
+      api.profile.save({ storeName: businessName, phone: supportPhone }),
+    ]);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
+
 
   // Dynamic simulated price outcome
   const sampleRetail = 4000;
@@ -99,17 +112,26 @@ export default function GeneralSettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-700">Business Name</label>
-                <Input defaultValue="RunFast Sports" className="text-xs" />
+                <Input
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  className="text-xs"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-700">Support Contact (WhatsApp)</label>
-                <Input defaultValue="+91 98765 00000" className="text-xs font-mono" />
+                <Input
+                  value={supportPhone}
+                  onChange={(e) => setSupportPhone(e.target.value)}
+                  className="text-xs font-mono"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-700">Base Currency</label>
                 <Input defaultValue="INR (₹) — Indian Rupee" readOnly className="bg-zinc-50 font-mono text-xs text-zinc-700" />
               </div>
             </div>
+
           </CardContent>
         </Card>
 
