@@ -64,6 +64,11 @@ async function migrate() {
       ALTER TABLE conversations ADD COLUMN IF NOT EXISTS deal_amount NUMERIC(12,2);
       ALTER TABLE conversations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'active';
       ALTER TABLE conversations ADD COLUMN IF NOT EXISTS products_discussed JSONB DEFAULT '[]'::jsonb;
+
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT 'credentials';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     `);
 
     console.log("✅ Schema applied and verified");

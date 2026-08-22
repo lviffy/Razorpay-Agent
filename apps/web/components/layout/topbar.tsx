@@ -57,10 +57,12 @@ import { ProfileDialog } from "@/components/layout/profile-dialog";
 import { api, defaultMerchantProfile } from "@/lib/api/client";
 import { MerchantProfile } from "@/lib/types";
 import { useStore } from "@/lib/context/store-context";
+import { useAuth } from "@/lib/context/auth-context";
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { currentStore, stores, switchStore } = useStore();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
   const [profileOpen, setProfileOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -74,6 +76,16 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
     read: boolean;
     type: string;
   }>>([]);
+
+  const displayName = user?.name || profile.name;
+  const displayEmail = user?.email || profile.email;
+  const displayMerchantId = user?.merchantId || profile.merchantId;
+  const initials = (displayName || "RF")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "RF";
 
   // Load profile state & live notifications
   useEffect(() => {
@@ -102,12 +114,13 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
   const handleCopyId = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(profile.merchantId);
+    navigator.clipboard.writeText(displayMerchantId);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     router.push("/login");
   };
 
@@ -199,7 +212,9 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500 pl-3 border-l border-zinc-200">
+          <div className="hidden sm:block h-4 w-px bg-zinc-200 mx-1" />
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-zinc-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-zinc-600 font-medium text-[11px]">AI Seller: Online</span>
           </div>
         </div>
@@ -219,7 +234,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         </div>
 
         {/* Right: Quick Actions & Profile */}
-        <div className="flex items-center gap-1 sm:gap-2.5">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Mobile Search Button (Quick ⌘K trigger) */}
           <button
             type="button"
@@ -295,20 +310,23 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             </PopoverContent>
           </Popover>
 
+          {/* Clean Vertical Divider */}
+          <div className="hidden sm:block h-5 w-px bg-zinc-200 mx-0.5 shrink-0" />
+
           {/* User Profile Dropdown Menu Trigger */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 aria-label="User Account Menu"
-                className="flex items-center gap-1.5 sm:gap-2.5 pl-2 sm:pl-3 border-l border-zinc-200 hover:bg-zinc-50 py-1 px-1.5 sm:px-2 rounded-xl transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
+                className="flex items-center gap-1.5 sm:gap-2.5 py-1 px-1.5 sm:px-2 rounded-xl hover:bg-zinc-100/80 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500/20 group"
               >
                 <div className="w-7 h-7 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                  RF
+                  {initials}
                 </div>
                 <div className="hidden lg:block text-left">
-                  <p className="text-xs font-semibold text-zinc-900 leading-none">{profile.name}</p>
-                  <p className="text-[10px] text-zinc-500 font-mono leading-none mt-1">{profile.merchantId}</p>
+                  <p className="text-xs font-semibold text-zinc-900 leading-none">{displayName}</p>
+                  <p className="text-[10px] text-zinc-500 font-mono leading-none mt-1">{displayMerchantId}</p>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-zinc-400 group-hover:text-zinc-600 transition-transform duration-200 group-data-[state=open]:rotate-180 shrink-0" />
               </button>
@@ -323,19 +341,19 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <div className="p-3 bg-zinc-50/80 rounded-xl border border-zinc-100/80 mb-1 space-y-2">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-xs shrink-0">
-                    RF
+                    {initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-zinc-900 truncate leading-none">{profile.name}</p>
+                    <p className="text-xs font-bold text-zinc-900 truncate leading-none">{displayName}</p>
                     <p className="text-[11px] text-zinc-500 truncate mt-1 flex items-center gap-1">
                       <Mail className="w-3 h-3 text-zinc-400 shrink-0" />
-                      <span className="truncate font-mono">{profile.email}</span>
+                      <span className="truncate font-mono">{displayEmail}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 text-[10px] font-mono border-t border-zinc-200/60">
-                  <span className="text-zinc-500">ID: {profile.merchantId}</span>
+                  <span className="text-zinc-500">ID: {displayMerchantId}</span>
                   <button
                     type="button"
                     onClick={handleCopyId}

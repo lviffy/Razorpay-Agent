@@ -10,6 +10,10 @@ import {
   OnboardingStep,
   StoreProvider,
   MerchantProfile,
+  AuthUser,
+  AuthResponse,
+  LoginCredentials,
+  SignupCredentials,
 } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
@@ -60,17 +64,24 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
   try {
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE}${endpoint}`;
     let storeId = "a0000000-0000-0000-0000-000000000001";
+    let token: string | null = null;
     if (typeof window !== "undefined") {
       storeId = localStorage.getItem("agentbridge_selected_store_id") || storeId;
+      token = localStorage.getItem("agentbridge_auth_token");
     }
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const authHeaders: Record<string, string> = {};
+    if (token) {
+      authHeaders["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(url, {
       ...options,
       signal: options.signal || controller.signal,
       headers: {
         "Content-Type": "application/json",
         "x-store-id": storeId,
+        ...authHeaders,
         ...(options.headers || {}),
       },
     });
@@ -78,6 +89,12 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
 
     if (!res.ok) {
       console.warn(`API request to ${endpoint} returned status ${res.status}`);
+      try {
+        const errJson = await res.json();
+        if (errJson && typeof errJson === "object") {
+          return errJson as T;
+        }
+      } catch (e) {}
       return fallback;
     }
 
@@ -196,6 +213,62 @@ function advanceFallbackStep(content: string): { reply: string; state: Onboardin
 }
 
 export const api = {
+  auth: {
+    login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+      return fetchJson<AuthResponse>(
+        "/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify(credentials),
+        },
+        { success: false, error: "Network connection failed. Please check backend server." }
+      );
+    },
+    signup: async (credentials: SignupCredentials): Promise<AuthResponse> => {
+      return fetchJson<AuthResponse>(
+        "/auth/signup",
+        {
+          method: "POST",
+          body: JSON.stringify(credentials),
+        },
+        { success: false, error: "Network connection failed. Please check backend server." }
+      );
+    },
+    google: async (payload: {
+      credential?: string;
+      code?: string;
+      email?: string;
+      fullName?: string;
+      avatarUrl?: string;
+    } = {}): Promise<AuthResponse> => {
+      return fetchJson<AuthResponse>(
+        "/auth/google",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        { success: false, error: "Google authentication failed. Please try again." }
+      );
+    },
+    getGoogleUrl: async (): Promise<{ configured: boolean; url: string | null }> => {
+      return fetchJson<{ configured: boolean; url: string | null }>(
+        "/auth/google/url",
+        {},
+        { configured: false, url: null }
+      );
+    },
+    me: async (): Promise<{ user: AuthUser } | null> => {
+      return fetchJson<{ user: AuthUser } | null>("/auth/me", {}, null);
+    },
+    logout: async (): Promise<{ success: boolean }> => {
+      return fetchJson<{ success: boolean }>(
+        "/auth/logout",
+        { method: "POST" },
+        { success: true }
+      );
+    },
+  },
+
   dashboard: {
     getOverview: async () => {
       return fetchJson<{

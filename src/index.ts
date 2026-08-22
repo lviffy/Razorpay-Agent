@@ -24,6 +24,7 @@ import merchantRouter from "./api/merchant.ts";
 import activityRouter from "./api/activity.ts";
 import simulatorRouter from "./api/simulator.ts";
 import onboardingRouter from "./api/onboarding.ts";
+import authRouter from "./api/auth.ts";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8000", 10);
@@ -60,6 +61,7 @@ app.use("/api/v1/checkout", checkoutRouter);
 app.use("/demo", demoRouter);
 
 // ── Full Dashboard & Management REST APIs ─────────────────────────────────────
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/api/v1/products", productsRouter);
 app.use("/api/v1/orders", ordersRouter);

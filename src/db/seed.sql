@@ -3,6 +3,49 @@
 -- Full realistic merchant, product, conversation, order, and audit ledger seed
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- ── Seed Authenticated Merchant Users ─────────────────────────────────────────
+INSERT INTO users (id, email, password_hash, name, role, store_id, phone, provider, is_active)
+VALUES 
+    (
+        '10000000-0000-0000-0000-000000000001',
+        'merchant@runfast.in',
+        '$2b$10$na6oVRFPvYTlOyRtYinKJOz8ORXD8AagbZM9BDo7ja1vg8gtaskIW',
+        'Rahul Mehta',
+        'merchant_owner',
+        'a0000000-0000-0000-0000-000000000001',
+        '+91 98765 00000',
+        'credentials',
+        true
+    ),
+    (
+        '10000000-0000-0000-0000-000000000002',
+        'merchant@runfastsports.in',
+        '$2b$10$na6oVRFPvYTlOyRtYinKJOz8ORXD8AagbZM9BDo7ja1vg8gtaskIW',
+        'Rahul Mehta',
+        'merchant_owner',
+        'a0000000-0000-0000-0000-000000000001',
+        '+91 98765 00000',
+        'credentials',
+        true
+    ),
+    (
+        '20000000-0000-0000-0000-000000000001',
+        'support@speedgear.in',
+        '$2b$10$na6oVRFPvYTlOyRtYinKJOz8ORXD8AagbZM9BDo7ja1vg8gtaskIW',
+        'Vikram Shah',
+        'merchant_owner',
+        'b0000000-0000-0000-0000-000000000002',
+        '+91 98111 22334',
+        'credentials',
+        true
+    )
+ON CONFLICT (email) DO UPDATE SET
+    password_hash = EXCLUDED.password_hash,
+    name = EXCLUDED.name,
+    role = EXCLUDED.role,
+    store_id = EXCLUDED.store_id,
+    phone = EXCLUDED.phone;
+
 -- ── Store A: RunFast Sports (Bengaluru) ───────────────────────────────────────
 INSERT INTO stores (id, name, city, phone, email, role, razorpay_account_id, currency, is_active, agent_settings)
 VALUES (

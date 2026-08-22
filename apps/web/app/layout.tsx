@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/context/auth-context";
 
 const googleSans = localFont({
   src: "./fonts/GoogleSansFlex.ttf",
@@ -61,7 +62,7 @@ export default function RootLayout({
       className={`scroll-smooth ${googleSans.variable} ${figtree.variable} ${deliciousHandrawn.variable} ${mono.variable}`}
     >
       <body className="font-sans antialiased text-[#09090b] bg-[#fbfbfd] selection:bg-[#195adc] selection:text-white tracking-normal">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

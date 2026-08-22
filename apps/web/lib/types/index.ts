@@ -173,3 +173,38 @@ export interface MerchantProfile {
   status: "active" | "inactive";
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  phone?: string;
+  avatarUrl?: string;
+  storeId?: string;
+  storeName?: string;
+  storeCity?: string;
+  merchantId?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token?: string;
+  user?: AuthUser;
+  error?: string;
+  message?: string;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+export interface SignupCredentials {
+  fullName: string;
+  email: string;
+  password: string;
+  storeName?: string;
+  phone?: string;
+}
+

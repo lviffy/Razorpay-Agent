@@ -19,6 +19,37 @@ CREATE TABLE IF NOT EXISTS stores (
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 1.1 Merchant Users & Authenticated Accounts
+CREATE TABLE IF NOT EXISTS users (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email               VARCHAR(255) UNIQUE NOT NULL,
+    password_hash       VARCHAR(255),
+    name                VARCHAR(255) NOT NULL,
+    role                VARCHAR(50) DEFAULT 'merchant_owner',
+    store_id            UUID REFERENCES stores(id) ON DELETE SET NULL,
+    phone               VARCHAR(50),
+    avatar_url          TEXT,
+    provider            VARCHAR(50) DEFAULT 'credentials',
+    is_active           BOOLEAN DEFAULT TRUE,
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 1.2 User Sessions (for JWT / persistent login token tracking)
+CREATE TABLE IF NOT EXISTS sessions (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID REFERENCES users(id) ON DELETE CASCADE,
+    token               VARCHAR(500) UNIQUE NOT NULL,
+    expires_at          TIMESTAMPTZ NOT NULL,
+    user_agent          TEXT,
+    ip_address          VARCHAR(100),
+    created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+
 -- 2. Merchant Negotiation Rules
 CREATE TABLE IF NOT EXISTS negotiation_rules (
     id                              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
