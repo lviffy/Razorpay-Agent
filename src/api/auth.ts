@@ -154,7 +154,9 @@ router.post("/signup", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error("Signup error:", err);
-    return res.status(500).json({ error: "Failed to create merchant account. Please try again." });
+    return res.status(500).json({
+      error: err?.message || "Failed to create merchant account. Please try again.",
+    });
   }
 });
 
@@ -246,8 +248,8 @@ router.post("/login", async (req: Request, res: Response) => {
         role: user.role,
         phone: user.phone || "+91 98765 00000",
         avatarUrl: user.avatar_url,
-        storeId: user.store_id || DEFAULT_STORE_ID,
-        storeName: user.store_name || "RunFast Sports",
+        storeId: user.store_id,
+        storeName: user.store_name || "ZapAI Store",
         storeCity: user.store_city || "Bengaluru",
         merchantId: `merch_${user.id.slice(0, 8)}`,
         onboardingCompleted: Boolean(user.onboarding_completed),
@@ -257,7 +259,9 @@ router.post("/login", async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error("Login error:", err);
-    return res.status(500).json({ error: "Authentication failed. Please try again." });
+    return res.status(500).json({
+      error: err?.message || "Authentication failed. Please try again.",
+    });
   }
 });
 
@@ -494,7 +498,7 @@ router.post("/google", async (req: Request, res: Response) => {
         role: user.role,
         phone: user.phone || "+91 98765 00000",
         avatarUrl: user.avatar_url || googleAvatar,
-        storeId: user.store_id || DEFAULT_STORE_ID,
+        storeId: user.store_id,
         storeName: user.store_name || "ZapAI Store",
         merchantId: `merch_${user.id.slice(0, 8)}`,
         onboardingCompleted: Boolean(user.onboarding_completed),
@@ -503,8 +507,10 @@ router.post("/google", async (req: Request, res: Response) => {
       message: "Signed in with Google successfully.",
     });
   } catch (err: any) {
-    console.error("Google authentication error:", err);
-    return res.status(500).json({ error: "Google authentication failed. Please try again." });
+    console.error("Google SSO error:", err);
+    return res.status(500).json({
+      error: err?.message || "Google authentication failed.",
+    });
   }
 });
 
