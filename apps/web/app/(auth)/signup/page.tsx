@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,8 +19,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/context/auth-context";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { signup, loginWithGoogle } = useAuth();
   const [fullName, setFullName] = useState("");
   const [storeName, setStoreName] = useState("");
@@ -30,6 +31,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      setErrorMsg(decodeURIComponent(errorParam));
+    }
+  }, [searchParams]);
 
   // Password Strength Calculation
   const hasMinLength = password.length >= 8;
@@ -327,6 +335,14 @@ export default function SignupPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-zinc-50"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>}>
+      <SignupForm />
+    </Suspense>
   );
 }
 

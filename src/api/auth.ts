@@ -74,7 +74,7 @@ router.post("/signup", async (req: Request, res: Response) => {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    let storeId = DEFAULT_STORE_ID;
+    let storeId: string | null = null;
     let actualStoreName = storeName || "My Merchant Store";
 
     // If storeName was provided, create a dedicated store record in Neon DB
@@ -99,7 +99,7 @@ router.post("/signup", async (req: Request, res: Response) => {
           );
         }
       } catch (storeErr) {
-        console.warn("Could not create dedicated store, using default store:", storeErr);
+        console.warn("Could not create dedicated store:", storeErr);
       }
     }
 
@@ -357,9 +357,9 @@ router.get("/google/callback", async (req: Request, res: Response) => {
       isNewUser = true;
       const insertRes = await db.query(
         `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active, onboarding_completed)
-         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true, false)
+         VALUES ($1, $2, 'merchant_owner', NULL, $3, 'google', true, false)
          RETURNING *`,
-        [normalizedEmail, name || "Google Merchant", DEFAULT_STORE_ID, picture || null]
+        [normalizedEmail, name || "Google Merchant", picture || null]
       );
       user = insertRes.rows[0];
     }
@@ -384,7 +384,8 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     return res.redirect(`${targetBase}/auth/callback?token=${token}&email=${encodeURIComponent(user.email)}&onboardingCompleted=${onboardingDone}&isNewUser=${isNewUser}`);
   } catch (err: any) {
     console.error("Google callback error:", err);
-    return res.redirect(`${targetBase}/login?error=Google+authentication+failed`);
+    const errMessage = encodeURIComponent(err?.message || "Google authentication failed");
+    return res.redirect(`${targetBase}/login?error=${errMessage}`);
   }
 });
 
@@ -455,9 +456,9 @@ router.post("/google", async (req: Request, res: Response) => {
       isNewUser = true;
       const insertRes = await db.query(
         `INSERT INTO users (email, name, role, store_id, avatar_url, provider, is_active, onboarding_completed)
-         VALUES ($1, $2, 'merchant_owner', $3, $4, 'google', true, false)
+         VALUES ($1, $2, 'merchant_owner', NULL, $3, 'google', true, false)
          RETURNING *`,
-        [ssoEmail, ssoName, DEFAULT_STORE_ID, googleAvatar || null]
+        [ssoEmail, ssoName, googleAvatar || null]
       );
       user = insertRes.rows[0];
     } else if (googleAvatar && !user.avatar_url) {
