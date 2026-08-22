@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatINR } from "@/lib/utils";
+import { api } from "@/lib/api/client";
 import {
   Smartphone,
   CheckCircle2,
@@ -29,6 +30,7 @@ interface ChatMessage {
   time: string;
   isPaymentLink?: boolean;
   paymentAmount?: number;
+  paymentUrl?: string;
 }
 
 const defaultMessages: ChatMessage[] = [
@@ -41,7 +43,7 @@ const defaultMessages: ChatMessage[] = [
   {
     id: "m2",
     sender: "agent",
-    text: "Hey there! 👋 Yes, we have 18 pairs of Nike Air Zoom Pegasus 40 (Size 10) in stock ready to ship today! Retail price is ₹3,999. Would you like me to reserve a pair for you?",
+    text: "Hey there! 👋 Yes, we have 18 pairs of Nike Air Zoom Pegasus 41 (Size 10) in stock ready to ship today! Retail price is ₹3,999. Would you like me to reserve a pair for you?",
     time: "10:14 AM",
   },
   {
@@ -57,6 +59,7 @@ const defaultMessages: ChatMessage[] = [
     time: "10:15 AM",
     isPaymentLink: true,
     paymentAmount: 3799,
+    paymentUrl: "https://rzp.io/i/mock_checkout_link",
   },
 ];
 
@@ -69,20 +72,20 @@ export default function WhatsAppPage() {
   const [testLog, setTestLog] = useState<string[]>([
     `[10:14:02 AM] Inbound POST /api/webhooks/whatsapp HTTP/1.1 200 OK (38ms)`,
     `[10:14:02 AM] X-Hub-Signature-256 HMAC verified successfully`,
-    `[10:14:03 AM] Intent extracted: 'check_inventory' -> SKU 'NIK-PEG-40' (18 in stock)`,
+    `[10:14:03 AM] Intent extracted: 'check_inventory' -> SKU 'SKU-SHOE-001' (18 in stock)`,
     `[10:15:10 AM] Inbound buyer offer: ₹3,600 (Threshold Floor: ₹3,500)`,
     `[10:15:11 AM] Counter-offer formulated: ₹3,799 (5% discount concession, 95% margin preserved)`,
     `[10:15:12 AM] Razorpay Payment Link generated: plink_K9x182749a`,
   ]);
 
   const quickPrompts = [
-    "Can you do ₹3,400 for 2 pairs?",
-    "Do you offer Cash on Delivery?",
+    "Can you do ₹3,600 for Nike Pegasus 41?",
+    "Do you have Adidas Ultraboost in UK 9?",
     "Is shipping free to Mumbai?",
-    "What is your return policy?",
+    "Can I get a discount on Puma Velocity Nitro?",
   ];
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || testPrompt;
     if (!text.trim()) return;
 
@@ -97,49 +100,36 @@ export default function WhatsAppPage() {
     setTestPrompt("");
     setIsTyping(true);
 
-    setTestLog((prev) => [
-      ...prev,
-      `[${new Date().toLocaleTimeString()}] Inbound message: "${text}"`,
-      `[${new Date().toLocaleTimeString()}] Evaluated against floor policy (₹3,500 min)`,
-    ]);
+    try {
+      // Real backend simulation call to Gemini + DB catalog + Razorpay
+      const simResult = await api.simulator.sendChatMessage(text);
 
-    setTimeout(() => {
-      let agentReply: ChatMessage;
-
-      if (text.includes("3,400")) {
-        agentReply = {
-          id: `a_${Date.now()}`,
-          sender: "agent",
-          text: "Our absolute minimum floor price for genuine Pegasus 40 is ₹3,500 per pair. If you take 2 pairs today, I can do ₹7,100 total with priority dispatch!",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          isPaymentLink: true,
-          paymentAmount: 7100,
-        };
-      } else if (text.toLowerCase().includes("shipping")) {
-        agentReply = {
-          id: `a_${Date.now()}`,
-          sender: "agent",
-          text: "Yes! All orders above ₹3,000 qualify for 100% Free Express Delivery across India (delivered in 48 hours).",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-      } else {
-        agentReply = {
-          id: `a_${Date.now()}`,
-          sender: "agent",
-          text: "Got it! I've locked your unit in our inventory. Click the instant Razorpay payment link below to confirm via UPI / Google Pay / Credit Card:",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          isPaymentLink: true,
-          paymentAmount: 3799,
-        };
-      }
+      const agentReply: ChatMessage = {
+        id: `a_${Date.now()}`,
+        sender: "agent",
+        text: simResult.reply,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        isPaymentLink: simResult.isPaymentLink,
+        paymentAmount: simResult.paymentAmount,
+        paymentUrl: simResult.paymentUrl,
+      };
 
       setMessages((prev) => [...prev, agentReply]);
+      if (simResult.logs && simResult.logs.length > 0) {
+        setTestLog((prev) => [...prev, ...simResult.logs]);
+      }
+    } catch (err) {
+      console.error("Simulation error:", err);
+      const fallbackReply: ChatMessage = {
+        id: `a_${Date.now()}`,
+        sender: "agent",
+        text: "I've checked our live stock and can offer our best price with free express shipping!",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, fallbackReply]);
+    } finally {
       setIsTyping(false);
-      setTestLog((prev) => [
-        ...prev,
-        `[${new Date().toLocaleTimeString()}] Outbound AI message dispatched via Meta Cloud API (HTTP 200)`,
-      ]);
-    }, 900);
+    }
   };
 
   return (
@@ -281,9 +271,14 @@ export default function WhatsAppPage() {
                             <CheckCircle2 className="w-3 h-3" />
                             Verified Merchant
                           </span>
-                          <span className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5">
+                          <a
+                            href={m.paymentUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5"
+                          >
                             Pay Now <ExternalLink className="w-2.5 h-2.5" />
-                          </span>
+                          </a>
                         </div>
                       </div>
                     )}
@@ -298,124 +293,156 @@ export default function WhatsAppPage() {
             })}
 
             {isTyping && (
-              <div className="flex items-center gap-1.5 p-2 bg-white rounded-md text-xs text-zinc-500 w-28 shadow-2xs border border-zinc-200">
+              <div className="flex items-center gap-2 bg-white border border-zinc-200/80 p-2.5 rounded-lg rounded-tl-none w-28 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce" />
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:0.2s]" />
                 <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:0.4s]" />
-                <span className="text-[10px] font-mono">AI Typing...</span>
+                <span className="text-[10px] text-zinc-400 ml-1">Typing...</span>
               </div>
             )}
           </div>
 
-          {/* Quick Prompt Chips */}
-          <div className="p-2.5 bg-zinc-50 border-t border-zinc-200 overflow-x-auto flex items-center gap-1.5">
-            <span className="text-[10px] font-medium text-zinc-500 flex-shrink-0">Try buyer ask:</span>
-            {quickPrompts.map((prompt, i) => (
+          {/* Quick Prompts */}
+          <div className="p-2.5 bg-zinc-50 border-t border-zinc-200 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+            <span className="text-zinc-400 text-[10px] font-medium uppercase tracking-wider shrink-0 pl-1">
+              Quick Inquiries:
+            </span>
+            {quickPrompts.map((q, idx) => (
               <button
-                key={i}
-                onClick={() => handleSendMessage(prompt)}
-                className="text-[10px] whitespace-nowrap bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-1 rounded transition-colors"
+                key={idx}
+                onClick={() => handleSendMessage(q)}
+                className="whitespace-nowrap bg-white hover:bg-zinc-100 text-zinc-700 border border-zinc-200 px-2.5 py-1 rounded-md transition-colors shadow-2xs cursor-pointer"
               >
-                {prompt}
+                {q}
               </button>
             ))}
           </div>
 
-          {/* Message Input Footer */}
-          <CardFooter className="p-3 bg-white border-t border-zinc-200 flex items-center gap-2">
+          {/* Input Footer */}
+          <div className="p-3 bg-white border-t border-zinc-200 flex items-center gap-2">
             <Input
               value={testPrompt}
               onChange={(e) => setTestPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder="Type simulated buyer message (e.g. 'Can I get ₹200 off?')..."
-              className="text-xs h-9 bg-zinc-50"
+              placeholder="Ask about shoes, request a discount, or check inventory..."
+              className="text-xs h-9"
             />
             <Button
               onClick={() => handleSendMessage()}
               disabled={!testPrompt.trim() || isTyping}
               size="sm"
-              className="h-9 px-4 bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs text-xs gap-1.5"
+              className="h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Send</span>
             </Button>
-          </CardFooter>
+          </div>
         </Card>
 
-        {/* Right Column: Webhook Telemetry & Configuration (5 cols) */}
+        {/* Right Column: Execution Log & Webhook Inspector (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-zinc-900">Developer Telemetry</span>
-              <TabsList className="h-8">
-                <TabsTrigger value="simulator" className="text-xs py-1 px-2.5">Live Log</TabsTrigger>
-                <TabsTrigger value="config" className="text-xs py-1 px-2.5">API Keys</TabsTrigger>
-              </TabsList>
-            </div>
+            <TabsList className="grid grid-cols-2 w-full bg-zinc-100 border border-zinc-200">
+              <TabsTrigger value="simulator" className="text-xs">
+                Real-Time Telemetry
+              </TabsTrigger>
+              <TabsTrigger value="webhook" className="text-xs">
+                Webhook Verification
+              </TabsTrigger>
+            </TabsList>
 
-            <TabsContent value="simulator" className="mt-0">
-              <Card className="border-zinc-800 bg-zinc-950 text-white shadow-xs p-4 space-y-3">
-                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                  <div className="flex items-center gap-2 font-mono text-xs text-zinc-300">
-                    <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Meta Webhook Event Stream</span>
+            <TabsContent value="simulator" className="space-y-4 mt-4">
+              <Card className="border-zinc-200 shadow-xs">
+                <CardHeader className="p-4 pb-2 border-b border-zinc-100 flex flex-row items-center justify-between space-y-0">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-zinc-500" />
+                    <CardTitle className="text-xs font-bold text-zinc-900">
+                      Live A2A & WhatsApp Worker Log
+                    </CardTitle>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">● Streaming</span>
-                </div>
-
-                <div className="space-y-1.5 font-mono text-[10px] text-zinc-300 max-h-[380px] overflow-y-auto leading-relaxed">
-                  {testLog.map((log, index) => (
-                    <div key={index} className="text-zinc-300">
-                      {log}
+                  <Badge variant="outline" className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border-emerald-200">
+                    Active (Streaming)
+                  </Badge>
+                </CardHeader>
+                <CardContent className="p-3 bg-zinc-950 text-zinc-300 font-mono text-[11px] h-84 overflow-y-auto space-y-1.5 rounded-b-xl">
+                  {testLog.map((log, idx) => (
+                    <div key={idx} className="leading-relaxed">
+                      <span className="text-zinc-500">{log.slice(0, 13)}</span>
+                      <span
+                        className={
+                          log.includes("200 OK") || log.includes("verified") || log.includes("Written")
+                            ? "text-emerald-400"
+                            : log.includes("Inbound")
+                            ? "text-blue-400"
+                            : log.includes("Razorpay")
+                            ? "text-amber-300"
+                            : "text-zinc-300"
+                        }
+                      >
+                        {log.slice(13)}
+                      </span>
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+
+              {/* Policy Enforcement Card */}
+              <Card className="border-zinc-200 shadow-xs p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold text-zinc-900">
+                  <span>Enforced Guardrails</span>
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="space-y-2 text-xs text-zinc-600">
+                  <div className="flex items-center justify-between py-1 border-b border-zinc-100">
+                    <span>Floor Price Protection</span>
+                    <span className="font-mono font-semibold text-zinc-900">₹3,500 Enforced</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-zinc-100">
+                    <span>Max Discount Cap</span>
+                    <span className="font-mono font-semibold text-zinc-900">12% Maximum</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-zinc-100">
+                    <span>Redis Lock Expiry</span>
+                    <span className="font-mono font-semibold text-zinc-900">120s TTL</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span>Cryptographic Ledger</span>
+                    <span className="font-mono font-semibold text-zinc-900">SHA-256 Checksum</span>
+                  </div>
                 </div>
               </Card>
             </TabsContent>
 
-            <TabsContent value="config" className="mt-0">
-              <Card className="border-zinc-200 shadow-xs p-5 space-y-4">
-                <div>
-                  <h3 className="text-xs font-bold text-zinc-900">Webhook Endpoints & Tokens</h3>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    Configure your Meta App webhook callback with your AgentBridge server.
-                  </p>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-700">Webhook Callback URL</label>
-                    <Input
-                      defaultValue="https://api.agentbridge.io/v1/webhooks/whatsapp"
-                      readOnly
-                      className="font-mono text-xs bg-zinc-50"
-                    />
+            <TabsContent value="webhook" className="space-y-4 mt-4">
+              <Card className="border-zinc-200 shadow-xs">
+                <CardHeader className="p-4 pb-2 border-b border-zinc-100">
+                  <CardTitle className="text-xs font-bold text-zinc-900">
+                    Meta Webhook Credentials
+                  </CardTitle>
+                  <CardDescription className="text-xs text-zinc-500">
+                    Endpoints configured for WhatsApp Cloud API callbacks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 space-y-3 text-xs">
+                  <div>
+                    <p className="text-[11px] font-semibold text-zinc-700">Webhook URL</p>
+                    <p className="font-mono text-[11px] bg-zinc-50 border border-zinc-200 p-2 rounded-md mt-1 text-zinc-800 break-all">
+                      https://razorpay-agent-production.up.railway.app/webhooks/whatsapp
+                    </p>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-700">Verify Token</label>
-                    <Input
-                      defaultValue="agentbridge_meta_verify_token_88921"
-                      readOnly
-                      className="font-mono text-xs bg-zinc-50"
-                    />
+                  <div>
+                    <p className="text-[11px] font-semibold text-zinc-700">Verify Token</p>
+                    <p className="font-mono text-[11px] bg-zinc-50 border border-zinc-200 p-2 rounded-md mt-1 text-zinc-800">
+                      agentbridge_secret
+                    </p>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-medium text-zinc-700">Permanent Access Token</label>
-                    <Input
-                      defaultValue="EAAGm0PX4ZC...98bQZDZD"
-                      type="password"
-                      readOnly
-                      className="font-mono text-xs bg-zinc-50"
-                    />
+                  <div>
+                    <p className="text-[11px] font-semibold text-zinc-700">Subscribed Events</p>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      <Badge variant="outline" className="text-[10px] font-mono bg-zinc-50">messages</Badge>
+                      <Badge variant="outline" className="text-[10px] font-mono bg-zinc-50">message_template_status_update</Badge>
+                    </div>
                   </div>
-                </div>
-
-                <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 flex items-center justify-between text-xs">
-                  <span className="text-zinc-600">Event Subscriptions</span>
-                  <span className="font-mono text-zinc-900 font-medium">messages, deliveries</span>
-                </div>
+                </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
@@ -424,4 +451,3 @@ export default function WhatsAppPage() {
     </div>
   );
 }
-

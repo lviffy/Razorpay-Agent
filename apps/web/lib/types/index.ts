@@ -132,10 +132,16 @@ export interface AnalyticsSummary {
   conversionRate: number;
   averageDiscount: number;
   averageOrderValue: number;
+  marginPreserved?: number;
   topSellingProducts: Array<{
     title: string;
     salesCount: number;
     revenue: number;
+  }>;
+  channelBreakdown?: Array<{
+    channel: string;
+    percentage: number;
+    gmv: number;
   }>;
 }
 

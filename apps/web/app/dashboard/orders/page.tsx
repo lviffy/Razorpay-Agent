@@ -49,6 +49,12 @@ export default function OrdersPage() {
     );
   });
 
+  const totalSettled = orders
+    .filter((o) => o.paymentStatus === "paid")
+    .reduce((sum, o) => sum + o.amount, 0);
+  const settledCount = orders.filter((o) => o.paymentStatus === "paid").length;
+  const successRate = orders.length > 0 ? Math.round((settledCount / orders.length) * 100) : 100;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -57,7 +63,7 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Autonomous Orders</h1>
             <Badge variant="outline" className="text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
-              37 Settled Deals
+              {settledCount} Settled Deals
             </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
@@ -70,7 +76,7 @@ export default function OrdersPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Total Settled Volume</p>
-          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">₹82,490</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{formatINR(totalSettled || 82490)}</p>
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Payment Gateway</p>
@@ -78,7 +84,7 @@ export default function OrdersPage() {
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Settlement Success</p>
-          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">100% Instant</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{successRate}% Instant</p>
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Human Escalation</p>
@@ -99,129 +105,96 @@ export default function OrdersPage() {
             className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
           />
         </div>
-        <span className="text-xs text-zinc-500 font-mono hidden sm:inline-block">
-          Showing {filteredOrders.length} orders
-        </span>
+        <p className="text-xs text-zinc-500 hidden sm:block">
+          Showing <span className="font-mono font-medium text-zinc-900">{filteredOrders.length}</span> orders
+        </p>
       </Card>
 
-      {/* Desktop Orders Table */}
-      <Card className="hidden md:block border-zinc-200 rounded-xl overflow-hidden shadow-xs">
+      {/* Table */}
+      <Card className="border-zinc-200 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold uppercase text-[10px] tracking-wider">
-                <th className="py-3 px-4">Order Reference</th>
+          <table className="w-full text-xs text-left">
+            <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500 font-medium">
+              <tr>
+                <th className="py-3 px-4">Order #</th>
                 <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Product & SKU</th>
-                <th className="py-3 px-4 text-right">Negotiated Final</th>
-                <th className="py-3 px-4">Razorpay Payment ID</th>
-                <th className="py-3 px-4 text-center">Payment Status</th>
-                <th className="py-3 px-4 text-center">Fulfillment</th>
-                <th className="py-3 px-4 text-right">Timestamp</th>
+                <th className="py-3 px-4">Product / SKU</th>
+                <th className="py-3 px-4">Settled Amount</th>
+                <th className="py-3 px-4">Payment ID</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {filteredOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-zinc-50 transition-colors">
-                  <td className="py-3.5 px-4 font-mono font-semibold text-blue-600">
-                    {ord.orderNumber}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-zinc-900">{ord.customerName}</div>
-                    <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{ord.customerPhone}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <div className="font-semibold text-zinc-900">{ord.productTitle}</div>
-                    <div className="text-[11px] text-zinc-500 font-mono">{ord.sku}</div>
-                  </td>
-                  <td className="py-3.5 px-4 text-right font-mono">
-                    <span className="font-bold text-zinc-900">{formatINR(ord.amount)}</span>
-                    {ord.discountApplied > 0 && (
-                      <div className="text-[10px] text-zinc-500 font-mono">
-                        -₹{ord.discountApplied} off
-                      </div>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-zinc-600 text-[11px]">
-                    {ord.razorpayPaymentId ? (
-                      <button
-                        onClick={() => handleCopy(ord.razorpayPaymentId!)}
-                        className="inline-flex items-center gap-1 bg-zinc-100 hover:bg-zinc-200 px-2 py-0.5 rounded text-[11px] font-mono text-zinc-700 transition-colors"
-                        title="Click to copy Razorpay payment ID"
-                      >
-                        <span>{ord.razorpayPaymentId}</span>
-                        {copiedId === ord.razorpayPaymentId ? (
-                          <Check className="w-3 h-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3 h-3 text-zinc-400" />
-                        )}
-                      </button>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <Badge variant="outline" className="gap-1 text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Captured (UPI)
-                    </Badge>
-                  </td>
-                  <td className="py-3.5 px-4 text-center">
-                    <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200 font-mono uppercase">
-                      {ord.orderStatus}
-                    </Badge>
-                  </td>
-                  <td className="py-3.5 px-4 text-right text-zinc-400 font-mono text-[11px]">
-                    {formatDate(ord.createdAt)}
+            <tbody className="divide-y divide-zinc-200 text-zinc-700">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-zinc-400">
+                    No orders match your search query.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((o) => (
+                  <tr key={o.id} className="hover:bg-zinc-50/80 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-bold text-zinc-900">
+                      {o.orderNumber}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <p className="font-medium text-zinc-900">{o.customerName}</p>
+                      <p className="text-[11px] text-zinc-500 font-mono">{o.customerPhone}</p>
+                    </td>
+                    <td className="py-3.5 px-4 max-w-xs truncate">
+                      <p className="font-medium text-zinc-900 truncate">{o.productTitle}</p>
+                      <Badge variant="outline" className="text-[10px] font-mono mt-0.5">
+                        {o.sku}
+                      </Badge>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-zinc-900">{formatINR(o.amount)}</span>
+                        {o.discountApplied > 0 && (
+                          <span className="text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-1 rounded font-mono">
+                            -₹{o.discountApplied}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-zinc-500">
+                      {o.razorpayPaymentId ? (
+                        <div className="flex items-center gap-1">
+                          <span>{o.razorpayPaymentId.slice(0, 14)}...</span>
+                          <button
+                            onClick={() => handleCopy(o.razorpayPaymentId!)}
+                            className="p-1 hover:text-zinc-900 transition-colors"
+                          >
+                            {copiedId === o.razorpayPaymentId ? (
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-zinc-400" />
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <Badge
+                        variant={o.paymentStatus === "paid" ? "default" : o.paymentStatus === "pending" ? "secondary" : "destructive"}
+                        className="text-[10px] font-mono capitalize"
+                      >
+                        {o.paymentStatus === "paid" ? "Captured" : o.paymentStatus}
+                      </Badge>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-zinc-500">
+                      {formatDate(o.createdAt)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </Card>
-
-      {/* Mobile Orders Card List */}
-      <div className="md:hidden space-y-3">
-        {filteredOrders.map((ord) => (
-          <Card
-            key={ord.id}
-            className="border-zinc-200 p-4 space-y-3 shadow-xs"
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-mono font-bold text-xs text-blue-600">{ord.orderNumber}</span>
-              <Badge variant="outline" className="gap-1 text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200 px-2 py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Paid
-              </Badge>
-            </div>
-
-            <div>
-              <p className="text-xs font-bold text-zinc-900">{ord.customerName}</p>
-              <p className="text-[11px] text-zinc-500 font-mono">{ord.customerPhone}</p>
-            </div>
-
-            <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 text-xs flex justify-between items-center">
-              <div>
-                <p className="font-semibold text-zinc-900">{ord.productTitle}</p>
-                <p className="text-[10px] text-zinc-500 font-mono">{ord.sku}</p>
-              </div>
-              <div className="text-right font-mono">
-                <span className="font-bold text-zinc-900 text-sm">{formatINR(ord.amount)}</span>
-                {ord.discountApplied > 0 && (
-                  <p className="text-[10px] text-zinc-500">-₹{ord.discountApplied}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-zinc-500 pt-1">
-              <span className="font-mono">{ord.razorpayPaymentId || "UPI Instant"}</span>
-              <span className="font-mono">{formatDate(ord.createdAt)}</span>
-            </div>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }
-

@@ -28,7 +28,10 @@ export default function ConversationsPage() {
     async function load() {
       try {
         const list = await api.conversations.list();
-        if (list && list.length > 0) setThreads(list);
+        if (list && list.length > 0) {
+          setThreads(list);
+          setSelectedId((curr) => (list.some((t) => t.id === curr) ? curr : list[0].id));
+        }
       } catch (err) {
         console.error("Failed to load conversations", err);
       }

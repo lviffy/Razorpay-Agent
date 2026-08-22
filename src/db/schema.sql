@@ -8,9 +8,13 @@ CREATE TABLE IF NOT EXISTS stores (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name                VARCHAR(255) NOT NULL,
     city                VARCHAR(100),
+    phone               VARCHAR(50) DEFAULT '+91 98765 00000',
+    email               VARCHAR(255) DEFAULT 'merchant@runfastsports.in',
+    role                VARCHAR(100) DEFAULT 'Store Owner & Admin',
     razorpay_account_id VARCHAR(100) NOT NULL DEFAULT 'rzp_test_mock',
     currency            VARCHAR(10) DEFAULT 'INR',
     is_active           BOOLEAN DEFAULT TRUE,
+    agent_settings      JSONB DEFAULT '{"tone":"friendly","status":"active","autoNegotiationEnabled":true,"humanEscalationEnabled":true,"escalationThresholdAmount":5000}'::jsonb,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
@@ -24,6 +28,9 @@ CREATE TABLE IF NOT EXISTS negotiation_rules (
     free_shipping_threshold         NUMERIC(12,2),
     allow_bundle_offers             BOOLEAN DEFAULT TRUE,
     auto_accept_threshold           NUMERIC(12,2),
+    risk_profile                    VARCHAR(50) DEFAULT 'balanced',
+    human_approval_above            NUMERIC(12,2) DEFAULT 5000.00,
+    alternative_products_enabled    BOOLEAN DEFAULT TRUE,
     created_at                      TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -41,7 +48,12 @@ CREATE TABLE IF NOT EXISTS products (
     inventory_reserved      INT DEFAULT 0,
     reservation_expires_at  TIMESTAMPTZ,
     inventory_state         VARCHAR(20) DEFAULT 'AVAILABLE',   -- AVAILABLE | RESERVED | PAYMENT_PENDING | PAID | SOLD
+    is_ai_enabled           BOOLEAN DEFAULT TRUE,
+    category                VARCHAR(100) DEFAULT 'General',
+    description             TEXT DEFAULT '',
+    image_url               TEXT,
     agent_schema            JSONB NOT NULL,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
     updated_at              TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(store_id, shopify_variant_id)
 );
@@ -105,6 +117,12 @@ CREATE TABLE IF NOT EXISTS orders (
     x402_tx_hash        VARCHAR(255) UNIQUE NOT NULL,
     mandate_id          VARCHAR(100),
     amount              NUMERIC(12,2) NOT NULL,
+    original_price      NUMERIC(12,2),
+    discount_applied    NUMERIC(12,2) DEFAULT 0,
+    customer_name       VARCHAR(255) DEFAULT 'Aarav Patel',
+    customer_phone      VARCHAR(50) DEFAULT '+91 98765 43210',
+    product_title       VARCHAR(255),
+    sku                 VARCHAR(100),
     currency            VARCHAR(10) DEFAULT 'INR',
     status              payment_status DEFAULT 'CREATED',
     created_at          TIMESTAMPTZ DEFAULT NOW(),
@@ -140,9 +158,13 @@ CREATE TABLE IF NOT EXISTS conversations (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id     VARCHAR(255) UNIQUE NOT NULL,
     phone_number        VARCHAR(50) NOT NULL,
+    customer_name       VARCHAR(255) DEFAULT 'Aarav Patel',
     buyer_agent_id      VARCHAR(100),
     mandate_id          VARCHAR(100),
     session_state       VARCHAR(50) DEFAULT 'IDLE',   -- IDLE | NEGOTIATING | AWAITING_PAYMENT | COMPLETE
+    status              VARCHAR(50) DEFAULT 'active', -- active | negotiating | deal_closed | escalated
+    deal_amount         NUMERIC(12,2),
+    products_discussed  JSONB DEFAULT '[]'::jsonb,
     last_message_id     VARCHAR(255),
     context             JSONB DEFAULT '{}'::jsonb,
     created_at          TIMESTAMPTZ DEFAULT NOW(),

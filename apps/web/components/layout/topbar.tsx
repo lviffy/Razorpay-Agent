@@ -91,9 +91,17 @@ export function Topbar() {
     },
   ]);
 
-  // Load profile state
+  // Load profile state & live notifications
   useEffect(() => {
-    api.profile.get().then(setProfile);
+    api.profile.get().then((p) => {
+      if (p) setProfile(p);
+    });
+    api.analytics.getNotifications().then((notifs) => {
+      if (notifs && notifs.length > 0) {
+        setNotifications(notifs);
+        setUnreadNotifications(notifs.filter((n) => !n.read).length);
+      }
+    });
   }, []);
 
   // Keyboard shortcut for Command Palette (⌘K / Ctrl+K)

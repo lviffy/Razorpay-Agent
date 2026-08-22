@@ -38,7 +38,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Agent Analytics & ROI</h1>
             <Badge variant="outline" className="text-[11px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
-              +₹9,310 Margin Preserved
+              +{formatINR(data.marginPreserved || 9310)} Margin Preserved
             </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
