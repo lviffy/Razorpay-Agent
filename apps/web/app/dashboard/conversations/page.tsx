@@ -3,8 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { ConversationThread } from "@/lib/types";
+import { initialMockConversations } from "@/lib/api/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   MessageSquare,
   Search,
@@ -17,27 +20,23 @@ import {
 } from "lucide-react";
 
 export default function ConversationsPage() {
-  const [threads, setThreads] = useState<ConversationThread[]>([]);
+  const [threads, setThreads] = useState<ConversationThread[]>(initialMockConversations);
   const [selectedId, setSelectedId] = useState<string>("conv_1");
   const [mobileTab, setMobileTab] = useState<"threads" | "chat" | "trace">("chat");
 
   useEffect(() => {
     async function load() {
-      const list = await api.conversations.list();
-      setThreads(list);
+      try {
+        const list = await api.conversations.list();
+        if (list && list.length > 0) setThreads(list);
+      } catch (err) {
+        console.error("Failed to load conversations", err);
+      }
     }
     load();
   }, []);
 
-  const selectedThread = threads.find((t) => t.id === selectedId) || threads[0];
-
-  if (!selectedThread) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-xs text-zinc-500 font-mono">Loading conversations...</p>
-      </div>
-    );
-  }
+  const selectedThread = threads.find((t) => t.id === selectedId) || threads[0] || initialMockConversations[0];
 
   return (
     <div className="space-y-4">
@@ -46,10 +45,10 @@ export default function ConversationsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-zinc-900 tracking-tight">AI Conversations & Traces</h1>
-            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
+            <Badge variant="outline" className="gap-1.5 font-medium text-[11px] bg-zinc-100 text-zinc-700 border-zinc-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               WhatsApp Engine
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
             Real-time WhatsApp buyer dialogues paired with transparent AI Seller reasoning traces and floor price mandate checks.
@@ -86,7 +85,7 @@ export default function ConversationsPage() {
       </div>
 
       {/* 3-Pane Layout */}
-      <div className="bg-white border border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs">
+      <Card className="border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs p-0">
         {/* Pane 1: Conversation List (3 cols) */}
         <div
           className={`lg:col-span-3 border-r border-zinc-200 flex flex-col ${
@@ -132,9 +131,9 @@ export default function ConversationsPage() {
                   </div>
                   <p className="text-[11px] text-zinc-500 line-clamp-1 pl-8 font-normal">{t.lastMessage}</p>
                   <div className="flex items-center justify-between mt-1 pl-8">
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
+                    <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
                       {t.status === "deal_closed" ? "✓ Deal Closed" : "Negotiating"}
-                    </span>
+                    </Badge>
                     {t.dealAmount && (
                       <span className="text-xs font-mono font-bold text-zinc-900">
                         {formatINR(t.dealAmount)}
@@ -164,9 +163,9 @@ export default function ConversationsPage() {
                 <p className="text-[10px] text-zinc-500 font-mono mt-1">{selectedThread.customerPhone}</p>
               </div>
             </div>
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-mono">
+            <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200 font-mono">
               WhatsApp Live
-            </span>
+            </Badge>
           </div>
 
           {/* Messages Feed */}
@@ -291,9 +290,10 @@ export default function ConversationsPage() {
             </span>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
+
 
 

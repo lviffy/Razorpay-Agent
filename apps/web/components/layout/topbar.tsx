@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function Topbar() {
   return (
-    <header className="h-14 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 select-none">
+    <header className="h-14 bg-white border-b border-zinc-200 px-6 flex items-center justify-between sticky top-0 z-20 select-none flex-shrink-0">
       {/* Left: Active Store + Environment Pill */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 bg-zinc-100 border border-zinc-200 px-2.5 py-1 rounded-md">

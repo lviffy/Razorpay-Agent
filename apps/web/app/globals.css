@@ -2,14 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent layout shift when scrollbar appears */
 html {
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
-  scrollbar-color: #cbd5e1 transparent;
-  scrollbar-width: thin;
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 /* Smooth scrolling & accessible reduced motion */

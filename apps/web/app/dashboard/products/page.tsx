@@ -3,8 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { Product } from "@/lib/types";
+import { initialMockProducts } from "@/lib/api/mock-data";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import {
   Plus,
@@ -17,9 +21,9 @@ import {
 } from "lucide-react";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(initialMockProducts);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState<"ALL" | "IN_STOCK" | "AI_ENABLED" | "SHOPIFY" | "AGENTBRIDGE">("ALL");
+  const [filter, setFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
@@ -65,9 +69,9 @@ export default function ProductsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Unified Catalog</h1>
-            <span className="text-[11px] px-2 py-0.5 rounded-md font-mono bg-zinc-100 text-zinc-700 border border-zinc-200">
+            <Badge variant="outline" className="text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
               {products.length} Products
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
             Omnichannel inventory synced across AgentBridge Native database and connected Shopify stores.
@@ -83,65 +87,61 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      {/* Catalog KPI Quick Bar */}
+      {/* Catalog KPI Quick Bar using shadcn Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Total SKUs</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{products.length}</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">AI Selling Enabled</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{aiActiveCount} Active</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Available Stock Units</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{totalInventory} Units</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Floor Price Compliance</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">100% Enforced</p>
-        </div>
+        </Card>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-zinc-200 rounded-xl shadow-xs">
-        <div className="flex items-center gap-2 w-full sm:w-80 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-xs">
-          <Search className="w-3.5 h-3.5 text-zinc-400" />
-          <input
-            type="text"
-            aria-label="Search catalog"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title, SKU, category..."
-            className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
-          />
-        </div>
+      {/* Filter and Search Bar with shadcn Tabs */}
+      <Card className="p-3 border-zinc-200 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2 w-full sm:w-80 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-xs">
+            <Search className="w-3.5 h-3.5 text-zinc-400" />
+            <input
+              type="text"
+              aria-label="Search catalog"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title, SKU, category..."
+              className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
+            />
+          </div>
 
-        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto text-[11px]">
-          {[
-            { id: "ALL", label: "All Products" },
-            { id: "AI_ENABLED", label: "AI Active" },
-            { id: "IN_STOCK", label: "In Stock" },
-            { id: "AGENTBRIDGE", label: "Native" },
-            { id: "SHOPIFY", label: "Shopify" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id as any)}
-              className={`px-3 py-1 rounded-md transition-colors ${
-                filter === tab.id
-                  ? "bg-zinc-900 text-white font-medium shadow-xs"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <Tabs value={filter} onValueChange={setFilter}>
+            <TabsList className="h-8">
+              {[
+                { id: "ALL", label: "All Products" },
+                { id: "AI_ENABLED", label: "AI Active" },
+                { id: "IN_STOCK", label: "In Stock" },
+                { id: "AGENTBRIDGE", label: "Native" },
+                { id: "SHOPIFY", label: "Shopify" },
+              ].map((tab) => (
+                <TabsTrigger key={tab.id} value={tab.id} className="text-xs py-1 px-2.5">
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
-      </div>
+      </Card>
 
       {/* Catalog Table */}
-      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
+      <Card className="border-zinc-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -172,9 +172,9 @@ export default function ProductsPage() {
                     </td>
                     <td className="py-3.5 px-4 font-mono text-zinc-600">{p.sku}</td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
+                      <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
                         {p.provider === "SHOPIFY" ? "Shopify Live" : "AgentBridge Native"}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-zinc-900">
                       {formatINR(p.price)}
@@ -229,7 +229,7 @@ export default function ProductsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       <NativeProductModal
         open={modalOpen}
@@ -239,3 +239,4 @@ export default function ProductsPage() {
     </div>
   );
 }
+

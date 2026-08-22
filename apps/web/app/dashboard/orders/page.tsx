@@ -3,7 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { Order } from "@/lib/types";
+import { initialMockOrders } from "@/lib/api/mock-data";
 import { formatINR, formatDate } from "@/lib/utils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   CheckCircle2,
   ShoppingBag,
@@ -13,14 +17,18 @@ import {
 } from "lucide-react";
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(initialMockOrders);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const list = await api.orders.list();
-      setOrders(list);
+      try {
+        const list = await api.orders.list();
+        if (list && list.length > 0) setOrders(list);
+      } catch (err) {
+        console.error("Failed to load orders", err);
+      }
     }
     load();
   }, []);
@@ -41,8 +49,6 @@ export default function OrdersPage() {
     );
   });
 
-  const totalSettled = orders.reduce((sum, o) => sum + o.amount, 0);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -50,9 +56,9 @@ export default function OrdersPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Autonomous Orders</h1>
-            <span className="text-[11px] px-2 py-0.5 rounded-md font-mono bg-zinc-100 text-zinc-700 border border-zinc-200">
+            <Badge variant="outline" className="text-[11px] font-mono bg-zinc-100 text-zinc-700 border-zinc-200">
               37 Settled Deals
-            </span>
+            </Badge>
           </div>
           <p className="text-xs text-zinc-500 mt-1">
             Full lifecycle orders captured through AI WhatsApp negotiations and settled via Razorpay UPI.
@@ -60,28 +66,28 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Settlement KPIs */}
+      {/* Settlement KPIs using shadcn Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Total Settled Volume</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">₹82,490</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Payment Gateway</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">Razorpay UPI</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Settlement Success</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">100% Instant</p>
-        </div>
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+        </Card>
+        <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Human Escalation</p>
           <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">0 Interventions</p>
-        </div>
+        </Card>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-3 border border-zinc-200 rounded-xl shadow-xs flex items-center justify-between">
+      <Card className="p-3 border-zinc-200 shadow-xs flex items-center justify-between">
         <div className="flex items-center gap-2 w-full sm:w-80 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-xs">
           <Search className="w-3.5 h-3.5 text-zinc-400" />
           <input
@@ -96,10 +102,10 @@ export default function OrdersPage() {
         <span className="text-xs text-zinc-500 font-mono hidden sm:inline-block">
           Showing {filteredOrders.length} orders
         </span>
-      </div>
+      </Card>
 
       {/* Desktop Orders Table */}
-      <div className="hidden md:block bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
+      <Card className="hidden md:block border-zinc-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -155,15 +161,15 @@ export default function OrdersPage() {
                     )}
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
+                    <Badge variant="outline" className="gap-1 text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                       Captured (UPI)
-                    </span>
+                    </Badge>
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200 font-mono uppercase">
+                    <Badge variant="outline" className="text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200 font-mono uppercase">
                       {ord.orderStatus}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="py-3.5 px-4 text-right text-zinc-400 font-mono text-[11px]">
                     {formatDate(ord.createdAt)}
@@ -173,21 +179,21 @@ export default function OrdersPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Mobile Orders Card List */}
       <div className="md:hidden space-y-3">
         {filteredOrders.map((ord) => (
-          <div
+          <Card
             key={ord.id}
-            className="bg-white border border-zinc-200 rounded-xl p-4 space-y-3 shadow-xs"
+            className="border-zinc-200 p-4 space-y-3 shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold text-xs text-blue-600">{ord.orderNumber}</span>
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded">
+              <Badge variant="outline" className="gap-1 text-[10px] font-medium bg-zinc-100 text-zinc-700 border-zinc-200 px-2 py-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 Paid
-              </span>
+              </Badge>
             </div>
 
             <div>
@@ -212,9 +218,10 @@ export default function OrdersPage() {
               <span className="font-mono">{ord.razorpayPaymentId || "UPI Instant"}</span>
               <span className="font-mono">{formatDate(ord.createdAt)}</span>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>
   );
 }
+

@@ -71,7 +71,8 @@ class LocalStateStore {
   }
 
   getProducts(): Product[] {
-    return this.get<Product[]>("products", initialMockProducts);
+    const saved = this.get<Product[]>("products", initialMockProducts);
+    return Array.isArray(saved) && saved.length > 0 ? saved : initialMockProducts;
   }
 
   saveProducts(products: Product[]): void {
@@ -79,7 +80,8 @@ class LocalStateStore {
   }
 
   getConversations(): ConversationThread[] {
-    return this.get<ConversationThread[]>("conversations", initialMockConversations);
+    const saved = this.get<ConversationThread[]>("conversations", initialMockConversations);
+    return Array.isArray(saved) && saved.length > 0 ? saved : initialMockConversations;
   }
 
   saveConversations(conversations: ConversationThread[]): void {
@@ -87,7 +89,8 @@ class LocalStateStore {
   }
 
   getOrders(): Order[] {
-    return this.get<Order[]>("orders", initialMockOrders);
+    const saved = this.get<Order[]>("orders", initialMockOrders);
+    return Array.isArray(saved) && saved.length > 0 ? saved : initialMockOrders;
   }
 
   saveOrders(orders: Order[]): void {
@@ -95,7 +98,8 @@ class LocalStateStore {
   }
 
   getRules(): NegotiationRules {
-    return this.get<NegotiationRules>("rules", defaultNegotiationRules);
+    const saved = this.get<NegotiationRules>("rules", defaultNegotiationRules);
+    return { ...defaultNegotiationRules, ...(saved || {}) };
   }
 
   saveRules(rules: NegotiationRules): void {
@@ -103,7 +107,8 @@ class LocalStateStore {
   }
 
   getAgent(): AgentProfile {
-    return this.get<AgentProfile>("agent_profile", defaultAgentProfile);
+    const saved = this.get<AgentProfile>("agent_profile", defaultAgentProfile);
+    return { ...defaultAgentProfile, ...(saved || {}) };
   }
 
   saveAgent(agent: AgentProfile): void {
@@ -111,11 +116,20 @@ class LocalStateStore {
   }
 
   getAnalytics(): AnalyticsSummary {
-    return this.get<AnalyticsSummary>("analytics", initialMockAnalytics);
+    const saved = this.get<AnalyticsSummary>("analytics", initialMockAnalytics);
+    return {
+      ...initialMockAnalytics,
+      ...(saved || {}),
+      topSellingProducts:
+        Array.isArray(saved?.topSellingProducts) && saved.topSellingProducts.length > 0
+          ? saved.topSellingProducts
+          : initialMockAnalytics.topSellingProducts,
+    };
   }
 
   getActivity(): ActivityEvent[] {
-    return this.get<ActivityEvent[]>("activity", initialMockActivity);
+    const saved = this.get<ActivityEvent[]>("activity", initialMockActivity);
+    return Array.isArray(saved) && saved.length > 0 ? saved : initialMockActivity;
   }
 }
 

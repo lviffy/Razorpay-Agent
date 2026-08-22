@@ -33,9 +33,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 bg-[#0c0d12] text-white flex flex-col flex-shrink-0 min-h-screen border-r border-zinc-800 select-none">
-      {/* Brand Header */}
-      <div className="h-14 flex items-center px-5 border-b border-zinc-800">
+    <aside className="w-60 bg-[#0c0d12] text-white flex flex-col flex-shrink-0 h-screen sticky top-0 border-r border-zinc-800 select-none z-30 overflow-hidden">
+      {/* Brand Header (Pinned at Top) */}
+      <div className="h-14 flex items-center px-5 border-b border-zinc-800 flex-shrink-0">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
             A
@@ -51,8 +51,8 @@ export function Sidebar() {
         </Link>
       </div>
 
-      {/* Main Navigation */}
-      <div className="flex-1 py-4 px-3 space-y-6 overflow-y-auto">
+      {/* Main Navigation (Scrolls inside itself if viewport is short) */}
+      <div className="flex-1 py-4 px-3 space-y-5 overflow-y-auto overflow-x-hidden min-h-0">
         <div>
           <p className="px-2.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
             Store Ops
@@ -128,23 +128,24 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Footer Store Status */}
-      <div className="p-3 border-t border-zinc-800">
+      {/* Footer Store Status (Pinned at Bottom) */}
+      <div className="p-3 border-t border-zinc-800 flex-shrink-0 bg-[#0c0d12]">
         <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <div className="truncate">
               <p className="text-xs font-semibold text-white truncate">RunFast Sports</p>
               <p className="text-[11px] text-zinc-400 truncate">Native + Shopify</p>
             </div>
-            <div className="w-2 h-2 rounded-full bg-emerald-500" title="Agent Live" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Agent Live" />
           </div>
 
           <div className="pt-2 border-t border-zinc-800 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
             <span>AI Status</span>
-            <span className="text-zinc-300 font-medium">Active (Floor Protected)</span>
+            <span className="text-zinc-300 font-medium">Floor Protected</span>
           </div>
         </div>
       </div>
     </aside>
   );
 }
+
