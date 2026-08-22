@@ -5,10 +5,16 @@ import { api } from "@/lib/api/client";
 import { Product } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
-import { Plus, Search, Layers, Zap, ShoppingBag, Check, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Layers,
+  ShoppingBag,
+  Check,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -49,40 +55,72 @@ export default function ProductsPage() {
     return true;
   });
 
+  const totalInventory = products.reduce((acc, p) => acc + p.inventory, 0);
+  const aiActiveCount = products.filter((p) => p.aiSellingEnabled).length;
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-surface-900 tracking-tight">Unified Catalog</h1>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Unified catalog across Native AgentBridge and connected Shopify stores.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Unified Catalog</h1>
+            <span className="text-[11px] px-2 py-0.5 rounded-md font-mono bg-zinc-100 text-zinc-700 border border-zinc-200">
+              {products.length} Products
+            </span>
+          </div>
+          <p className="text-xs text-zinc-500 mt-1">
+            Omnichannel inventory synced across AgentBridge Native database and connected Shopify stores.
           </p>
         </div>
-        <Button onClick={() => setModalOpen(true)} size="sm" className="gap-1.5">
-          <Plus className="w-4 h-4" />
+        <Button
+          onClick={() => setModalOpen(true)}
+          size="sm"
+          className="gap-2 text-xs h-8 bg-blue-600 hover:bg-blue-700 font-medium text-white shadow-xs"
+        >
+          <Plus className="w-3.5 h-3.5" />
           <span>Add Native Product</span>
         </Button>
       </div>
 
+      {/* Catalog KPI Quick Bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+          <p className="text-[11px] font-medium text-zinc-500">Total SKUs</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{products.length}</p>
+        </div>
+        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+          <p className="text-[11px] font-medium text-zinc-500">AI Selling Enabled</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{aiActiveCount} Active</p>
+        </div>
+        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+          <p className="text-[11px] font-medium text-zinc-500">Available Stock Units</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{totalInventory} Units</p>
+        </div>
+        <div className="bg-white border border-zinc-200 rounded-xl p-4 shadow-xs">
+          <p className="text-[11px] font-medium text-zinc-500">Floor Price Compliance</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">100% Enforced</p>
+        </div>
+      </div>
+
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-surface-200 rounded-xl shadow-subtle">
-        <div className="flex items-center gap-2 w-full sm:w-80 bg-surface-50 border border-surface-200 rounded-lg px-2.5 py-1.5 text-xs">
-          <Search className="w-3.5 h-3.5 text-surface-400" />
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 border border-zinc-200 rounded-xl shadow-xs">
+        <div className="flex items-center gap-2 w-full sm:w-80 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-1.5 text-xs">
+          <Search className="w-3.5 h-3.5 text-zinc-400" />
           <input
             type="text"
             aria-label="Search catalog"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by title, SKU..."
-            className="bg-transparent border-none outline-none w-full text-xs text-surface-900 placeholder:text-surface-400"
+            placeholder="Search by title, SKU, category..."
+            className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
+        <div className="flex items-center gap-1 w-full sm:w-auto overflow-x-auto text-[11px]">
           {[
             { id: "ALL", label: "All Products" },
-            { id: "AI_ENABLED", label: "AI Selling Active" },
+            { id: "AI_ENABLED", label: "AI Active" },
             { id: "IN_STOCK", label: "In Stock" },
             { id: "AGENTBRIDGE", label: "Native" },
             { id: "SHOPIFY", label: "Shopify" },
@@ -90,10 +128,10 @@ export default function ProductsPage() {
             <button
               key={tab.id}
               onClick={() => setFilter(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              className={`px-3 py-1 rounded-md transition-colors ${
                 filter === tab.id
-                  ? "bg-[#195adc] text-white shadow-xs"
-                  : "bg-surface-100 text-surface-600 hover:bg-surface-200"
+                  ? "bg-zinc-900 text-white font-medium shadow-xs"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               }`}
             >
               {tab.label}
@@ -103,83 +141,93 @@ export default function ProductsPage() {
       </div>
 
       {/* Catalog Table */}
-      <div className="bg-white border border-surface-200 rounded-xl overflow-hidden shadow-subtle">
+      <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-surface-200 bg-surface-50 text-surface-600 font-semibold uppercase text-[10px] tracking-wider">
-              <th className="py-3 px-4">Product</th>
-              <th className="py-3 px-4">SKU</th>
-              <th className="py-3 px-4">Provider</th>
-              <th className="py-3 px-4 text-right">Price</th>
-              <th className="py-3 px-4 text-right">Floor Price</th>
-              <th className="py-3 px-4 text-center">Stock</th>
-              <th className="py-3 px-4 text-center">AI Selling</th>
-              <th className="py-3 px-4 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-surface-100">
-            {filteredProducts.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="py-8 text-center text-surface-400">
-                  No products matched your search or filters.
-                </td>
+            <thead>
+              <tr className="border-b border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold uppercase text-[10px] tracking-wider">
+                <th className="py-3 px-4">Product Details</th>
+                <th className="py-3 px-4">SKU</th>
+                <th className="py-3 px-4">Source</th>
+                <th className="py-3 px-4 text-right">Retail Price</th>
+                <th className="py-3 px-4 text-right">Floor Limit</th>
+                <th className="py-3 px-4 text-center">Stock</th>
+                <th className="py-3 px-4 text-center">AI Autonomy</th>
+                <th className="py-3 px-4 text-right">Action</th>
               </tr>
-            ) : (
-              filteredProducts.map((p) => (
-                <tr key={p.id} className="hover:bg-surface-50/60 transition-colors">
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-surface-900">{p.title}</div>
-                    <div className="text-[11px] text-surface-500 line-clamp-1">{p.description}</div>
-                  </td>
-                  <td className="py-3 px-4 font-mono text-surface-600">{p.sku}</td>
-                  <td className="py-3 px-4">
-                    {p.provider === "SHOPIFY" ? (
-                      <Badge variant="success">Shopify</Badge>
-                    ) : (
-                      <Badge variant="brand">AgentBridge</Badge>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono font-semibold text-surface-900">
-                    {formatINR(p.price)}
-                  </td>
-                  <td className="py-3 px-4 text-right font-mono text-surface-600">
-                    {formatINR(p.minPrice)}
-                  </td>
-                  <td className="py-3 px-4 text-center font-mono">
-                    {p.inventory > 0 ? (
-                      <span className="text-surface-800 font-semibold">{p.inventory}</span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">Out of Stock</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${
-                        p.aiSellingEnabled
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-surface-100 text-surface-500 border-surface-200"
-                      }`}
-                    >
-                      {p.aiSellingEnabled ? "● Enabled" : "○ Disabled"}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
-                      className="text-[11px] h-7 px-2"
-                    >
-                      {p.aiSellingEnabled ? "Pause AI" : "Enable AI"}
-                    </Button>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-zinc-400">
+                    No products matched your search or filters.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredProducts.map((p) => (
+                  <tr key={p.id} className="hover:bg-zinc-50 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-zinc-900">{p.title}</div>
+                      <div className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">{p.description}</div>
+                    </td>
+                    <td className="py-3.5 px-4 font-mono text-zinc-600">{p.sku}</td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
+                        {p.provider === "SHOPIFY" ? "Shopify Live" : "AgentBridge Native"}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-zinc-900">
+                      {formatINR(p.price)}
+                    </td>
+                    <td className="py-3.5 px-4 text-right font-mono text-zinc-600">
+                      <span className="bg-zinc-100 px-2 py-0.5 rounded text-zinc-700 font-medium">
+                        {formatINR(p.minPrice)}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono">
+                      {p.inventory > 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-zinc-800 font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          {p.inventory} in stock
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 font-medium bg-zinc-100 px-2 py-0.5 rounded text-[10px]">
+                          Out of Stock
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <button
+                        onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium border transition-colors ${
+                          p.aiSellingEnabled
+                            ? "bg-zinc-900 text-white border-zinc-800"
+                            : "bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200"
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            p.aiSellingEnabled ? "bg-emerald-400" : "bg-zinc-400"
+                          }`}
+                        />
+                        {p.aiSellingEnabled ? "AI Enabled" : "Disabled"}
+                      </button>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
+                        className="text-[11px] h-7 px-2.5 text-zinc-600 hover:text-zinc-900"
+                      >
+                        {p.aiSellingEnabled ? "Pause" : "Enable"}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

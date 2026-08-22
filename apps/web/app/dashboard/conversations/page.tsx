@@ -4,21 +4,16 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/lib/api/client";
 import { ConversationThread } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   MessageSquare,
   Search,
   CheckCircle2,
-  Clock,
   Send,
   Zap,
-  ExternalLink,
   ShieldCheck,
-  Bot,
-  User,
-  ListFilter,
-  BrainCircuit,
+  CheckCheck,
+  Layers,
 } from "lucide-react";
 
 export default function ConversationsPage() {
@@ -37,7 +32,11 @@ export default function ConversationsPage() {
   const selectedThread = threads.find((t) => t.id === selectedId) || threads[0];
 
   if (!selectedThread) {
-    return <div className="text-xs text-surface-500">Loading conversations...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-xs text-zinc-500 font-mono">Loading conversations...</p>
+      </div>
+    );
   }
 
   return (
@@ -45,34 +44,40 @@ export default function ConversationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-surface-900 tracking-tight">AI Conversations & Traces</h1>
-          <p className="text-xs text-surface-500 mt-0.5">
-            Real-time WhatsApp buyer dialogues paired with transparent AI Seller reasoning traces.
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold text-zinc-900 tracking-tight">AI Conversations & Traces</h1>
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              WhatsApp Engine
+            </span>
+          </div>
+          <p className="text-xs text-zinc-500 mt-1">
+            Real-time WhatsApp buyer dialogues paired with transparent AI Seller reasoning traces and floor price mandate checks.
           </p>
         </div>
 
         {/* Mobile Tab Switcher */}
-        <div className="flex items-center gap-1 lg:hidden bg-surface-100 p-1 rounded-lg border border-surface-200 self-start">
+        <div className="flex items-center gap-1 lg:hidden bg-zinc-100 p-1 rounded-lg border border-zinc-200 self-start text-xs">
           <button
             onClick={() => setMobileTab("threads")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-              mobileTab === "threads" ? "bg-white text-surface-900 shadow-xs" : "text-surface-600 hover:text-surface-900"
+            className={`px-3 py-1 rounded-md transition-colors ${
+              mobileTab === "threads" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
             }`}
           >
             Threads ({threads.length})
           </button>
           <button
             onClick={() => setMobileTab("chat")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-              mobileTab === "chat" ? "bg-white text-surface-900 shadow-xs" : "text-surface-600 hover:text-surface-900"
+            className={`px-3 py-1 rounded-md transition-colors ${
+              mobileTab === "chat" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
             }`}
           >
             WhatsApp Chat
           </button>
           <button
             onClick={() => setMobileTab("trace")}
-            className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
-              mobileTab === "trace" ? "bg-white text-surface-900 shadow-xs" : "text-surface-600 hover:text-surface-900"
+            className={`px-3 py-1 rounded-md transition-colors ${
+              mobileTab === "trace" ? "bg-white text-zinc-900 font-medium shadow-xs" : "text-zinc-600"
             }`}
           >
             AI Trace
@@ -81,26 +86,26 @@ export default function ConversationsPage() {
       </div>
 
       {/* 3-Pane Layout */}
-      <div className="bg-white border border-surface-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[560px] lg:h-[calc(100vh-13rem)] overflow-hidden shadow-subtle">
+      <div className="bg-white border border-zinc-200 rounded-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:h-[calc(100vh-12rem)] overflow-hidden shadow-xs">
         {/* Pane 1: Conversation List (3 cols) */}
         <div
-          className={`lg:col-span-3 border-r border-surface-200 flex flex-col ${
+          className={`lg:col-span-3 border-r border-zinc-200 flex flex-col ${
             mobileTab !== "threads" ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="p-3 border-b border-surface-200 bg-surface-50">
-            <div className="flex items-center gap-2 bg-white border border-surface-200 rounded-lg px-2.5 py-1.5 text-xs">
-              <Search className="w-3.5 h-3.5 text-surface-400" />
+          <div className="p-3 border-b border-zinc-200 bg-zinc-50">
+            <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs">
+              <Search className="w-3.5 h-3.5 text-zinc-400" />
               <input
                 type="text"
                 aria-label="Search conversations"
-                placeholder="Search conversations..."
-                className="bg-transparent border-none outline-none w-full text-xs text-surface-900 placeholder:text-surface-400"
+                placeholder="Search leads, phone, deals..."
+                className="bg-transparent border-none outline-none w-full text-xs text-zinc-900 placeholder:text-zinc-400"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto divide-y divide-surface-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-100">
             {threads.map((t) => {
               const isSelected = t.id === selectedThread.id;
               return (
@@ -110,23 +115,28 @@ export default function ConversationsPage() {
                     setSelectedId(t.id);
                     setMobileTab("chat");
                   }}
-                  className={`w-full text-left p-3.5 transition-all flex flex-col gap-1 ${
+                  className={`w-full text-left p-3.5 transition-colors flex flex-col gap-1.5 ${
                     isSelected
-                      ? "bg-brand-50/80 text-surface-900 font-medium ring-1 ring-inset ring-brand-500/20"
-                      : "hover:bg-surface-50 text-surface-700"
+                      ? "bg-zinc-100 border-l-2 border-zinc-900 text-zinc-900 font-medium"
+                      : "hover:bg-zinc-50 text-zinc-700 border-l-2 border-transparent"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-surface-900">{t.customerName}</span>
-                    <span className="text-[10px] text-surface-500 font-mono">{t.lastMessageAt}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-zinc-200 text-zinc-700 flex items-center justify-center font-bold text-[10px]">
+                        {t.customerName.charAt(0)}
+                      </div>
+                      <span className="text-xs font-semibold text-zinc-900">{t.customerName}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 font-mono">{t.lastMessageAt}</span>
                   </div>
-                  <p className="text-[11px] text-surface-500 line-clamp-1">{t.lastMessage}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <Badge variant={t.status === "deal_closed" ? "success" : "brand"}>
-                      {t.status === "deal_closed" ? "Deal Closed" : "Negotiating"}
-                    </Badge>
+                  <p className="text-[11px] text-zinc-500 line-clamp-1 pl-8 font-normal">{t.lastMessage}</p>
+                  <div className="flex items-center justify-between mt-1 pl-8">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
+                      {t.status === "deal_closed" ? "✓ Deal Closed" : "Negotiating"}
+                    </span>
                     {t.dealAmount && (
-                      <span className="text-xs font-mono font-bold text-surface-900">
+                      <span className="text-xs font-mono font-bold text-zinc-900">
                         {formatINR(t.dealAmount)}
                       </span>
                     )}
@@ -139,21 +149,28 @@ export default function ConversationsPage() {
 
         {/* Pane 2: WhatsApp Transcript (5 cols) */}
         <div
-          className={`lg:col-span-5 border-r border-surface-200 flex flex-col bg-[#F8FAFC] ${
+          className={`lg:col-span-5 border-r border-zinc-200 flex flex-col bg-zinc-50 ${
             mobileTab !== "chat" ? "hidden lg:flex" : "flex"
           }`}
         >
-          {/* Top Info */}
-          <div className="p-3 border-b border-surface-200 bg-white flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-surface-900">{selectedThread.customerName}</p>
-              <p className="text-[11px] text-surface-500 font-mono">{selectedThread.customerPhone}</p>
+          {/* Top Info Header */}
+          <div className="p-3.5 border-b border-zinc-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs">
+                {selectedThread.customerName.charAt(0)}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-zinc-900 leading-none">{selectedThread.customerName}</p>
+                <p className="text-[10px] text-zinc-500 font-mono mt-1">{selectedThread.customerPhone}</p>
+              </div>
             </div>
-            <Badge variant="brand">WhatsApp Cloud API</Badge>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-mono">
+              WhatsApp Live
+            </span>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3">
+          {/* Messages Feed */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-zinc-100/60">
             {selectedThread.messages.map((m) => {
               const isUser = m.sender === "customer";
               const isSystem = m.sender === "system";
@@ -162,9 +179,13 @@ export default function ConversationsPage() {
                 return (
                   <div
                     key={m.id}
-                    className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-center text-xs text-emerald-800 font-medium"
+                    className="p-3 bg-white border border-zinc-200 rounded-lg text-center text-xs text-zinc-800 font-medium space-y-1 shadow-xs"
                   >
-                    {m.content}
+                    <div className="flex items-center justify-center gap-1.5 text-zinc-900 font-bold">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Razorpay Settlement Verified</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-600">{m.content}</p>
                   </div>
                 );
               }
@@ -177,38 +198,40 @@ export default function ConversationsPage() {
                   }`}
                 >
                   <div
-                    className={`p-3 rounded-xl border leading-relaxed shadow-2xs ${
+                    className={`p-3 rounded-xl leading-relaxed shadow-xs ${
                       isUser
-                        ? "bg-white text-surface-900 border-surface-200"
-                        : "bg-[#0C2340] text-white border-[#0A1D36]"
+                        ? "bg-white text-zinc-900 border border-zinc-200 rounded-tl-none"
+                        : "bg-zinc-900 text-white rounded-tr-none"
                     }`}
                   >
-                    <p>{m.content}</p>
+                    <p className="text-xs">{m.content}</p>
                     {m.metadata?.isPaymentLink && (
-                      <div className="mt-2.5 pt-2.5 border-t border-blue-900/60 flex items-center justify-between text-[11px]">
-                        <span className="text-blue-300 font-mono">
+                      <div className="mt-2 pt-2 border-t border-zinc-700 flex items-center justify-between text-[11px]">
+                        <span className="text-zinc-200 font-mono font-bold">
                           Razorpay {formatINR(m.metadata.offerAmount || 0)}
                         </span>
-                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                        <span className="text-emerald-400 font-medium flex items-center gap-1 font-mono text-[10px]">
                           <CheckCircle2 className="w-3 h-3" />
                           Ready to Pay
                         </span>
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] text-surface-400 mt-1 px-1">{m.timestamp}</span>
+                  <div className="flex items-center gap-1 mt-1 px-1">
+                    <span className="text-[10px] text-zinc-400 font-mono">{m.timestamp}</span>
+                    {!isUser && <CheckCheck className="w-3 h-3 text-blue-500" />}
+                  </div>
                 </div>
               );
             })}
           </div>
 
           {/* Read-only Agent Status Footer */}
-          <div className="p-3 bg-white border-t border-surface-200 flex items-center justify-between text-xs text-surface-500">
-            <span className="flex items-center gap-1.5 text-[11px]">
-              <Zap className="w-3.5 h-3.5 text-emerald-500" />
-              AI Seller Agent is handling this conversation automatically.
+          <div className="p-3 bg-white border-t border-zinc-200 flex items-center justify-between text-xs text-zinc-500">
+            <span className="text-[11px] text-zinc-600">
+              AI Seller Agent is handling negotiations autonomously.
             </span>
-            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2.5 rounded-md">
+            <Button variant="outline" size="sm" className="text-[11px] h-7 px-2.5 text-zinc-700 hover:bg-zinc-50 border-zinc-300">
               Take Over
             </Button>
           </div>
@@ -220,15 +243,12 @@ export default function ConversationsPage() {
             mobileTab !== "trace" ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="p-3 border-b border-surface-200 bg-surface-50 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[#195adc]" />
-              <span className="text-xs font-bold text-surface-900 uppercase tracking-wider">
-                AI Trace Engine
-              </span>
-            </div>
-            <span className="text-[10px] font-mono text-surface-500 font-semibold">
-              {selectedThread.traces.length} STEPS
+          <div className="p-3.5 border-b border-zinc-200 bg-zinc-50 flex items-center justify-between">
+            <span className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+              AI Reasoning Trace
+            </span>
+            <span className="text-[10px] font-mono text-zinc-600 font-medium bg-zinc-200/80 px-2 py-0.5 rounded">
+              {selectedThread.traces.length} Steps
             </span>
           </div>
 
@@ -237,33 +257,36 @@ export default function ConversationsPage() {
               <div key={tr.id} className="relative pl-5 pb-2">
                 {/* Vertical connecting line */}
                 {index < selectedThread.traces.length - 1 && (
-                  <div className="absolute left-1.5 top-3 bottom-0 w-0.5 bg-surface-200" />
+                  <div className="absolute left-1.5 top-2.5 bottom-0 w-px bg-zinc-200" />
                 )}
                 {/* Dot */}
-                <div className="absolute left-0 top-1 w-3.5 h-3.5 rounded-full bg-brand-50 border-2 border-[#195adc]" />
+                <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-zinc-900 flex items-center justify-center" />
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-surface-900">{tr.title}</span>
+                    <span className="text-xs font-bold text-zinc-900">{tr.title}</span>
                     {tr.durationMs && (
-                      <span className="text-[10px] font-mono text-surface-400">
+                      <span className="text-[10px] font-mono text-zinc-500">
                         {tr.durationMs}ms
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-surface-600 leading-normal bg-surface-50 p-2.5 rounded-lg border border-surface-200 font-mono">
+                  <div className="text-[11px] text-zinc-700 leading-relaxed bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 font-mono">
                     {tr.detail}
-                  </p>
-                  <span className="text-[10px] text-surface-400 font-mono">{tr.timestamp}</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-mono block">{tr.timestamp}</span>
                 </div>
               </div>
             ))}
           </div>
 
           {/* Trace Summary Footer */}
-          <div className="p-3 bg-surface-50 border-t border-surface-200 text-xs text-surface-600 flex items-center justify-between">
-            <span className="text-[11px] font-medium">Audit Mandate Signature</span>
-            <span className="font-mono text-[10px] bg-white px-2 py-0.5 border border-surface-200 rounded text-surface-700">
+          <div className="p-3 bg-zinc-50 border-t border-zinc-200 text-xs text-zinc-600 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
+              <span className="text-[11px] font-medium text-zinc-700">Audit Mandate Signature</span>
+            </div>
+            <span className="font-mono text-[10px] bg-white px-2 py-0.5 border border-zinc-200 rounded text-zinc-800 font-medium">
               0x9a8f...4e12
             </span>
           </div>
@@ -272,3 +295,5 @@ export default function ConversationsPage() {
     </div>
   );
 }
+
+
