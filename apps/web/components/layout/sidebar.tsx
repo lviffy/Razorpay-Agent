@@ -10,20 +10,20 @@ import {
   ShoppingBag,
   BarChart3,
   Smartphone,
-  Sliders,
-  Settings,
-  Zap,
   ShieldCheck,
+  Zap,
+  Settings,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/lib/context/store-context";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-  { href: "/dashboard/products", label: "Products", icon: Package, count: "5" },
-  { href: "/dashboard/conversations", label: "Conversations", icon: MessageSquare, count: "2" },
-  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag, count: "37" },
+  { href: "/dashboard/products", label: "Products", icon: Package },
+  { href: "/dashboard/conversations", label: "Conversations", icon: MessageSquare },
+  { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/whatsapp", label: "WhatsApp", icon: Smartphone },
 ];
@@ -38,93 +38,89 @@ export function SidebarNavContent({ onItemClick }: { onItemClick?: () => void })
   const pathname = usePathname();
 
   return (
-    <div className="flex-1 py-4 px-3 space-y-5 overflow-y-auto overflow-x-hidden min-h-0">
-      <div>
-        <p className="px-2.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-          Store Ops
+    <div className="flex-1 py-4 px-3 space-y-6 overflow-y-auto no-scrollbar">
+      {/* Main Apps */}
+      <div className="space-y-1">
+        <p className="px-3 text-[10px] font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+          Merchant Cockpit
         </p>
-        <nav className="space-y-0.5">
-          {mainNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.href === "/dashboard"
-                ? pathname === "/dashboard"
-                : pathname.startsWith(item.href);
+        {mainNavItems.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onItemClick}
-                className={cn(
-                  "flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
-                  isActive
-                    ? "bg-zinc-800 text-white font-semibold shadow-2xs"
-                    : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-white" : "text-zinc-400")} />
-                  <span>{item.label}</span>
-                </div>
-
-                {item.count && (
-                  <span
-                    className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded font-mono font-medium",
-                      isActive ? "bg-zinc-700 text-zinc-200" : "bg-zinc-900 text-zinc-500"
-                    )}
-                  >
-                    {item.count}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onItemClick}
+              className={cn(
+                "flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group relative",
+                isActive
+                  ? "bg-blue-600 text-white font-semibold shadow-xs"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    isActive ? "text-white" : "text-zinc-400 group-hover:text-zinc-200"
+                  )}
+                />
+                <span>{item.label}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
-      <div>
-        <p className="px-2.5 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
-          Configuration
+      {/* Engine & Configuration */}
+      <div className="space-y-1">
+        <p className="px-3 text-[10px] font-semibold text-zinc-300 uppercase tracking-wider mb-2">
+          Engine & Rules
         </p>
-        <nav className="space-y-0.5">
-          {configNavItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname.startsWith(item.href);
+        {configNavItems.map((item) => {
+          const isActive = pathname === item.href;
+          const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onItemClick}
-                className={cn(
-                  "flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
-                  isActive
-                    ? "bg-zinc-800 text-white font-semibold shadow-2xs"
-                    : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-white" : "text-zinc-400")} />
-                  <span>{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onItemClick}
+              className={cn(
+                "flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group",
+                isActive
+                  ? "bg-blue-600 text-white font-semibold shadow-xs"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Icon
+                  className={cn(
+                    "w-4 h-4 transition-colors",
+                    isActive ? "text-white" : "text-zinc-400 group-hover:text-zinc-200"
+                  )}
+                />
+                <span>{item.label}</span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 export function Sidebar() {
+  const { currentStore } = useStore();
+
   return (
-    <aside className="hidden lg:flex w-60 bg-[#0c0d12] text-white flex-col flex-shrink-0 h-screen sticky top-0 border-r border-zinc-800 select-none z-30 overflow-hidden">
-      {/* Brand Header (Pinned at Top) */}
-      <div className="h-14 flex items-center px-5 border-b border-zinc-800 flex-shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
+    <aside className="w-56 bg-[#0c0d12] text-white flex flex-col flex-shrink-0 border-r border-zinc-800 select-none z-30 hidden lg:flex h-screen sticky top-0">
+      {/* Brand Header */}
+      <div className="h-14 flex items-center justify-between px-5 border-b border-zinc-800 flex-shrink-0">
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs group-hover:bg-blue-500 transition-colors">
             Z
           </div>
           <div>
@@ -146,8 +142,10 @@ export function Sidebar() {
         <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800/80 space-y-2">
           <div className="flex items-center justify-between">
             <div className="truncate">
-              <p className="text-xs font-semibold text-white truncate">RunFast Sports</p>
-              <p className="text-[11px] text-zinc-400 truncate">Native + Shopify</p>
+              <p className="text-xs font-semibold text-white truncate">
+                {currentStore?.name || "Merchant Store"}
+              </p>
+              <p className="text-[11px] text-zinc-400 truncate">Autonomous AI</p>
             </div>
             <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Agent Live" />
           </div>
@@ -169,6 +167,8 @@ export function MobileSidebarDrawer({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { currentStore } = useStore();
+
   return (
     <AnimatePresence>
       {open && (
@@ -229,8 +229,10 @@ export function MobileSidebarDrawer({
               <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="truncate">
-                    <p className="text-xs font-semibold text-white truncate">RunFast Sports</p>
-                    <p className="text-[11px] text-zinc-400 truncate">Native + Shopify</p>
+                    <p className="text-xs font-semibold text-white truncate">
+                      {currentStore?.name || "Merchant Store"}
+                    </p>
+                    <p className="text-[11px] text-zinc-400 truncate">Autonomous AI</p>
                   </div>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
                 </div>
@@ -247,5 +249,3 @@ export function MobileSidebarDrawer({
     </AnimatePresence>
   );
 }
-
-

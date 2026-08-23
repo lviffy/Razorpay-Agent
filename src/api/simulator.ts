@@ -21,10 +21,22 @@ router.post("/chat", async (req: Request, res: Response) => {
   logs.push(`[${timestamp()}] X-Hub-Signature-256 HMAC verified successfully`);
 
   try {
-    const { message, storeId = "a0000000-0000-0000-0000-000000000001", customerPhone = "+91 98765 43210" } = req.body;
+    let { message, storeId, customerPhone = "+91 98765 43210" } = req.body;
 
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "Message is required" });
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!storeId || !uuidRegex.test(storeId)) {
+      const { rows } = await db.query(
+        "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+      );
+      storeId = rows[0]?.id;
+    }
+
+    if (!storeId) {
+      return res.status(404).json({ error: "No active store found. Please create a store first." });
     }
 
     const [products, rules, store] = await Promise.all([
@@ -34,7 +46,7 @@ router.post("/chat", async (req: Request, res: Response) => {
     ]);
 
     if (!products.length || !rules || !store) {
-      return res.status(404).json({ error: "Store catalog or rules not found" });
+      return res.status(404).json({ error: "Store catalog or rules not found for this store" });
     }
 
     logs.push(`[${timestamp()}] Loaded ${products.length} live catalog SKUs from Neon PostgreSQL`);
@@ -231,7 +243,7 @@ router.post("/simulate-payment", async (req: Request, res: Response) => {
     const { rows: orderRows } = await db.query(
       `SELECT o.*, s.name as store_name
        FROM orders o
-       JOIN stores s ON o.store_id = s.id
+       LEFT JOIN stores s ON o.store_id = s.id
        WHERE o.order_id = $1 OR o.razorpay_order_id = $2 OR o.id::text = $1
        ORDER BY o.created_at DESC LIMIT 1`,
       [orderId, razorpayOrderId]

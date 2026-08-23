@@ -254,22 +254,7 @@ function LoginForm() {
         </Button>
       </form>
 
-      {/* Demo Credentials Quick-Fill Helper */}
-      <div className="pt-2">
-        <button
-          type="button"
-          onClick={fillDemoCredentials}
-          className="w-full py-2 px-3 rounded-xl bg-surface-50 hover:bg-surface-100 border border-surface-200 text-surface-600 hover:text-surface-900 transition-all flex items-center justify-between text-xs font-mono group"
-        >
-          <span className="flex items-center gap-1.5 text-[11px]">
-            <Sparkles className="w-3.5 h-3.5 text-brand-600 group-hover:scale-110 transition-transform" />
-            <span>⚡ Demo Quick-Fill:</span>
-          </span>
-          <span className="text-[11px] text-brand-600 font-semibold underline underline-offset-2">
-            Fill Demo Account
-          </span>
-        </button>
-      </div>
+
 
       {/* Switch to Signup */}
       <div className="pt-2 border-t border-surface-100 text-center text-xs text-surface-500">

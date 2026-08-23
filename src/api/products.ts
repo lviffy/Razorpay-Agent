@@ -1,20 +1,64 @@
 import { Router } from "express";
 import { db } from "../db/migrate.ts";
-import { v4 as uuidv4 } from "uuid";
+import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
 
 const router = Router();
 
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = req.query.storeId as string | undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore token verify failure
+    }
+  }
+
+  // Fallback to active store
+  const { rows } = await db.query(
+    "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+  );
+  return rows[0]?.id || null;
+}
+
 // GET /api/v1/products — List all catalog products
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const storeId = req.query.storeId as string | undefined;
+    const storeId = await getStoreIdFromReq(req);
 
     let query = `
       SELECT
         p.id,
         p.store_id,
-        s.name as store_name,
+        COALESCE(s.name, 'Native Store') as store_name,
         p.shopify_product_id,
         p.shopify_variant_id,
         p.title,
@@ -32,7 +76,7 @@ router.get("/", async (req: Request, res: Response) => {
         p.created_at,
         p.updated_at
       FROM products p
-      JOIN stores s ON p.store_id = s.id
+      LEFT JOIN stores s ON p.store_id = s.id
     `;
     const params: any[] = [];
 
@@ -62,7 +106,7 @@ router.get("/", async (req: Request, res: Response) => {
         inventory: parseInt(r.inventory_available, 10),
         inventoryReserved: parseInt(r.inventory_reserved, 10),
         inventoryState: r.inventory_state,
-        provider: r.shopify_product_id.startsWith("mock-prod") ? "ZAPAI" : "SHOPIFY",
+        provider: r.shopify_product_id && !r.shopify_product_id.startsWith("mock-prod") && !r.shopify_product_id.startsWith("prod_") ? "SHOPIFY" : "ZAPAI",
         aiSellingEnabled: r.is_ai_enabled ?? true,
         maxDiscountPercent,
         description: r.description || "",
@@ -91,7 +135,6 @@ router.post("/", async (req: Request, res: Response) => {
       inventory,
       category,
       description,
-      storeId = "a0000000-0000-0000-0000-000000000001",
       aiSellingEnabled = true,
     } = req.body;
 
@@ -99,9 +142,23 @@ router.post("/", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Title and price are required" });
     }
 
+    let storeId = req.body.storeId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!storeId || !uuidRegex.test(storeId)) {
+      storeId = await getStoreIdFromReq(req);
+    }
+
+    // If no store exists yet, create one
+    if (!storeId) {
+      const { rows: newStore } = await db.query(
+        "INSERT INTO stores (name, is_active) VALUES ('My Store', true) RETURNING id"
+      );
+      storeId = newStore[0].id;
+    }
+
     const listedPrice = Number(price);
     const floorPrice = minPrice ? Number(minPrice) : Math.round(listedPrice * 0.85);
-    const stock = inventory ? Number(inventory) : 10;
+    const stock = inventory !== undefined ? Number(inventory) : 10;
     const finalSku = sku || `SKU-${Date.now().toString().slice(-6)}`;
     const variantId = `var_${Date.now()}`;
     const shopifyProdId = `prod_${Date.now()}`;
@@ -158,89 +215,44 @@ router.post("/", async (req: Request, res: Response) => {
       maxDiscountPercent: Math.round(((listedPrice - floorPrice) / listedPrice) * 100),
       description: r.description,
       category: r.category,
-      createdAt: r.created_at.toISOString(),
-      updatedAt: r.updated_at.toISOString(),
+      imageUrl: r.image_url,
+      createdAt: new Date(r.created_at).toISOString(),
     };
 
     return res.status(201).json(createdProduct);
-  } catch (err) {
-    console.error("Product create error:", err);
-    return res.status(500).json({ error: "Failed to create product" });
+  } catch (err: any) {
+    console.error("Create product error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to create product" });
   }
 });
 
-// PATCH /api/v1/products/:id/toggle-ai — Toggle AI selling
+// PATCH /api/v1/products/:id/toggle-ai — Toggle AI agent selling for this SKU
 router.patch("/:id/toggle-ai", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { enabled } = req.body;
+    const { isAiEnabled } = req.body;
 
     const { rows } = await db.query(
       `UPDATE products
        SET is_ai_enabled = $1, updated_at = NOW()
        WHERE id = $2
-       RETURNING *`,
-      [Boolean(enabled), id]
+       RETURNING id, is_ai_enabled, title`,
+      [Boolean(isAiEnabled), id]
     );
 
-    if (!rows[0]) {
+    if (rows.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    const r = rows[0];
     return res.json({
-      id: r.id,
-      aiSellingEnabled: r.is_ai_enabled,
-      updatedAt: r.updated_at.toISOString(),
+      success: true,
+      id: rows[0].id,
+      isAiEnabled: rows[0].is_ai_enabled,
+      title: rows[0].title,
     });
   } catch (err) {
     console.error("Toggle AI error:", err);
-    return res.status(500).json({ error: "Failed to update AI state" });
-  }
-});
-
-// PATCH /api/v1/products/:id — Update product details
-router.patch("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { title, price, minPrice, inventory, category, description, isAiEnabled } = req.body;
-
-    const { rows } = await db.query(
-      `UPDATE products
-       SET
-         title = COALESCE($1, title),
-         listed_price = COALESCE($2, listed_price),
-         floor_price = COALESCE($3, floor_price),
-         inventory_available = COALESCE($4, inventory_available),
-         category = COALESCE($5, category),
-         description = COALESCE($6, description),
-         is_ai_enabled = COALESCE($7, is_ai_enabled),
-         updated_at = NOW()
-       WHERE id = $8
-       RETURNING *`,
-      [title, price, minPrice, inventory, category, description, isAiEnabled, id]
-    );
-
-    if (!rows[0]) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    return res.json(rows[0]);
-  } catch (err) {
-    console.error("Product update error:", err);
-    return res.status(500).json({ error: "Failed to update product" });
-  }
-});
-
-// DELETE /api/v1/products/:id — Delete product
-router.delete("/:id", async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    await db.query("DELETE FROM products WHERE id = $1", [id]);
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("Product delete error:", err);
-    return res.status(500).json({ error: "Failed to delete product" });
+    return res.status(500).json({ error: "Failed to toggle AI status" });
   }
 });
 

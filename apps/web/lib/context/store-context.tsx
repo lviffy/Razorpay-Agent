@@ -25,10 +25,10 @@ interface StoreContextType {
 
 const defaultStore: ConnectedStore = {
   id: "store_default",
-  name: "My Store",
+  name: "Merchant Store",
   city: "Bengaluru",
-  phone: "+91 98765 00000",
-  email: "merchant@zapai.io",
+  phone: "",
+  email: "",
   role: "Store Owner & Admin",
   currency: "INR",
   isActive: true,
@@ -53,10 +53,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const userStore: ConnectedStore = {
         id: user.storeId || "store_default",
-        name: user.storeName || "My Store",
+        name: user.storeName || "Merchant Store",
         city: user.storeCity || "Bengaluru",
-        phone: user.phone || "+91 98765 00000",
-        email: user.email,
+        phone: user.phone || "",
+        email: user.email || "",
         role: "Store Owner & Admin",
         currency: "INR",
         isActive: true,

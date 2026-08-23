@@ -11,7 +11,7 @@ interface ShopifySyncCardProps {
 }
 
 export function ShopifySyncCard({ onSyncComplete }: ShopifySyncCardProps) {
-  const [shopDomain, setShopDomain] = useState("runfast-sports.myshopify.com");
+  const [shopDomain, setShopDomain] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 

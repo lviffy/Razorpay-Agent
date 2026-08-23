@@ -3,11 +3,11 @@ import { OnboardingState } from "@/lib/types";
 
 let sessionStore: OnboardingState = {
   id: "onb_sess_001",
-  merchantId: "merch_runfast",
+  merchantId: "merchant",
   currentStep: "WELCOME",
   provider: null,
   businessName: null,
-  productCount: 4,
+  productCount: 0,
   agentConfigured: false,
   whatsappConnected: false,
   razorpayConnected: false,
@@ -33,11 +33,11 @@ export async function POST(req: NextRequest) {
     if (body.action === "reset") {
       sessionStore = {
         id: `onb_sess_${Date.now()}`,
-        merchantId: "merch_runfast",
+        merchantId: "merchant",
         currentStep: "WELCOME",
         provider: null,
         businessName: null,
-        productCount: 4,
+        productCount: 0,
         agentConfigured: false,
         whatsappConnected: false,
         razorpayConnected: false,
@@ -62,6 +62,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(sessionStore);
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Session error" }, { status: 500 });
   }
 }

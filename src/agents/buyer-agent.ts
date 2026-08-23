@@ -168,7 +168,7 @@ export class BuyerAgent {
     spendingLimit: number
   ): Promise<{ category?: string; keywords: string[] }> {
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash-lite",
+      model: "gemini-3.6-flash",
       tools: [
         {
           functionDeclarations: [

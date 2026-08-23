@@ -222,46 +222,11 @@ export default function OnboardingPage() {
                 {/* Step-specific inline widgets attached directly in the middle of the chat */}
                 {isLastAssistantMessage && (
                   <div className="mt-4 space-y-3 w-full">
-                    {/* Step: WELCOME (Quick Business Name Preset Chips in Middle) */}
+                    {/* Step: WELCOME */}
                     {state.currentStep === "WELCOME" && (
-                      <div className="space-y-2.5 pt-1">
-                        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider pl-0.5">
-                          Quick Select or Type Below:
-                        </p>
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                          {[
-                            { name: "RunFast Sports", icon: "👟", cat: "Athletic Shoes & Apparel" },
-                            { name: "RoastLab Coffee", icon: "☕", cat: "Specialty Beans & Gear" },
-                            { name: "Volt Audio", icon: "⚡", cat: "Hi-Fi Headphones" },
-                            { name: "Luxe Wardrobe", icon: "👗", cat: "Designer Fashion" },
-                            { name: "Glow Botanics", icon: "✨", cat: "Organic Skincare & Serums" },
-                            { name: "Chronos Watches", icon: "⌚", cat: "Minimalist Timepieces" },
-                            { name: "Aura Home Living", icon: "🕯️", cat: "Artisanal Decor & Scents" },
-                            { name: "CyberByte Tech", icon: "🎮", cat: "Mechanical Keyboards & Gear" },
-                            { name: "Matcha Bloom", icon: "🍵", cat: "Ceremonial Grade Tea" },
-                            { name: "Nomad Carry", icon: "🎒", cat: "Modular Travel Packs" },
-                            { name: "Urban Kicks", icon: "🛹", cat: "Streetwear & Sneakers" },
-                            { name: "Optix Studio", icon: "👓", cat: "Eyewear & Sunframes" },
-                          ].map((brand) => (
-                            <motion.button
-                              key={brand.name}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => handleSendMessage(brand.name)}
-                              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-white border border-zinc-200/90 hover:border-brand-500 hover:bg-brand-50/40 text-xs font-medium text-zinc-800 shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer group shrink-0"
-                            >
-                              <span className="text-xs sm:text-sm">{brand.icon}</span>
-                              <span className="font-semibold text-zinc-900 group-hover:text-brand-700">
-                                {brand.name}
-                              </span>
-                              <span className="text-[10px] text-zinc-400 font-normal hidden xs:inline">
-                                • {brand.cat}
-                              </span>
-                            </motion.button>
-                          ))}
-                        </div>
+                      <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-600">
+                        <p className="font-semibold text-zinc-900 mb-0.5">Enter Your Business Name</p>
+                        Type your real store or business name in the chat below to begin.
                       </div>
                     )}
 
@@ -303,22 +268,11 @@ export default function OnboardingPage() {
                           options={[
                             {
                               id: "add_modal",
-                              label: "Add Product Manually",
-                              description: "Custom price, SKU, inventory, and floor price barrier.",
-                              badge: "Modal Editor",
+                              label: "Add Product Details",
+                              description: "Enter your product title, listed price, SKU, stock inventory, and negotiation floor.",
+                              badge: "Product Form",
                               icon: <Layers className="w-4 h-4" />,
                               onClick: () => setNativeModalOpen(true),
-                            },
-                            {
-                              id: "quick_nike",
-                              label: "Use Example: Nike Pegasus 40 (₹3,999)",
-                              description: "AI automatically structures product with floor price ₹3,500 (18 units).",
-                              badge: "1-Click Preset",
-                              icon: <Sparkles className="w-4 h-4" />,
-                              onClick: () =>
-                                handleSendMessage(
-                                  "Nike Air Zoom Pegasus 40 running shoes, ₹3999, 18 units, minimum price ₹3500"
-                                ),
                             },
                           ]}
                         />
@@ -423,10 +377,10 @@ export default function OnboardingPage() {
                         </div>
 
                         <Button
-                          onClick={() => handleSendMessage("Connect WhatsApp Business Number +91 98765 00000")}
+                          onClick={() => handleSendMessage("Connect WhatsApp Business Number")}
                           className="w-full text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 gap-2"
                         >
-                          <span>Connect Business Number (+91 98765 00000)</span>
+                          <span>Connect WhatsApp Business Number</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Button>
                       </motion.div>

@@ -120,7 +120,7 @@ export function LiveStorePreview({ state, className }: LiveStorePreviewProps) {
             <div>
               <p className="text-xs font-semibold text-zinc-900 leading-none">WhatsApp Channel</p>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                {state.whatsappConnected ? "+91 98765 00000" : "Disconnected"}
+                {state.whatsappConnected ? "Webhook Connected" : "Disconnected"}
               </p>
             </div>
           </div>

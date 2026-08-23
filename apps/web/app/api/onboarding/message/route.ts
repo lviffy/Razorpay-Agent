@@ -13,11 +13,11 @@ export async function POST(req: NextRequest) {
 
     const currentState: OnboardingState = state || {
       id: "onb_sess_001",
-      merchantId: "merch_runfast",
+      merchantId: "merchant",
       currentStep: "WELCOME",
       provider: null,
       businessName: null,
-      productCount: 4,
+      productCount: 0,
       agentConfigured: false,
       whatsappConnected: false,
       razorpayConnected: false,

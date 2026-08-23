@@ -1,15 +1,59 @@
 import { Router } from "express";
 import { db } from "../db/migrate.ts";
+import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
 
 const router = Router();
 
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = (req.query.storeId as string) || (req.body?.storeId as string);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const { rows } = await db.query(
+    "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+  );
+  return rows[0]?.id || null;
+}
+
 // GET /api/v1/settings/rules — Fetch store negotiation rules
 router.get("/rules", async (req: Request, res: Response) => {
   try {
-    const storeId = (req.query.storeId as string) || "a0000000-0000-0000-0000-000000000001";
+    const storeId = await getStoreIdFromReq(req);
     const { rows } = await db.query(
-      `SELECT * FROM negotiation_rules WHERE store_id = $1 LIMIT 1`,
+      `SELECT * FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
       [storeId]
     );
 
@@ -44,7 +88,7 @@ router.get("/rules", async (req: Request, res: Response) => {
 // PUT /api/v1/settings/rules — Update store negotiation rules
 router.put("/rules", async (req: Request, res: Response) => {
   try {
-    const storeId = (req.body.storeId as string) || "a0000000-0000-0000-0000-000000000001";
+    const storeId = await getStoreIdFromReq(req);
     const {
       maxDiscountPercent,
       minimumOrderValue,
@@ -55,49 +99,55 @@ router.put("/rules", async (req: Request, res: Response) => {
       riskProfile,
     } = req.body;
 
-    const { rows } = await db.query(
-      `INSERT INTO negotiation_rules (
-        store_id, max_discount_percentage, min_order_value_for_discount,
-        free_shipping_threshold, allow_bundle_offers, alternative_products_enabled,
-        human_approval_above, risk_profile
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      ON CONFLICT (id) DO NOTHING
-      RETURNING *`,
-      [
-        storeId,
-        maxDiscountPercent,
-        minimumOrderValue,
-        freeShippingAbove,
-        bundleOffersEnabled,
-        alternativeProductsEnabled,
-        humanApprovalAbove,
-        riskProfile,
-      ]
-    );
+    if (storeId) {
+      const { rows: existing } = await db.query(
+        "SELECT id FROM negotiation_rules WHERE store_id = $1 LIMIT 1",
+        [storeId]
+      );
 
-    // Also update existing record if present
-    await db.query(
-      `UPDATE negotiation_rules
-       SET
-         max_discount_percentage = $1,
-         min_order_value_for_discount = $2,
-         free_shipping_threshold = $3,
-         allow_bundle_offers = $4,
-         alternative_products_enabled = $5,
-         human_approval_above = $6,
-         risk_profile = $7
-       WHERE store_id = $8`,
-      [
-        maxDiscountPercent,
-        minimumOrderValue,
-        freeShippingAbove,
-        bundleOffersEnabled,
-        alternativeProductsEnabled,
-        humanApprovalAbove,
-        riskProfile,
-        storeId,
-      ]
-    );
+      if (existing.length === 0) {
+        await db.query(
+          `INSERT INTO negotiation_rules (
+            store_id, max_discount_percentage, min_order_value_for_discount,
+            free_shipping_threshold, allow_bundle_offers, alternative_products_enabled,
+            human_approval_above, risk_profile
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            storeId,
+            maxDiscountPercent,
+            minimumOrderValue,
+            freeShippingAbove,
+            bundleOffersEnabled,
+            alternativeProductsEnabled,
+            humanApprovalAbove,
+            riskProfile,
+          ]
+        );
+      } else {
+        await db.query(
+          `UPDATE negotiation_rules
+           SET
+             max_discount_percentage = $1,
+             min_order_value_for_discount = $2,
+             free_shipping_threshold = $3,
+             allow_bundle_offers = $4,
+             alternative_products_enabled = $5,
+             human_approval_above = $6,
+             risk_profile = $7
+           WHERE store_id = $8`,
+          [
+            maxDiscountPercent,
+            minimumOrderValue,
+            freeShippingAbove,
+            bundleOffersEnabled,
+            alternativeProductsEnabled,
+            humanApprovalAbove,
+            riskProfile,
+            storeId,
+          ]
+        );
+      }
+    }
 
     return res.json({
       maxDiscountPercent,
@@ -117,15 +167,16 @@ router.put("/rules", async (req: Request, res: Response) => {
 // GET /api/v1/settings/agent — Fetch AI Seller configuration
 router.get("/agent", async (req: Request, res: Response) => {
   try {
-    const storeId = (req.query.storeId as string) || "a0000000-0000-0000-0000-000000000001";
+    const storeId = await getStoreIdFromReq(req);
     const { rows } = await db.query(
-      `SELECT agent_settings FROM stores WHERE id = $1 LIMIT 1`,
+      `SELECT agent_settings, name FROM stores WHERE ($1::uuid IS NULL OR id = $1::uuid) LIMIT 1`,
       [storeId]
     );
 
+    const storeName = rows[0]?.name || "AI Seller Agent";
     const s = rows[0]?.agent_settings || {};
     return res.json({
-      name: s.name || "RunFast AI Seller",
+      name: s.name || `${storeName} AI Seller`,
       tone: s.tone || "friendly",
       status: s.status || "active",
       autoNegotiationEnabled: s.autoNegotiationEnabled ?? true,
@@ -141,7 +192,7 @@ router.get("/agent", async (req: Request, res: Response) => {
 // PUT /api/v1/settings/agent — Update AI Seller configuration
 router.put("/agent", async (req: Request, res: Response) => {
   try {
-    const storeId = (req.body.storeId as string) || "a0000000-0000-0000-0000-000000000001";
+    const storeId = await getStoreIdFromReq(req);
     const {
       name,
       tone,
@@ -152,7 +203,7 @@ router.put("/agent", async (req: Request, res: Response) => {
     } = req.body;
 
     const agentSettings = {
-      name: name || "RunFast AI Seller",
+      name: name || "AI Seller Agent",
       tone: tone || "friendly",
       status: status || "active",
       autoNegotiationEnabled: autoNegotiationEnabled ?? true,
@@ -160,12 +211,14 @@ router.put("/agent", async (req: Request, res: Response) => {
       escalationThresholdAmount: escalationThresholdAmount || 5000,
     };
 
-    await db.query(
-      `UPDATE stores
-       SET agent_settings = $1, updated_at = NOW()
-       WHERE id = $2`,
-      [JSON.stringify(agentSettings), storeId]
-    );
+    if (storeId) {
+      await db.query(
+        `UPDATE stores
+         SET agent_settings = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify(agentSettings), storeId]
+      );
+    }
 
     return res.json(agentSettings);
   } catch (err) {

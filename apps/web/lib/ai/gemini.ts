@@ -52,7 +52,7 @@ export async function generateOnboardingAIResponse(
   if (genAI) {
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-3.6-flash",
         generationConfig: {
           responseMimeType: "application/json",
           temperature: 0.7,
@@ -89,12 +89,13 @@ STEP ORDER IN ONBOARDING:
 6. "RAZORPAY_CONNECT" (Connect Razorpay test API keys)
 7. "READY" (Store is 100% active, ready for live launch)
 
-TASK:
-1. Analyze the user's message in context.
-2. Answer any question they have intelligently, concisely, and warmly. Explain ZapAI features (like floor price barriers, Razorpay instant checkout, UPI deep links) if asked.
-3. If they provided a business name, product, discount rule, or clicked a preset, extract the structured data accurately.
-4. Advance the step appropriately to guide them toward 100% launch readiness.
-5. Provide a crisp, friendly, conversational reply (1-3 sentences).
+CRITICAL RULES:
+1. If the user message is just a greeting (e.g. "hi", "hello", "hey") or asks a question, answer warmly and helpfully, and KEEP nextStep at "${currentState.currentStep}". DO NOT advance to the next step.
+2. If on "AGENT_SETUP", only advance if they specify a discount percentage or select a risk profile (conservative/balanced/aggressive). If they ask questions or say hi, answer and guide them to set their discount rule.
+3. If on "CATALOG_SETUP", only advance if product info is provided or added.
+4. If on "WHATSAPP_CONNECT", only advance if they confirm connecting their WhatsApp number.
+5. If on "RAZORPAY_CONNECT", only advance if they confirm connecting Razorpay credentials.
+6. Provide a crisp, friendly, conversational reply (1-3 sentences).
 
 Return ONLY valid JSON matching this schema:
 {
@@ -138,7 +139,7 @@ Return ONLY valid JSON matching this schema:
     }
   }
 
-  // Smart Heuristic NLP Fallback (if API key not set or network down)
+  // Smart Heuristic NLP Fallback
   return fallbackHeuristicAI(userMessage, currentState);
 }
 
@@ -155,6 +156,17 @@ function fallbackHeuristicAI(
   let progress = currentState.completionPercentage;
   const extracted: OnboardingAIOutput["extracted"] = {};
 
+  const isGreeting = /^(hi|hello|hey|greetings|hola|good\s*(morning|evening|afternoon)|sup|yo)\b/i.test(text);
+
+  if (isGreeting && currentState.currentStep !== "WELCOME") {
+    return {
+      reply: `Hello! I'm your ZapAI setup assistant for ${currentState.businessName || "your store"}. We are currently on the "${currentState.currentStep.replace(/_/g, " ")}" step. How can I help, or would you like to continue configuring your store?`,
+      nextStep: currentState.currentStep,
+      extracted: {},
+      completionPercentage: currentState.completionPercentage,
+    };
+  }
+
   if (currentState.currentStep === "WELCOME" || !currentState.businessName) {
     const cleanedName = userMessage
       .replace(/^(my store is|it's called|name is|i am|let's call it)\s+/i, "")
@@ -169,38 +181,58 @@ function fallbackHeuristicAI(
       nextStep = "AGENT_SETUP";
       progress = 50;
       reply = `Connected Shopify store catalog. Real-time SKU prices and stock levels are indexed! Now, let's configure your AI Seller's negotiation boundaries.`;
-    } else {
+    } else if (text.includes("native") || text.includes("zapai") || text.includes("manual") || text.includes("catalog")) {
       extracted.provider = "ZAPAI";
       nextStep = "CATALOG_SETUP";
-      progress = 45;
+      progress = 40;
       reply = `Native catalog selected. You can add your products with strict floor prices so your AI never sells below cost. What products do you want to list?`;
+    } else {
+      reply = `Would you like to add products directly to your ZapAI Native Catalog, or connect an existing Shopify store?`;
     }
   } else if (currentState.currentStep === "CATALOG_SETUP") {
-    nextStep = "AGENT_SETUP";
-    progress = 65;
-    reply = `Products indexed with strict floor barriers! Now, let's establish your negotiation profile. What maximum discount should your agent offer during live WhatsApp negotiations?`;
+    if (text.includes("added") || text.includes("sku") || text.includes("price") || text.includes("₹") || text.includes("rs")) {
+      nextStep = "AGENT_SETUP";
+      progress = 65;
+      reply = `Product indexed with strict floor barriers! Now, let's establish your negotiation profile. What maximum discount should your agent offer during live WhatsApp negotiations?`;
+    } else {
+      reply = `Please click 'Add Product Details' above to add your product to the catalog, or type in your product name and price.`;
+    }
   } else if (currentState.currentStep === "AGENT_SETUP") {
-    extracted.discountRules = {
-      maxDiscountPercent: text.includes("18") || text.includes("aggressive") ? 18 : text.includes("8") || text.includes("conservative") ? 8 : 12,
-      riskProfile: text.includes("aggressive") ? "aggressive" : text.includes("conservative") ? "conservative" : "balanced",
-    };
-    nextStep = "WHATSAPP_CONNECT";
-    progress = 80;
-    reply = `Negotiation guardrails set! Maximum discount is locked at ${extracted.discountRules.maxDiscountPercent}%. Next, connect your WhatsApp Business account so buyers can start messaging your store.`;
+    const hasDiscount = /\d+%?/.test(text) || text.includes("discount") || text.includes("profile") || text.includes("conservative") || text.includes("balanced") || text.includes("aggressive");
+    if (hasDiscount) {
+      const discount = text.includes("18") || text.includes("aggressive") ? 18 : text.includes("8") || text.includes("conservative") ? 8 : 12;
+      extracted.discountRules = {
+        maxDiscountPercent: discount,
+        riskProfile: text.includes("aggressive") ? "aggressive" : text.includes("conservative") ? "conservative" : "balanced",
+      };
+      nextStep = "WHATSAPP_CONNECT";
+      progress = 80;
+      reply = `Negotiation guardrails set! Maximum discount is locked at ${discount}%. Next, connect your WhatsApp Business account so buyers can start messaging your store.`;
+    } else {
+      reply = `Please choose a negotiation profile (Conservative: max 8%, Balanced: max 12%, Aggressive: max 18%) or specify your preferred maximum discount percentage.`;
+    }
   } else if (currentState.currentStep === "WHATSAPP_CONNECT") {
-    extracted.whatsappConnected = true;
-    nextStep = "RAZORPAY_CONNECT";
-    progress = 90;
-    reply = `WhatsApp Cloud webhook verified (+91 98765 00000)! Finally, connect your Razorpay credentials so your AI can autonomously issue 1-Tap UPI payment links.`;
-  } else if (currentState.currentStep === "RAZORPAY_CONNECT" || text.includes("razorpay")) {
-    extracted.razorpayConnected = true;
-    nextStep = "READY";
-    progress = 100;
-    reply = `Razorpay Test Mode connected and webhooks active! Your autonomous AI storefront is 100% configured and ready to accept live orders.`;
+    if (text.includes("whatsapp") || text.includes("phone") || text.includes("connect") || text.includes("+91") || /\d{10}/.test(text)) {
+      extracted.whatsappConnected = true;
+      nextStep = "RAZORPAY_CONNECT";
+      progress = 90;
+      reply = `WhatsApp Cloud webhook verified! Finally, connect your Razorpay credentials so your AI can autonomously issue 1-Tap UPI payment links.`;
+    } else {
+      reply = `Please connect your WhatsApp Business phone number so your AI agent can receive customer chats.`;
+    }
+  } else if (currentState.currentStep === "RAZORPAY_CONNECT") {
+    if (text.includes("razorpay") || text.includes("rzp") || text.includes("connect") || text.includes("test")) {
+      extracted.razorpayConnected = true;
+      nextStep = "READY";
+      progress = 100;
+      reply = `Razorpay Test Mode connected and webhooks active! Your autonomous AI storefront is 100% configured and ready to accept live orders.`;
+    } else {
+      reply = `Please click 'Connect Razorpay Test Credentials' to activate instant UPI settlements for your store.`;
+    }
   } else {
     nextStep = "READY";
     progress = 100;
-    reply = `All parameters are set and synchronized! You can now launch your merchant cockpit.`;
+    reply = `All parameters are set and synchronized! Click 'Open Merchant Dashboard' to launch your store cockpit.`;
   }
 
   return {

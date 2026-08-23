@@ -30,7 +30,7 @@ router.get("/", async (req: Request, res: Response) => {
         o.created_at,
         s.name as store_name
       FROM orders o
-      JOIN stores s ON o.store_id = s.id
+      LEFT JOIN stores s ON o.store_id = s.id
     `;
     const params: any[] = [];
     const conditions: string[] = [];
@@ -97,7 +97,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     const { rows } = await db.query(
       `SELECT o.*, s.name as store_name
        FROM orders o
-       JOIN stores s ON o.store_id = s.id
+       LEFT JOIN stores s ON o.store_id = s.id
        WHERE o.id = $1 OR o.order_id = $1`,
       [id]
     );

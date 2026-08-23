@@ -94,7 +94,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     return res.json({
       id: r.conversation_id,
       customerPhone: r.phone_number,
-      customerName: r.customer_name || "Aarav Patel",
+      customerName: r.customer_name || "Customer",
       status: r.status || "active",
       dealAmount: r.deal_amount ? parseFloat(r.deal_amount) : undefined,
       productsDiscussed: r.products_discussed || [],
