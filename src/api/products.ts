@@ -38,7 +38,7 @@ async function getStoreIdFromReq(req: Request): Promise<string | null> {
         if (rows[0]?.store_id) return rows[0].store_id;
       }
     } catch {
-      // ignore token verify failure
+      // ignore
     }
   }
 
@@ -124,9 +124,119 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/v1/products — Create a new product
+// POST /api/v1/products/bulk — Batch create multiple products
+router.post("/bulk", async (req: Request, res: Response) => {
+  try {
+    const rawProducts = Array.isArray(req.body) ? req.body : req.body?.products;
+    if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
+      return res.status(400).json({ error: "An array of products is required" });
+    }
+
+    let storeId = req.body.storeId;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!storeId || !uuidRegex.test(storeId)) {
+      storeId = await getStoreIdFromReq(req);
+    }
+
+    if (!storeId) {
+      const { rows: newStore } = await db.query(
+        "INSERT INTO stores (name, is_active) VALUES ('My Store', true) RETURNING id"
+      );
+      storeId = newStore[0].id;
+    }
+
+    const createdList = [];
+
+    for (let i = 0; i < rawProducts.length; i++) {
+      const item = rawProducts[i];
+      if (!item.title || item.price === undefined) continue;
+
+      const listedPrice = Number(item.price);
+      const floorPrice = item.minPrice !== undefined ? Number(item.minPrice) : Math.round(listedPrice * 0.88);
+      const stock = item.inventory !== undefined ? Number(item.inventory) : 10;
+      const finalSku = item.sku || `SKU-${Date.now().toString().slice(-4)}${i}`;
+      const variantId = `var_${Date.now()}_${i}`;
+      const shopifyProdId = `prod_${Date.now()}_${i}`;
+
+      const agentSchema = {
+        variantId,
+        title: item.title,
+        sku: finalSku,
+        listedPrice,
+        floorPrice,
+        inventoryAvailable: stock,
+        attributes: {
+          category: item.category || "General",
+          description: item.description || "",
+        },
+      };
+
+      const { rows } = await db.query(
+        `INSERT INTO products (
+          store_id, shopify_product_id, shopify_variant_id,
+          title, sku, listed_price, floor_price,
+          inventory_available, inventory_reserved, inventory_state,
+          is_ai_enabled, category, description, agent_schema,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, NOW(), NOW())
+        RETURNING *`,
+        [
+          storeId,
+          shopifyProdId,
+          variantId,
+          item.title,
+          finalSku,
+          listedPrice,
+          floorPrice,
+          stock,
+          item.aiSellingEnabled ?? true,
+          item.category || "General",
+          item.description || "",
+          JSON.stringify(agentSchema),
+        ]
+      );
+
+      if (rows[0]) {
+        const r = rows[0];
+        createdList.push({
+          id: r.id,
+          storeId: r.store_id,
+          title: r.title,
+          sku: r.sku,
+          price: parseFloat(r.listed_price),
+          minPrice: parseFloat(r.floor_price),
+          inventory: parseInt(r.inventory_available, 10),
+          provider: "ZAPAI",
+          aiSellingEnabled: r.is_ai_enabled,
+          maxDiscountPercent: Math.round(((listedPrice - floorPrice) / listedPrice) * 100),
+          description: r.description,
+          category: r.category,
+        });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      count: createdList.length,
+      products: createdList,
+    });
+  } catch (err: any) {
+    console.error("Bulk create products error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to bulk create products" });
+  }
+});
+
+// POST /api/v1/products — Create single product or multiple
 router.post("/", async (req: Request, res: Response) => {
   try {
+    if (Array.isArray(req.body) || (req.body?.products && Array.isArray(req.body.products))) {
+      // Forward to bulk handler logic
+      const rawProducts = Array.isArray(req.body) ? req.body : req.body.products;
+      const storeId = req.body.storeId;
+      const fakeReq = { ...req, body: { products: rawProducts, storeId } };
+      return router.handle(fakeReq as any, res as any, () => {});
+    }
+
     const {
       title,
       sku,
@@ -148,7 +258,6 @@ router.post("/", async (req: Request, res: Response) => {
       storeId = await getStoreIdFromReq(req);
     }
 
-    // If no store exists yet, create one
     if (!storeId) {
       const { rows: newStore } = await db.query(
         "INSERT INTO stores (name, is_active) VALUES ('My Store', true) RETURNING id"
@@ -157,7 +266,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const listedPrice = Number(price);
-    const floorPrice = minPrice ? Number(minPrice) : Math.round(listedPrice * 0.85);
+    const floorPrice = minPrice !== undefined ? Number(minPrice) : Math.round(listedPrice * 0.88);
     const stock = inventory !== undefined ? Number(inventory) : 10;
     const finalSku = sku || `SKU-${Date.now().toString().slice(-6)}`;
     const variantId = `var_${Date.now()}`;

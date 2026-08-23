@@ -329,6 +329,16 @@ export const api = {
         }
       );
     },
+    createBulk: async (payload: Partial<Product>[]): Promise<{ success: boolean; count: number; products: Product[] }> => {
+      return fetchJson<{ success: boolean; count: number; products: Product[] }>(
+        "/products/bulk",
+        {
+          method: "POST",
+          body: JSON.stringify({ products: payload }),
+        },
+        { success: true, count: payload.length, products: [] }
+      );
+    },
     toggleAI: async (productId: string, enabled: boolean): Promise<Product | null> => {
       return fetchJson<Product | null>(
         `/products/${productId}/toggle-ai`,

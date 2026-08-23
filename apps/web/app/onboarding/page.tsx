@@ -88,11 +88,20 @@ export default function OnboardingPage() {
 
   const handleSaveNativeProduct = async (productData: any) => {
     setLoading(true);
-    await api.products.create(productData);
-    const updated = await api.onboarding.sendMessage(
-      `Added ${productData.title} at ₹${productData.price} (Floor: ₹${productData.minPrice}, 10 units)`
-    );
-    setState(updated.state);
+    if (Array.isArray(productData)) {
+      await api.products.createBulk(productData);
+      const summaryTitles = productData.map((p: any) => p.title).join(", ");
+      const updated = await api.onboarding.sendMessage(
+        `Added ${productData.length} products to catalog: ${summaryTitles}`
+      );
+      setState(updated.state);
+    } else {
+      await api.products.create(productData);
+      const updated = await api.onboarding.sendMessage(
+        `Added ${productData.title} at ₹${productData.price} (Floor: ₹${productData.minPrice || Math.round(productData.price * 0.88)}, ${productData.inventory || 10} units)`
+      );
+      setState(updated.state);
+    }
     setLoading(false);
   };
 

@@ -40,8 +40,11 @@ export default function ProductsPage() {
   };
 
   const handleSaveProduct = async (productData: any) => {
-    await api.products.create(productData);
-    setModalOpen(false);
+    if (Array.isArray(productData)) {
+      await api.products.createBulk(productData);
+    } else {
+      await api.products.create(productData);
+    }
     loadProducts();
   };
 
