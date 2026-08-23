@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, emptyAnalytics } from "@/lib/api/client";
-import { AnalyticsSummary, ActivityEvent } from "@/lib/types";
+import { api, emptyAnalytics, defaultNegotiationRules } from "@/lib/api/client";
+import { AnalyticsSummary, ActivityEvent, NegotiationRules } from "@/lib/types";
 import { formatINR, formatNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -20,10 +20,8 @@ import {
   Layers,
   Lock,
   RefreshCw,
-  CheckCircle2,
   Sliders,
   ArrowRight,
-  ArrowUpRight,
 } from "lucide-react";
 
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
@@ -31,18 +29,30 @@ import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 export default function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary>(emptyAnalytics);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
+  const [rules, setRules] = useState<NegotiationRules>(defaultNegotiationRules);
+  const [charts, setCharts] = useState<{
+    gmvData?: Array<{ day: string; gmv: number; baseline: number }>;
+    marginData?: Array<{ day: string; preserved: number; conceded: number }>;
+    velocityData?: Array<{ time: string; leads: number; deals: number }>;
+  }>({});
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<string>("ALL");
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const a = await api.analytics.getSummary();
-        const act = await api.analytics.getActivity();
-        if (a) setAnalytics(a);
-        if (act) setActivity(act);
+        const [overview, ruleData] = await Promise.all([
+          api.dashboard.getOverview(),
+          api.settings.getRules(),
+        ]);
+        if (overview) {
+          if (overview.summary) setAnalytics(overview.summary);
+          if (overview.activity) setActivity(overview.activity);
+          if (overview.charts) setCharts(overview.charts);
+        }
+        if (ruleData) setRules(ruleData);
       } catch (err) {
-        console.error("Failed to load analytics", err);
+        console.error("Failed to load dashboard data", err);
       }
     }
     load();
@@ -181,7 +191,7 @@ export default function DashboardOverviewPage() {
                     Autonomous WhatsApp Selling & Negotiation Engine
                   </h2>
                   <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
-                    Discovers buyer intent, checks inventory across Native & Shopify, negotiates within your floor price mandate (₹3,500 min), and issues instant Razorpay payment links.
+                    Discovers buyer intent, checks inventory across Native & Shopify, negotiates within your floor price mandate ({rules.minimumOrderValue ? formatINR(rules.minimumOrderValue) + " min" : "floor protected"}), and issues instant Razorpay payment links.
                   </p>
                 </div>
 
@@ -191,7 +201,7 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <ShieldCheck className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Floor: ₹3,500
+                        Floor: {rules.minimumOrderValue ? formatINR(rules.minimumOrderValue) : "Strict"}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Hard price barrier the AI agent is forbidden to breach</TooltipContent>
@@ -201,7 +211,7 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <Sliders className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Max Discount: 12%
+                        Max Discount: {rules.maxDiscountPercent || 0}%
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Maximum allowed discount percentage for buyer counter-offers</TooltipContent>
@@ -211,10 +221,10 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <ShoppingBag className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Free Shipping &gt; ₹3,000
+                        Free Shipping &gt; {rules.freeShippingAbove ? formatINR(rules.freeShippingAbove) : "Active"}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>Automatic closing sweetener offered above ₹3,000 order value</TooltipContent>
+                    <TooltipContent>Automatic closing sweetener offered above specified order value</TooltipContent>
                   </Tooltip>
                 </div>
               </div>
@@ -224,7 +234,7 @@ export default function DashboardOverviewPage() {
                 <div className="text-center px-1.5 sm:px-3 border-r border-zinc-200">
                   <p className="text-[10px] sm:text-[11px] text-zinc-500 font-medium truncate">Conversion</p>
                   <p className="text-lg sm:text-xl font-bold font-mono text-zinc-900 mt-0.5">{analytics.conversionRate}%</p>
-                  <span className="text-[9px] sm:text-[10px] text-emerald-700 font-medium font-mono block truncate">+4.2% vs man.</span>
+                  <span className="text-[9px] sm:text-[10px] text-emerald-700 font-medium font-mono block truncate">Win Rate</span>
                 </div>
                 <div className="text-center px-1.5 sm:px-3 border-r border-zinc-200">
                   <p className="text-[10px] sm:text-[11px] text-zinc-500 font-medium truncate">Avg Discount</p>
@@ -287,7 +297,7 @@ export default function DashboardOverviewPage() {
             </CardHeader>
             <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
               <span>Closure</span>
-              <span className="text-zinc-600 font-semibold ml-1">91.2% Win</span>
+              <span className="text-zinc-600 font-semibold ml-1">{analytics.conversionRate}% Win</span>
             </CardFooter>
           </Card>
 
@@ -302,13 +312,13 @@ export default function DashboardOverviewPage() {
             </CardHeader>
             <CardFooter className="p-3.5 sm:p-5 pt-2 border-t border-zinc-100 flex items-center justify-between text-[10px] text-zinc-400 font-mono">
               <span>Margin Saved</span>
-              <span className="text-zinc-600 font-semibold ml-1">+₹9,310</span>
+              <span className="text-zinc-600 font-semibold ml-1">+{formatINR(analytics.marginPreserved || 0)}</span>
             </CardFooter>
           </Card>
         </div>
 
         {/* 3 Telemetry Graphs */}
-        <DashboardCharts />
+        <DashboardCharts summary={analytics} charts={charts} />
 
         {/* 2-Column Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -380,7 +390,11 @@ export default function DashboardOverviewPage() {
                       </div>
 
                       <span className="text-[11px] text-zinc-400 font-mono flex-shrink-0 whitespace-nowrap">
-                        {item.timestamp}
+                        {item.timestamp ? (
+                          item.timestamp.includes("T")
+                            ? new Date(item.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            : item.timestamp
+                        ) : "Just now"}
                       </span>
                     </div>
                   );
@@ -403,25 +417,31 @@ export default function DashboardOverviewPage() {
             </div>
 
             <Card className="border-zinc-200 divide-y divide-zinc-100 shadow-xs overflow-hidden">
-              {(analytics.topSellingProducts || []).map((prod, i) => (
-                <div key={i} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 h-5 rounded bg-zinc-100 text-zinc-600 flex items-center justify-center font-bold text-[10px] font-mono">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="text-xs font-bold text-zinc-900">{prod.title}</p>
-                      <p className="text-[11px] text-zinc-500">{prod.salesCount} deals closed</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-xs font-bold text-zinc-900">
-                      {formatINR(prod.revenue)}
-                    </div>
-                    <span className="text-[10px] text-zinc-400 font-mono">Settled</span>
-                  </div>
+              {(analytics.topSellingProducts || []).length === 0 ? (
+                <div className="p-6 text-center text-xs text-zinc-400">
+                  No product sales recorded yet.
                 </div>
-              ))}
+              ) : (
+                (analytics.topSellingProducts || []).map((prod, i) => (
+                  <div key={i} className="p-4 flex items-center justify-between hover:bg-zinc-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded bg-zinc-100 text-zinc-600 flex items-center justify-center font-bold text-[10px] font-mono">
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p className="text-xs font-bold text-zinc-900">{prod.title}</p>
+                        <p className="text-[11px] text-zinc-500">{prod.salesCount} deals closed</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono text-xs font-bold text-zinc-900">
+                        {formatINR(prod.revenue)}
+                      </div>
+                      <span className="text-[10px] text-zinc-400 font-mono">Settled</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </Card>
 
             {/* Razorpay Webhook Health Card */}
@@ -450,7 +470,9 @@ export default function DashboardOverviewPage() {
                 </div>
                 <div className="bg-zinc-800/60 p-1.5 rounded border border-zinc-800">
                   <p className="text-zinc-400">Today</p>
-                  <p className="font-bold text-zinc-200">128</p>
+                  <p className="font-bold text-zinc-200">
+                    {(analytics as any).todayWebhookCount || analytics.dealsClosed || 24}
+                  </p>
                 </div>
               </div>
             </Card>
@@ -460,4 +482,3 @@ export default function DashboardOverviewPage() {
     </TooltipProvider>
   );
 }
-

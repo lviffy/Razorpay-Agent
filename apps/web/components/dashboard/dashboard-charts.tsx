@@ -15,39 +15,19 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatINR } from "@/lib/utils";
 import { TrendingUp, ShieldCheck, Activity } from "lucide-react";
+import { AnalyticsSummary } from "@/lib/types";
 
-const gmvData = [
-  { day: "Mon", gmv: 8400, baseline: 6200 },
-  { day: "Tue", gmv: 11200, baseline: 7800 },
-  { day: "Wed", gmv: 9800, baseline: 7100 },
-  { day: "Thu", gmv: 14500, baseline: 9200 },
-  { day: "Fri", gmv: 16200, baseline: 10400 },
-  { day: "Sat", gmv: 12900, baseline: 8900 },
-  { day: "Today", gmv: 18490, baseline: 11800 },
-];
-
-const marginData = [
-  { day: "Mon", preserved: 950, conceded: 420 },
-  { day: "Tue", preserved: 1280, conceded: 610 },
-  { day: "Wed", preserved: 1100, conceded: 530 },
-  { day: "Thu", preserved: 1640, conceded: 790 },
-  { day: "Fri", preserved: 1820, conceded: 880 },
-  { day: "Sat", preserved: 1450, conceded: 710 },
-  { day: "Today", preserved: 2070, conceded: 950 },
-];
-
-const velocityData = [
-  { time: "08:00", leads: 12, deals: 3 },
-  { time: "11:00", leads: 28, deals: 8 },
-  { time: "14:00", leads: 22, deals: 6 },
-  { time: "17:00", leads: 39, deals: 12 },
-  { time: "20:00", leads: 34, deals: 10 },
-  { time: "23:00", leads: 16, deals: 5 },
-];
+export interface DashboardChartsProps {
+  summary?: AnalyticsSummary;
+  charts?: {
+    gmvData?: Array<{ day: string; gmv: number; baseline: number }>;
+    marginData?: Array<{ day: string; preserved: number; conceded: number }>;
+    velocityData?: Array<{ time: string; leads: number; deals: number }>;
+  };
+}
 
 interface TooltipProps {
   active?: boolean;
@@ -80,7 +60,7 @@ function CustomTooltip({ active, payload, label, isCurrency = false }: TooltipPr
   return null;
 }
 
-export function DashboardCharts() {
+export function DashboardCharts({ summary, charts }: DashboardChartsProps) {
   const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<string>("all");
 
@@ -97,6 +77,69 @@ export function DashboardCharts() {
       </div>
     );
   }
+
+  const gmvData = charts?.gmvData && charts.gmvData.length > 0
+    ? charts.gmvData
+    : [
+        { day: "Mon", gmv: 0, baseline: 0 },
+        { day: "Tue", gmv: 0, baseline: 0 },
+        { day: "Wed", gmv: 0, baseline: 0 },
+        { day: "Thu", gmv: 0, baseline: 0 },
+        { day: "Fri", gmv: 0, baseline: 0 },
+        { day: "Sat", gmv: 0, baseline: 0 },
+        { day: "Today", gmv: 0, baseline: 0 },
+      ];
+
+  const marginData = charts?.marginData && charts.marginData.length > 0
+    ? charts.marginData
+    : [
+        { day: "Mon", preserved: 0, conceded: 0 },
+        { day: "Tue", preserved: 0, conceded: 0 },
+        { day: "Wed", preserved: 0, conceded: 0 },
+        { day: "Thu", preserved: 0, conceded: 0 },
+        { day: "Fri", preserved: 0, conceded: 0 },
+        { day: "Sat", preserved: 0, conceded: 0 },
+        { day: "Today", preserved: 0, conceded: 0 },
+      ];
+
+  const velocityData = charts?.velocityData && charts.velocityData.length > 0
+    ? charts.velocityData
+    : [
+        { time: "08:00", leads: 0, deals: 0 },
+        { time: "11:00", leads: 0, deals: 0 },
+        { time: "14:00", leads: 0, deals: 0 },
+        { time: "17:00", leads: 0, deals: 0 },
+        { time: "20:00", leads: 0, deals: 0 },
+        { time: "23:00", leads: 0, deals: 0 },
+      ];
+
+  const totalGmv = summary?.agentGmv !== undefined
+    ? summary.agentGmv
+    : gmvData.reduce((acc, curr) => acc + curr.gmv, 0);
+
+  const gmvGrowth = summary?.gmvGrowthPercent !== undefined
+    ? summary.gmvGrowthPercent
+    : 0;
+
+  const peakDay = totalGmv > 0
+    ? gmvData.reduce((max, curr) => (curr.gmv > max.gmv ? curr : max), gmvData[0] || { day: "Today", gmv: 0 })
+    : { day: "Today", gmv: 0 };
+
+  const totalPreserved = summary?.marginPreserved !== undefined
+    ? summary.marginPreserved
+    : marginData.reduce((acc, curr) => acc + curr.preserved, 0);
+
+  const avgDiscount = summary?.averageDiscount !== undefined
+    ? summary.averageDiscount
+    : 0;
+
+  const conversionRate = summary?.conversionRate !== undefined
+    ? summary.conversionRate
+    : 0;
+
+  const dealsClosed = summary?.dealsClosed !== undefined
+    ? summary.dealsClosed
+    : velocityData.reduce((acc, curr) => acc + curr.deals, 0);
 
   return (
     <div className="space-y-4">
@@ -145,11 +188,11 @@ export function DashboardCharts() {
                     <TrendingUp className="w-3.5 h-3.5 text-zinc-700" />
                     <span className="font-semibold uppercase tracking-wider text-[10px]">Graph 1 · GMV Velocity</span>
                   </div>
-                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">₹82,490</CardTitle>
+                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">{formatINR(totalGmv)}</CardTitle>
                   <CardDescription className="text-[11px] text-zinc-500 mt-0.5">7-day gross settled volume</CardDescription>
                 </div>
                 <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
-                  +28.4% WoW
+                  +{gmvGrowth}% WoW
                 </span>
               </div>
             </CardHeader>
@@ -193,7 +236,7 @@ export function DashboardCharts() {
             </CardContent>
 
             <CardFooter className="p-5 pt-3 border-t border-zinc-100 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-              <span>Peak Day: Today (₹18,490)</span>
+              <span>Peak Day: {peakDay.day} ({formatINR(peakDay.gmv)})</span>
               <span className="text-zinc-800 font-semibold">100% UPI Settled</span>
             </CardFooter>
           </Card>
@@ -209,7 +252,7 @@ export function DashboardCharts() {
                     <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />
                     <span className="font-semibold uppercase tracking-wider text-[10px]">Graph 2 · Margin Shield</span>
                   </div>
-                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">₹9,310</CardTitle>
+                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">{formatINR(totalPreserved)}</CardTitle>
                   <CardDescription className="text-[11px] text-zinc-500 mt-0.5">Dealer margin preserved against discount asks</CardDescription>
                 </div>
                 <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
@@ -262,7 +305,7 @@ export function DashboardCharts() {
                   <span className="w-2 h-2 rounded bg-zinc-400" /> Conceded
                 </span>
               </div>
-              <span className="text-zinc-800 font-semibold">6.8% Avg Disct</span>
+              <span className="text-zinc-800 font-semibold">{avgDiscount}% Avg Disct</span>
             </CardFooter>
           </Card>
         )}
@@ -277,11 +320,11 @@ export function DashboardCharts() {
                     <Activity className="w-3.5 h-3.5 text-zinc-700" />
                     <span className="font-semibold uppercase tracking-wider text-[10px]">Graph 3 · Conversion Flow</span>
                   </div>
-                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">91.2% Rate</CardTitle>
+                  <CardTitle className="text-xl font-bold font-mono text-zinc-900 mt-1">{conversionRate}% Rate</CardTitle>
                   <CardDescription className="text-[11px] text-zinc-500 mt-0.5">Inbound conversations to settled payments</CardDescription>
                 </div>
                 <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
-                  37 Deals Closed
+                  {dealsClosed} Deals Closed
                 </span>
               </div>
             </CardHeader>

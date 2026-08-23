@@ -75,7 +75,7 @@ export default function OrdersPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Total Settled Volume</p>
-          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{formatINR(totalSettled || 82490)}</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{formatINR(totalSettled)}</p>
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Payment Gateway</p>
