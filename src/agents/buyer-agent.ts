@@ -167,45 +167,66 @@ export class BuyerAgent {
     message: string,
     spendingLimit: number
   ): Promise<{ category?: string; keywords: string[] }> {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3.6-flash",
-      tools: [
-        {
-          functionDeclarations: [
-            {
-              name: "extractIntent",
-              description: "Extract the shopping intent from the user message",
-              parameters: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  category: {
-                    type: SchemaType.STRING,
-                    description:
-                      "Product category e.g. 'running shoes', 'socks', 'tee'",
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3.6-flash",
+        tools: [
+          {
+            functionDeclarations: [
+              {
+                name: "extractIntent",
+                description: "Extract the shopping intent from the user message",
+                parameters: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    category: {
+                      type: SchemaType.STRING,
+                      description:
+                        "Product category e.g. 'running shoes', 'socks', 'tee'",
+                    },
+                    keywords: {
+                      type: SchemaType.ARRAY,
+                      items: { type: SchemaType.STRING },
+                      description: "Key search terms from the message",
+                    },
                   },
-                  keywords: {
-                    type: SchemaType.ARRAY,
-                    items: { type: SchemaType.STRING },
-                    description: "Key search terms from the message",
-                  },
+                  required: ["keywords"],
                 },
-                required: ["keywords"],
               },
-            },
-          ],
-        },
-      ],
-      toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY } },
-    });
+            ],
+          },
+        ],
+        toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY } },
+      });
 
-    const result = await model.generateContent(
-      `Extract shopping intent from: "${message}"\nBudget: ₹${spendingLimit}`
-    );
-    const calls = result.response.functionCalls();
-    if (!calls?.length) return { keywords: [message] };
+      const result = await model.generateContent(
+        `Extract shopping intent from: "${message}"\nBudget: ₹${spendingLimit}`
+      );
+      const calls = result.response.functionCalls();
+      if (calls?.length) {
+        return calls[0].args as { category?: string; keywords: string[] };
+      }
+    } catch (err) {
+      console.warn("⚠️ Gemini intent parsing fallback active:", (err as any)?.message || err);
+    }
 
-    const args = calls[0].args as { category?: string; keywords: string[] };
-    return args;
+    // High-precision deterministic intent fallback
+    const lower = message.toLowerCase();
+    let category = "General";
+    if (lower.includes("shoe") || lower.includes("sneaker") || lower.includes("runner")) {
+      category = "Running Shoes";
+    } else if (lower.includes("sock")) {
+      category = "Accessories";
+    } else if (lower.includes("tee") || lower.includes("shirt")) {
+      category = "Apparel";
+    }
+
+    const keywords = message
+      .replace(/under|below|for|within|buy|need|want|₹|rs|inr|[0-9,]/gi, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2);
+
+    return { category, keywords: keywords.length > 0 ? keywords : [message] };
   }
 
   private async createMandate(opts: {

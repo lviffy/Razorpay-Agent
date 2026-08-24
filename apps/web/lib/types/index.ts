@@ -122,6 +122,8 @@ export interface AgentProfile {
   autoNegotiationEnabled: boolean;
   humanEscalationEnabled: boolean;
   escalationThresholdAmount: number;
+  /** When enabled, agent autonomously suggests complementary add-ons to hit free-shipping threshold */
+  bundleUpsellEnabled?: boolean;
 }
 
 export interface AnalyticsSummary {

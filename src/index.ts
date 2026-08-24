@@ -151,8 +151,12 @@ async function start() {
     console.log("✅ Neon DB connected & schema verified");
 
     // Verify Redis connection
-    await redis.ping();
-    console.log("✅ Redis connected");
+    if (redis) {
+      await redis.ping();
+      console.log("✅ Redis connected");
+    } else {
+      console.log("ℹ️  Running in-memory queue & locks (Redis optional)");
+    }
 
     // Start async WhatsApp worker
     startWhatsAppWorker();

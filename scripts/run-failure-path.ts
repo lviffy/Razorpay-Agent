@@ -13,9 +13,11 @@ async function main() {
   console.log("=================================================\n");
 
   await db.query("SELECT 1");
-  await redis.ping();
+  if (redis) {
+    await redis.ping();
+    await redis.flushdb();
+  }
   await db.query("UPDATE products SET inventory_state = 'AVAILABLE', inventory_available = 10, inventory_reserved = 0");
-  await redis.flushdb();
 
   // Get store & product
   const { rows: products } = await db.query(

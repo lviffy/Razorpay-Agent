@@ -272,4 +272,41 @@ input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Live SSE Telemetry Flash Animations */
+@keyframes event-flash {
+  0% {
+    background-color: rgba(220, 252, 231, 0.95);
+    transform: scale(1.01);
+  }
+  50% {
+    background-color: rgba(220, 252, 231, 0.4);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.event-new {
+  animation: event-flash 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes audit-flash {
+  0% {
+    background-color: rgba(219, 234, 254, 0.95);
+    border-left: 4px solid #2563eb;
+  }
+  50% {
+    background-color: rgba(219, 234, 254, 0.5);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.audit-flash {
+  animation: audit-flash 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
 

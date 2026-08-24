@@ -124,8 +124,7 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/v1/products/bulk — Batch create multiple products
-router.post("/bulk", async (req: Request, res: Response) => {
+async function handleBulkCreate(req: Request, res: Response) {
   try {
     const rawProducts = Array.isArray(req.body) ? req.body : req.body?.products;
     if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
@@ -224,17 +223,16 @@ router.post("/bulk", async (req: Request, res: Response) => {
     console.error("Bulk create products error:", err);
     return res.status(500).json({ error: err?.message || "Failed to bulk create products" });
   }
-});
+}
+
+// POST /api/v1/products/bulk — Create multiple products in batch
+router.post("/bulk", handleBulkCreate);
 
 // POST /api/v1/products — Create single product or multiple
 router.post("/", async (req: Request, res: Response) => {
   try {
     if (Array.isArray(req.body) || (req.body?.products && Array.isArray(req.body.products))) {
-      // Forward to bulk handler logic
-      const rawProducts = Array.isArray(req.body) ? req.body : req.body.products;
-      const storeId = req.body.storeId;
-      const fakeReq = { ...req, body: { products: rawProducts, storeId } };
-      return router.handle(fakeReq as any, res as any, () => {});
+      return handleBulkCreate(req, res);
     }
 
     const {

@@ -239,4 +239,13 @@ export interface RazorpayPaymentEntity {
   description?: string;
   error_code?: string;
   error_description?: string;
+  // Notes passed at order creation time — used for per-order routing
+  notes?: {
+    conversation_id?: string;
+    phone_number?: string;
+    product_id?: string;
+    x402_tx_hash?: string;
+    session_id?: string;
+    [key: string]: string | undefined;
+  };
 }

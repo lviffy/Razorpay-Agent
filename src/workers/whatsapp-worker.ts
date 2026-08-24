@@ -1,10 +1,12 @@
 import { dequeueJob } from "../services/redis.ts";
 import { BuyerAgent } from "../agents/buyer-agent.ts";
+import { SellerAgent } from "../agents/seller-agent.ts";
 import { acquireLock, releaseLock } from "../services/redis.ts";
 import { createOrder, createStandardPaymentLink, generateOrderId, rupeesToPaise } from "../services/razorpay.ts";
 import { issueTransactionId } from "../services/x402.ts";
-import { setInventoryState, getProductById, getStore } from "../services/merchant.ts";
+import { setInventoryState, getProductById, getStore, getProducts, getNegotiationRules } from "../services/merchant.ts";
 import { logEvent } from "../services/audit.ts";
+import { checkBuyerVelocity } from "../services/rate-limit.ts";
 import {
   sendText,
   sendPaymentLink,
@@ -43,7 +45,7 @@ async function processLoop(): Promise<void> {
   }
 }
 
-async function handleJob(job: WorkerJob): Promise<void> {
+export async function handleJob(job: WorkerJob): Promise<void> {
   const { payload: msg } = job;
 
   // ── Button reply: Retry payment ────────────────────────────────────────────
@@ -69,6 +71,17 @@ async function handleJob(job: WorkerJob): Promise<void> {
   }
 
   await sendText(msg.from, `🔍 Got it! Searching for: "${msg.text}"\nBudget: ₹${spendingLimit.toLocaleString("en-IN")}\n\nQuerying stores...`);
+
+  // ── Velocity / fraud check ─────────────────────────────────────────────────
+  const velocity = await checkBuyerVelocity(msg.from);
+  if (!velocity.allowed) {
+    const resetMin = Math.ceil((velocity.resetInSeconds ?? 300) / 60);
+    await sendText(
+      msg.from,
+      `⚠️ Transaction limit reached (max 3 per 5 minutes).\nPlease try again in ~${resetMin} minute${resetMin !== 1 ? "s" : ""}.`
+    );
+    return;
+  }
 
   // ── Run Buyer Agent ────────────────────────────────────────────────────────
   const buyerAgent = new BuyerAgent();
@@ -101,6 +114,45 @@ async function handleJob(job: WorkerJob): Promise<void> {
     `*Offer: ₹${offer.offeredPrice.toLocaleString("en-IN")}*${offer.shippingFree ? " + Free Shipping 🚚" : ""}\n\n` +
     `_${offer.reasoningTrace}_\n\nLocking inventory and creating payment...`
   );
+
+  // ── Autonomous upsell / cross-sell suggestion ───────────────────────────
+  // Fire-and-forget: send bundle suggestion if below free-shipping threshold.
+  // Non-blocking — does not delay the payment link creation.
+  (async () => {
+    try {
+      const { rows: storeRows } = await db.query(
+        "SELECT id FROM products WHERE shopify_variant_id = $1 LIMIT 1",
+        [offer.product.variantId]
+      );
+      if (storeRows[0]) {
+        const storeIdForUpsell = (await db.query(
+          "SELECT store_id FROM products WHERE shopify_variant_id = $1 LIMIT 1",
+          [offer.product.variantId]
+        )).rows[0]?.store_id;
+
+        if (storeIdForUpsell) {
+          const [allProducts, rules] = await Promise.all([
+            getProducts(storeIdForUpsell),
+            getNegotiationRules(storeIdForUpsell),
+          ]);
+          if (rules) {
+            const seller = new SellerAgent(storeIdForUpsell);
+            const upsell = await seller.generateUpsell(
+              offer.product,
+              offer.offeredPrice,
+              rules,
+              allProducts.map((p) => p.agentSchema)
+            );
+            if (upsell) {
+              await sendText(msg.from, upsell.upsellMessage);
+            }
+          }
+        }
+      }
+    } catch {
+      // Upsell is best-effort — never block the payment flow
+    }
+  })();
 
   // ── Find product ID ────────────────────────────────────────────────────────
   const { rows: productRows } = await db.query(
@@ -146,6 +198,12 @@ async function handleJob(job: WorkerJob): Promise<void> {
       amountInPaise: rupeesToPaise(offer.offeredPrice),
       receipt: x402TxId,
       sessionId: offer.sessionId,
+      // Pass routing metadata so the webhook handler can target the exact buyer
+      notes: {
+        conversation_id: msg.conversationId,
+        phone_number: msg.from,
+        product_id: productId,
+      },
     })) as unknown as { id: string };
   } catch (err) {
     await releaseLock(storeId, offer.product.variantId);

@@ -32,6 +32,7 @@ interface ChatMessage {
   isPaymentLink?: boolean;
   paymentAmount?: number;
   paymentUrl?: string;
+  orderId?: string;
 }
 
 export default function WhatsAppPage() {
@@ -171,6 +172,7 @@ export default function WhatsAppPage() {
         isPaymentLink: simResult.isPaymentLink,
         paymentAmount: simResult.paymentAmount,
         paymentUrl: simResult.paymentUrl,
+        orderId: simResult.orderId || "ORD-1042",
       };
 
       setMessages((prev) => [...prev, agentReply]);
@@ -335,12 +337,12 @@ export default function WhatsAppPage() {
                         <div className="pt-1.5 border-t border-zinc-200 flex flex-wrap items-center justify-between gap-2">
                           <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
                             <CheckCircle2 className="w-3 h-3" />
-                            Verified Merchant
+                            Verified Merchant ({m.orderId || "ORD-1042"})
                           </span>
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => handleOpenCheckoutModal(m.paymentAmount || 3799, "ORD-1042", m.paymentUrl)}
+                              onClick={() => handleOpenCheckoutModal(m.paymentAmount || 3799, m.orderId || "ORD-1042", m.paymentUrl)}
                               className="text-[10px] font-bold px-2 py-1 bg-zinc-900 text-white hover:bg-zinc-800 rounded-md cursor-pointer flex items-center gap-1 shadow-2xs transition-colors"
                             >
                               <Sparkles className="w-2.5 h-2.5 text-amber-300" />

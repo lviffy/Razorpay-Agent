@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
+import { useAnimatedCounter } from "@/hooks/use-animated-counter";
 
 export default function DashboardOverviewPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary>(emptyAnalytics);
@@ -37,6 +38,13 @@ export default function DashboardOverviewPage() {
   }>({});
   const [selectedActivityFilter, setSelectedActivityFilter] = useState<string>("ALL");
   const [isLiveConnected, setIsLiveConnected] = useState<boolean>(false);
+  const [liveToast, setLiveToast] = useState<{ show: boolean; title: string; subtitle: string }>({
+    show: false,
+    title: "",
+    subtitle: "",
+  });
+
+  const animatedGmv = useAnimatedCounter(analytics.agentGmv);
 
   useEffect(() => {
     async function load() {
@@ -93,6 +101,16 @@ export default function DashboardOverviewPage() {
                 dealsClosed: prev.dealsClosed + 1,
               }));
             }
+
+            // Trigger floating live toast
+            setLiveToast({
+              show: true,
+              title: "Payment Captured · Razorpay Instant",
+              subtitle: amt ? `₹${amt.toLocaleString("en-IN")} settled autonomously` : "Settled via UPI",
+            });
+            setTimeout(() => {
+              setLiveToast((prev) => ({ ...prev, show: false }));
+            }, 3500);
           } else if (ev.type === "INVENTORY_LOCKED") {
             title = "Autonomous Inventory Reservation";
             description = `Locked 1 unit for ${p.sku || p.productTitle || "item"} (Redis Redlock TTL 120s)`;
@@ -101,16 +119,26 @@ export default function DashboardOverviewPage() {
             description = `Inventory restored. Reason: ${p.reason || "UPI_DECLINE"}`;
           }
 
-          const newActivityItem: ActivityEvent = {
+          const newActivityItem: ActivityEvent & { isNew?: boolean } = {
             id: `sse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             type: ev.type || "PAYMENT_CAPTURED",
             title,
             description,
             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             metadata: { ...p, ...ids },
+            isNew: true,
           };
 
-          setActivity((prev) => [newActivityItem, ...prev.slice(0, 25)]);
+          setActivity((prev) => [newActivityItem as ActivityEvent, ...prev.slice(0, 25)]);
+
+          // Clear isNew flash highlight after 2s
+          setTimeout(() => {
+            setActivity((prev) =>
+              prev.map((item) =>
+                item.id === newActivityItem.id ? { ...item, isNew: false } as any : item
+              )
+            );
+          }, 2000);
         } catch (parseErr) {
           // ignore non-JSON pings
         }
@@ -263,7 +291,7 @@ export default function DashboardOverviewPage() {
                 <span className="font-semibold uppercase tracking-wider text-[10px] sm:text-[11px]">Agent GMV</span>
                 <CreditCard className="w-4 h-4 text-zinc-400 shrink-0" />
               </div>
-              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(analytics.agentGmv)}</CardTitle>
+              <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{formatINR(animatedGmv)}</CardTitle>
               <div className="flex items-center gap-1 text-[11px] sm:text-xs text-emerald-600 font-medium mt-1 truncate">
                 <TrendingUp className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate">+{analytics.gmvGrowthPercent}% WoW</span>
@@ -365,7 +393,9 @@ export default function DashboardOverviewPage() {
                   return (
                     <div
                       key={item.id}
-                      className="p-4 flex items-start justify-between gap-4 hover:bg-zinc-50 transition-colors"
+                      className={`p-4 flex items-start justify-between gap-4 transition-all duration-300 ${
+                        (item as any).isNew ? "event-new" : "hover:bg-zinc-50"
+                      }`}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 rounded-lg bg-zinc-100 text-zinc-700 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -480,6 +510,25 @@ export default function DashboardOverviewPage() {
                 </div>
               </div>
             </Card>
+          </div>
+        </div>
+
+        {/* Floating Live Telemetry Toast */}
+        <div
+          className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out transform ${
+            liveToast.show
+              ? "opacity-100 translate-y-0 scale-100"
+              : "opacity-0 translate-y-4 scale-95 pointer-events-none"
+          }`}
+        >
+          <div className="bg-zinc-950 text-white px-4 py-3 rounded-2xl shadow-2xl border border-zinc-800 flex items-center gap-3.5 backdrop-blur-md">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-zinc-100">{liveToast.title}</p>
+              <p className="text-[11px] text-zinc-400 font-mono mt-0.5">{liveToast.subtitle}</p>
+            </div>
           </div>
         </div>
       </div>

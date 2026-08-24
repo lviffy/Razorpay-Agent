@@ -22,6 +22,13 @@ interface CreateOrderOptions {
   currency?: string;
   receipt: string;       // x402_transaction_id
   sessionId: string;     // for idempotency key
+  // Per-order routing metadata passed through to webhook
+  notes?: {
+    conversation_id?: string;
+    phone_number?: string;
+    product_id?: string;
+    [key: string]: string | undefined;
+  };
 }
 
 export async function createOrder(opts: CreateOrderOptions) {
@@ -37,6 +44,7 @@ export async function createOrder(opts: CreateOrderOptions) {
       x402_tx_hash: opts.receipt,
       session_id: opts.sessionId,
       source: "zapai",
+      ...(opts.notes ?? {}),
     },
   });
 

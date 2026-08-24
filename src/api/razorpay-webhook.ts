@@ -93,10 +93,14 @@ async function handlePaymentCaptured(
   );
 
   // Find product and update inventory: PAYMENT_PENDING → PAID
-  const { rows: productRows } = await db.query(
-    "SELECT id, shopify_variant_id, store_id FROM products WHERE store_id = $1 AND inventory_state = 'PAYMENT_PENDING'",
-    [order.store_id]
-  );
+  // Scope to exact product via notes.product_id to avoid cross-order collisions
+  const notesProductId = payment.notes?.product_id;
+  const productQuery = notesProductId
+    ? "SELECT id, shopify_variant_id, store_id FROM products WHERE id = $1 AND inventory_state = 'PAYMENT_PENDING'"
+    : "SELECT id, shopify_variant_id, store_id FROM products WHERE store_id = $1 AND inventory_state = 'PAYMENT_PENDING'";
+  const productParam = notesProductId ?? order.store_id;
+
+  const { rows: productRows } = await db.query(productQuery, [productParam]);
 
   for (const product of productRows) {
     await setInventoryState(product.id, "PAID", {
@@ -123,23 +127,47 @@ async function handlePaymentCaptured(
     }
   );
 
-  // Find conversation to send confirmation
-  const { rows: convRows } = await db.query(
-    `SELECT phone_number, conversation_id, last_message_id
-     FROM conversations
-     ORDER BY updated_at DESC LIMIT 1`
-  );
+  // Route WhatsApp confirmation to the exact buyer via notes — never a global query
+  const phoneNumber = payment.notes?.phone_number;
+  const conversationId = payment.notes?.conversation_id;
 
-  if (convRows[0]) {
-    await sendConfirmation(convRows[0].phone_number, {
-      whatsappMessageId: convRows[0].last_message_id ?? "",
-      conversationId: convRows[0].conversation_id,
+  if (phoneNumber) {
+    // Fetch last_message_id for the specific conversation
+    const { rows: convRows } = conversationId
+      ? await db.query(
+          `SELECT last_message_id FROM conversations WHERE conversation_id = $1 LIMIT 1`,
+          [conversationId]
+        )
+      : await db.query(
+          `SELECT last_message_id FROM conversations WHERE phone_number = $1 ORDER BY updated_at DESC LIMIT 1`,
+          [phoneNumber]
+        );
+
+    await sendConfirmation(phoneNumber, {
+      whatsappMessageId: convRows[0]?.last_message_id ?? "",
+      conversationId: conversationId ?? "",
       x402TransactionId: order.x402_tx_hash,
       razorpayPaymentId: payment.id,
       orderId: order.order_id,
       amount: payment.amount / 100, // paise → rupees
       storeName: order.store_name,
     });
+  } else {
+    // Fallback: legacy global lookup (single-user demo mode)
+    const { rows: convRows } = await db.query(
+      `SELECT phone_number, conversation_id, last_message_id FROM conversations ORDER BY updated_at DESC LIMIT 1`
+    );
+    if (convRows[0]) {
+      await sendConfirmation(convRows[0].phone_number, {
+        whatsappMessageId: convRows[0].last_message_id ?? "",
+        conversationId: convRows[0].conversation_id,
+        x402TransactionId: order.x402_tx_hash,
+        razorpayPaymentId: payment.id,
+        orderId: order.order_id,
+        amount: payment.amount / 100,
+        storeName: order.store_name,
+      });
+    }
   }
 
   console.log(`✅ Payment captured: ${order.order_id} | ₹${payment.amount / 100}`);
@@ -165,10 +193,14 @@ async function handlePaymentFailed(
   );
 
   // Find product and reset: PAYMENT_PENDING → AVAILABLE
-  const { rows: productRows } = await db.query(
-    "SELECT id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state = 'PAYMENT_PENDING'",
-    [order.store_id]
-  );
+  // Scope strictly to the product from order notes to prevent cross-order rollbacks
+  const notesProductId = payment.notes?.product_id;
+  const failProductQuery = notesProductId
+    ? "SELECT id, shopify_variant_id FROM products WHERE id = $1 AND inventory_state = 'PAYMENT_PENDING'"
+    : "SELECT id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state = 'PAYMENT_PENDING'";
+  const failProductParam = notesProductId ?? order.store_id;
+
+  const { rows: productRows } = await db.query(failProductQuery, [failProductParam]);
 
   for (const product of productRows) {
     await setInventoryState(product.id, "AVAILABLE", {
@@ -196,17 +228,18 @@ async function handlePaymentFailed(
     }
   );
 
-  // Send retry prompt via WhatsApp
-  const { rows: convRows } = await db.query(
-    "SELECT phone_number FROM conversations ORDER BY updated_at DESC LIMIT 1"
-  );
-
-  if (convRows[0]) {
-    await sendPaymentFailedWithRetry(
-      convRows[0].phone_number,
-      payment.amount / 100,
-      90 // ~90 seconds of inventory availability after lock expiry
+  // Route retry prompt to exact buyer via notes — never a global query
+  const failPhoneNumber = payment.notes?.phone_number;
+  if (failPhoneNumber) {
+    await sendPaymentFailedWithRetry(failPhoneNumber, payment.amount / 100, 90);
+  } else {
+    // Fallback: legacy global lookup (single-user demo mode)
+    const { rows: convRows } = await db.query(
+      "SELECT phone_number FROM conversations ORDER BY updated_at DESC LIMIT 1"
     );
+    if (convRows[0]) {
+      await sendPaymentFailedWithRetry(convRows[0].phone_number, payment.amount / 100, 90);
+    }
   }
 
   console.log(`❌ Payment failed: ${order.order_id} — lock released, inventory restored`);

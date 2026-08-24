@@ -15,10 +15,12 @@ async function main() {
 
   // Verify DB & Redis
   await db.query("SELECT 1");
-  await redis.ping();
+  if (redis) {
+    await redis.ping();
+    await redis.flushdb();
+  }
   await db.query("UPDATE products SET inventory_state = 'AVAILABLE', inventory_available = 10, inventory_reserved = 0");
-  await redis.flushdb();
-  console.log("✅ DB and Redis connected\n");
+  console.log("✅ DB and Redis ready\n");
 
   const waMessageId = `wamid.SIM_${Date.now()}`;
   const conversationId = `conv_sim_919876543210`;

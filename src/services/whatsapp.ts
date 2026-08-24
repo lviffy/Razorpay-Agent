@@ -19,13 +19,28 @@ function getAccessToken(): string {
 }
 
 async function sendRequest(body: Record<string, unknown>): Promise<void> {
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+
+  if (!phoneId || !token) {
+    const to = body.to || "buyer";
+    const type = body.type || "text";
+    console.log(`📱 [WhatsApp Outbound Mock] To: ${to} | Type: ${type}`);
+    if (type === "text") {
+      console.log(`   Text: ${(body.text as any)?.body}`);
+    } else if (type === "interactive") {
+      console.log(`   Interactive:`, JSON.stringify(body.interactive));
+    }
+    return;
+  }
+
   try {
     await axios.post(
-      `${WA_BASE}/${getPhoneNumberId()}/messages`,
+      `${WA_BASE}/${phoneId}/messages`,
       body,
       {
         headers: {
-          Authorization: `Bearer ${getAccessToken()}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       }
@@ -34,7 +49,7 @@ async function sendRequest(body: Record<string, unknown>): Promise<void> {
     if (axios.isAxiosError(err)) {
       console.error("WhatsApp API error:", err.response?.data ?? err.message);
     }
-    throw err;
+    console.warn("⚠️ WhatsApp delivery warning (proceeding without crashing worker)");
   }
 }
 

@@ -207,6 +207,71 @@ export default function AgentSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* AI Upsell & Cross-Sell Engine */}
+        <Card className="border-emerald-200/70 shadow-xs bg-gradient-to-br from-white to-emerald-50/30">
+          <CardHeader className="p-6 pb-4 border-b border-emerald-100/80 flex flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <CheckCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <CardTitle className="text-sm font-bold text-zinc-900">AI Upsell & Cross-Sell Engine</CardTitle>
+                <CardDescription className="text-[11px] text-zinc-500">
+                  Autonomously bundle complementary items to increase AOV and unlock buyer free-shipping thresholds.
+                </CardDescription>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
+              AI Growth Feature
+            </Badge>
+          </CardHeader>
+
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between p-4 bg-emerald-50/60 border border-emerald-200/60 rounded-lg">
+              <div className="space-y-0.5">
+                <p className="text-xs font-semibold text-zinc-900">Autonomous Bundle Suggestions</p>
+                <p className="text-[11px] text-zinc-500">
+                  When a deal is ₹X below your free-shipping threshold, the agent autonomously suggests a complementary
+                  add-on at floor price to unlock free delivery and increase order value.
+                </p>
+              </div>
+              <Switch
+                checked={profile.bundleUpsellEnabled ?? true}
+                onCheckedChange={(checked) =>
+                  setProfile({ ...profile, bundleUpsellEnabled: checked })
+                }
+              />
+            </div>
+
+            {/* AOV lift preview */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-white border border-zinc-200 rounded-lg text-center">
+                <p className="text-lg font-bold text-emerald-600">+18%</p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Avg AOV Lift</p>
+              </div>
+              <div className="p-3 bg-white border border-zinc-200 rounded-lg text-center">
+                <p className="text-lg font-bold text-zinc-900">₹150</p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Shipping Saved</p>
+              </div>
+              <div className="p-3 bg-white border border-zinc-200 rounded-lg text-center">
+                <p className="text-lg font-bold text-zinc-900">0ms</p>
+                <p className="text-[10px] text-zinc-500 mt-0.5">Added Latency</p>
+              </div>
+            </div>
+
+            {/* Live example upsell message preview */}
+            <div className="p-3.5 bg-[#DCF8C6]/60 border border-emerald-200/50 rounded-xl space-y-1.5">
+              <span className="text-[10px] font-mono text-zinc-500">Live WhatsApp Upsell Message Preview</span>
+              <p className="text-[11px] text-zinc-800 leading-relaxed">
+                🛍️ <strong>Bundle Offer — Unlock Free Shipping!</strong><br />
+                Add <strong>Running Socks (3-pack)</strong> for just ₹199 → your order total hits ₹3,899,
+                qualifying for free express delivery (saves ₹150).<br />
+                Reply <strong>YES</strong> to add it, or proceed with your current order.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Autonomy & Settlement Controls */}
         <Card className="border-zinc-200 shadow-xs">
           <CardHeader className="p-6 pb-4 border-b border-zinc-100 flex flex-row items-center justify-between space-y-0">
