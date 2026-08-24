@@ -50,7 +50,7 @@ export default function WhatsAppPage() {
         const [threads, credentials, profile] = await Promise.all([
           api.conversations.list(),
           api.settings.getCredentials(),
-          api.merchant.getProfile(),
+          api.profile.get(),
         ]);
         if (credentials) setCreds(credentials);
         if (profile?.storeName) setStoreName(profile.storeName);

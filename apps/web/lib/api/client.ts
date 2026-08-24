@@ -496,6 +496,22 @@ export const api = {
     },
   },
 
+  merchant: {
+    getProfile: async (): Promise<MerchantProfile> => {
+      return fetchJson<MerchantProfile>("/merchant/profile", {}, defaultMerchantProfile);
+    },
+    saveProfile: async (profile: Partial<MerchantProfile>): Promise<MerchantProfile> => {
+      return fetchJson<MerchantProfile>(
+        "/merchant/profile",
+        {
+          method: "PUT",
+          body: JSON.stringify(profile),
+        },
+        { ...defaultMerchantProfile, ...profile }
+      );
+    },
+  },
+
   simulator: {
     sendChatMessage: async (message: string, storeId?: string) => {
       return fetchJson<{
