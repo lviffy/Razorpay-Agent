@@ -101,6 +101,14 @@ export function ProfileDialog({
 
   if (!profile) return null;
 
+  const dialogInitials = (name || profile.name || "M")
+    .split(" ")
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "M";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-[540px] max-h-[90vh] overflow-y-auto p-0 border-zinc-200/90 rounded-2xl shadow-2xl bg-white [&>button]:hidden">
@@ -109,7 +117,7 @@ export function ProfileDialog({
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-blue-600 text-white font-bold text-sm sm:text-base flex items-center justify-center shadow-xs ring-4 ring-blue-500/10 shrink-0">
-                RF
+                {dialogInitials}
               </div>
               <div className="space-y-0.5 min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">

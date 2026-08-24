@@ -4,10 +4,52 @@ import type { Request, Response } from "express";
 
 const router = Router();
 
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = req.query.storeId as string | undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 // GET /api/v1/orders — List all orders from database
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const storeId = req.query.storeId as string | undefined;
+    const storeId = await getStoreIdFromReq(req);
     const status = req.query.status as string | undefined;
 
     let query = `
@@ -55,8 +97,8 @@ router.get("/", async (req: Request, res: Response) => {
 
     const orders = rows.map((r) => {
       const amount = parseFloat(r.amount);
-      const originalPrice = r.original_price ? parseFloat(r.original_price) : Math.round(amount * 1.08);
-      const discountApplied = r.discount_applied ? parseFloat(r.discount_applied) : originalPrice - amount;
+      const originalPrice = r.original_price ? parseFloat(r.original_price) : amount;
+      const discountApplied = r.discount_applied ? parseFloat(r.discount_applied) : 0;
 
       let paymentStatus: "paid" | "pending" | "failed" | "refunded" = "pending";
       if (r.status === "CAPTURED") paymentStatus = "paid";
@@ -66,10 +108,10 @@ router.get("/", async (req: Request, res: Response) => {
       return {
         id: r.id,
         orderNumber: r.order_id || `ORD-${r.id.slice(0, 4).toUpperCase()}`,
-        customerName: r.customer_name || "Customer",
-        customerPhone: r.customer_phone || "+91 98765 00000",
+        customerName: r.customer_name || "Direct Buyer",
+        customerPhone: r.customer_phone || "",
         productTitle: r.product_title || "Product Item",
-        sku: r.sku || "SKU-001",
+        sku: r.sku || "",
         amount,
         originalPrice,
         discountApplied,

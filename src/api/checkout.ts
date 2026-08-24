@@ -182,8 +182,8 @@ router.post("/pay", async (req: Request, res: Response) => {
     const {
       razorpayOrderId,
       orderId,
-      customerPhone = "+91 98765 43210",
-      customerName = "Aarav Patel",
+      customerPhone = "",
+      customerName = "Direct Buyer",
     } = req.body;
 
     const queryTarget = razorpayOrderId || req.headers["x-402-order-id"] as string;

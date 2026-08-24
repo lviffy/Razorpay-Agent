@@ -59,24 +59,24 @@ router.get("/rules", async (req: Request, res: Response) => {
 
     if (!rows[0]) {
       return res.json({
-        maxDiscountPercent: 12,
-        minimumOrderValue: 2000,
-        freeShippingAbove: 3000,
-        bundleOffersEnabled: true,
-        alternativeProductsEnabled: true,
-        humanApprovalAbove: 5000,
+        maxDiscountPercent: 0,
+        minimumOrderValue: 0,
+        freeShippingAbove: 0,
+        bundleOffersEnabled: false,
+        alternativeProductsEnabled: false,
+        humanApprovalAbove: 0,
         riskProfile: "balanced",
       });
     }
 
     const r = rows[0];
     return res.json({
-      maxDiscountPercent: parseFloat(r.max_discount_percentage || "12"),
-      minimumOrderValue: parseFloat(r.min_order_value_for_discount || "2000"),
-      freeShippingAbove: r.free_shipping_threshold ? parseFloat(r.free_shipping_threshold) : 3000,
-      bundleOffersEnabled: r.allow_bundle_offers ?? true,
-      alternativeProductsEnabled: r.alternative_products_enabled ?? true,
-      humanApprovalAbove: r.human_approval_above ? parseFloat(r.human_approval_above) : 5000,
+      maxDiscountPercent: parseFloat(r.max_discount_percentage || "0"),
+      minimumOrderValue: parseFloat(r.min_order_value_for_discount || "0"),
+      freeShippingAbove: r.free_shipping_threshold ? parseFloat(r.free_shipping_threshold) : 0,
+      bundleOffersEnabled: r.allow_bundle_offers ?? false,
+      alternativeProductsEnabled: r.alternative_products_enabled ?? false,
+      humanApprovalAbove: r.human_approval_above ? parseFloat(r.human_approval_above) : 0,
       riskProfile: r.risk_profile || "balanced",
     });
   } catch (err) {
@@ -250,26 +250,26 @@ router.get("/credentials", async (req: Request, res: Response) => {
     const s = rows[0]?.agent_settings || {};
     const creds = s.credentials || {};
 
-    const appUrl = process.env.APP_URL || "https://razorpay-agent-production.up.railway.app";
-    const razorpayKeyId = creds.razorpayKeyId || (rows[0]?.razorpay_account_id !== "rzp_test_mock" ? rows[0]?.razorpay_account_id : "") || "";
+    const appUrl = process.env.APP_URL || "";
+    const razorpayKeyId = creds.razorpayKeyId || (rows[0]?.razorpay_account_id && !rows[0].razorpay_account_id.startsWith("rzp_test_mock") ? rows[0].razorpay_account_id : "") || "";
     const hasSecret = Boolean(creds.razorpayKeySecret);
     const razorpayWebhookSecret = creds.razorpayWebhookSecret || "";
-    const whatsappPhoneNumber = creds.whatsappPhoneNumber || (rows[0]?.phone !== "+91 98765 00000" ? rows[0]?.phone : "") || "";
+    const whatsappPhoneNumber = creds.whatsappPhoneNumber || (rows[0]?.phone && !rows[0].phone.includes("98765 00000") ? rows[0].phone : "") || "";
     const whatsappPhoneNumberId = creds.whatsappPhoneNumberId || "";
     const hasWhatsAppToken = Boolean(creds.whatsappAccessToken);
-    const whatsappWebhookVerifyToken = creds.whatsappWebhookVerifyToken || "zapai_meta_webhook_secret_2026";
+    const whatsappWebhookVerifyToken = creds.whatsappWebhookVerifyToken || "";
 
     return res.json({
       razorpayKeyId,
       hasRazorpayKeySecret: hasSecret,
       razorpayWebhookSecret,
       razorpayEnvironment: razorpayKeyId.startsWith("rzp_live") ? "live" : "test",
-      razorpayWebhookUrl: `${appUrl}/webhooks/razorpay`,
+      razorpayWebhookUrl: appUrl ? `${appUrl}/webhooks/razorpay` : "",
       whatsappPhoneNumber,
       whatsappPhoneNumberId,
       hasWhatsAppAccessToken: hasWhatsAppToken,
       whatsappWebhookVerifyToken,
-      whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
+      whatsappWebhookUrl: appUrl ? `${appUrl}/webhooks/whatsapp` : "",
     });
   } catch (err) {
     console.error("Get credentials error:", err);

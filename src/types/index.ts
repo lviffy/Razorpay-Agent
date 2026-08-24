@@ -178,11 +178,13 @@ export interface AuditIds {
   x402TransactionId: string;
   razorpayPaymentId?: string;
   orderId?: string;
+  storeId?: string;
 }
 
 export interface AuditEvent {
   id: number;
   eventType: string;
+  storeId?: string;
   whatsappMessageId?: string;
   conversationId?: string;
   x402TransactionId: string;

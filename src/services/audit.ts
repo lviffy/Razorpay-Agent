@@ -30,12 +30,14 @@ export async function logEvent(
     .update(prevChecksum + JSON.stringify(payload))
     .digest("hex");
 
+  const storeId = ids.storeId || (payload as any)?.storeId || (payload as any)?.store_id || null;
+
   const { rows } = await db.query<AuditEvent>(
     `INSERT INTO audit_ledger (
       event_type, whatsapp_message_id, conversation_id,
       x402_transaction_id, razorpay_payment_id, order_id,
-      payload, event_checksum
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      payload, event_checksum, store_id
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *`,
     [
       eventType,
@@ -46,6 +48,7 @@ export async function logEvent(
       ids.orderId ?? null,
       JSON.stringify(payload),
       eventChecksum,
+      storeId,
     ]
   );
 

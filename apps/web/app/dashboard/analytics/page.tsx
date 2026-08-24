@@ -35,10 +35,7 @@ export default function AnalyticsPage() {
 
   const channels = data.channelBreakdown && data.channelBreakdown.length > 0
     ? data.channelBreakdown
-    : [
-        { channel: "ZapAI Native Catalog", percentage: 62, gmv: Math.round(data.agentGmv * 0.62) },
-        { channel: "Shopify Connected Store", percentage: 38, gmv: Math.round(data.agentGmv * 0.38) },
-      ];
+    : [];
 
   return (
     <div className="space-y-6">
@@ -91,7 +88,7 @@ export default function AnalyticsPage() {
               <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
             </div>
             <CardTitle className="text-lg sm:text-2xl font-bold font-mono text-zinc-900 mt-1">{data.averageDiscount}%</CardTitle>
-            <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Below 12% ceiling</CardDescription>
+            <CardDescription className="text-[11px] sm:text-xs text-zinc-500 mt-1 truncate">Preserving store floor</CardDescription>
           </CardHeader>
         </Card>
 
@@ -114,27 +111,33 @@ export default function AnalyticsPage() {
           <CardHeader className="p-6 pb-4">
             <CardTitle className="text-sm font-bold text-zinc-900">Revenue Contribution by Sourced Channel</CardTitle>
             <CardDescription className="text-xs text-zinc-500 mt-0.5">
-              Settlement volume split between Native ZapAI catalog and connected Shopify store.
+              Settlement volume split between Native catalog and connected Shopify store.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="p-6 pt-0 space-y-4">
-            <div className="space-y-4">
-              {channels.map((ch, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between text-xs mb-1.5 font-medium">
-                    <span className="text-zinc-800">{ch.channel}</span>
-                    <span className="font-mono font-bold text-zinc-900">{ch.percentage}% ({formatINR(ch.gmv)})</span>
+            {channels.length === 0 ? (
+              <div className="text-center py-8 text-xs text-zinc-400">
+                No channel orders recorded yet. As orders are captured, channel splits will display here.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {channels.map((ch, idx) => (
+                  <div key={idx}>
+                    <div className="flex justify-between text-xs mb-1.5 font-medium">
+                      <span className="text-zinc-800">{ch.channel}</span>
+                      <span className="font-mono font-bold text-zinc-900">{ch.percentage}% ({formatINR(ch.gmv)})</span>
+                    </div>
+                    <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${idx === 0 ? "bg-zinc-900" : "bg-zinc-600"}`}
+                        style={{ width: `${Math.min(100, Math.max(0, ch.percentage))}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-zinc-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${idx === 0 ? "bg-zinc-900" : "bg-zinc-600"}`}
-                      style={{ width: `${Math.min(100, Math.max(0, ch.percentage))}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             <div className="p-3.5 bg-zinc-50 rounded-lg border border-zinc-200 flex items-center justify-between text-xs">
               <div>

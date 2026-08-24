@@ -52,17 +52,18 @@ router.post("/chat", async (req: Request, res: Response) => {
     logs.push(`[${timestamp()}] Loaded ${products.length} live catalog SKUs from Neon PostgreSQL`);
     logs.push(`[${timestamp()}] Enforcing Store Mandates: Max Discount ${rules.maxDiscountPercentage}%, Min Order ₹${rules.minOrderValueForDiscount}`);
 
-    // Find best matching product
+    // Find best matching product dynamically from store catalog
     const lower = message.toLowerCase();
-    let matched = products.find((p) =>
-      lower.includes(p.title.toLowerCase()) ||
-      lower.includes(p.sku.toLowerCase()) ||
-      (lower.includes("pegasus") && p.sku.includes("SHOE")) ||
-      (lower.includes("shoe") && p.sku.includes("SHOE")) ||
-      (lower.includes("ultra") && p.sku.includes("UB")) ||
-      (lower.includes("sock") && p.sku.includes("SOCK")) ||
-      (lower.includes("tee") && p.sku.includes("TEE"))
-    ) || products[0];
+    const words = lower.split(/\s+/).filter((w: string) => w.length > 2);
+    let matched = products.find((p) => {
+      const pTitle = p.title.toLowerCase();
+      const pSku = p.sku.toLowerCase();
+      return (
+        lower.includes(pTitle) ||
+        lower.includes(pSku) ||
+        words.some((w: string) => pTitle.includes(w) || pSku.includes(w))
+      );
+    }) || products[0];
 
     logs.push(`[${timestamp()}] Intent Extracted: '${matched.title}' (SKU: ${matched.sku}, Listed: ₹${matched.listedPrice}, Floor: ₹${matched.floorPrice})`);
 
@@ -91,15 +92,16 @@ router.post("/chat", async (req: Request, res: Response) => {
         offeredPrice = lowestAllowedPrice;
         discountGiven = matched.listedPrice - lowestAllowedPrice;
         isPaymentLink = true;
-        reasoning = `Buyer proposal ₹${buyerOfferedPrice} violates floor price ₹${matched.floorPrice}. Formulated strategic counter at ₹${lowestAllowedPrice} (+ Free Shipping) preserving 95% margin.`;
+        reasoning = `Buyer proposal ₹${buyerOfferedPrice} violates floor price ₹${matched.floorPrice}. Formulated strategic counter at ₹${lowestAllowedPrice} preserving margin.`;
       }
     } else if (lower.includes("discount") || lower.includes("best price") || lower.includes("offer") || lower.includes("deal")) {
-      offeredPrice = Math.round(matched.listedPrice * 0.95);
+      const discountPct = Math.min(5, rules.maxDiscountPercentage || 5);
+      offeredPrice = Math.round(matched.listedPrice * (1 - discountPct / 100));
       discountGiven = matched.listedPrice - offeredPrice;
       isPaymentLink = true;
-      reasoning = `Incentivizing buyer with 5% flash discount: ₹${offeredPrice} (Saves ₹${discountGiven}).`;
+      reasoning = `Incentivizing buyer with ${discountPct}% flash discount: ₹${offeredPrice} (Saves ₹${discountGiven}).`;
     } else {
-      reasoning = `Confirming live variant stock: ${matched.inventoryAvailable} pairs available ready to dispatch.`;
+      reasoning = `Confirming live variant stock: ${matched.inventoryAvailable} available ready to dispatch.`;
     }
 
     logs.push(`[${timestamp()}] AI Seller Reasoning: ${reasoning}`);
@@ -151,7 +153,7 @@ router.post("/chat", async (req: Request, res: Response) => {
           offeredPrice,
           matched.listedPrice,
           discountGiven,
-          "Aarav Patel (Simulation)",
+          "WhatsApp Buyer",
           customerPhone,
           matched.title,
           matched.sku,

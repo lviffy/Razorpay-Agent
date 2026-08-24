@@ -4,9 +4,53 @@ import type { Request, Response } from "express";
 
 const router = Router();
 
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = req.query.storeId as string | undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 // GET /api/v1/conversations — List all conversation threads with transcripts & traces
-router.get("/", async (_req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
+    const storeId = await getStoreIdFromReq(req);
+
     const { rows } = await db.query(
       `SELECT
         id,
@@ -24,7 +68,9 @@ router.get("/", async (_req: Request, res: Response) => {
         created_at,
         updated_at
       FROM conversations
-      ORDER BY updated_at DESC`
+      WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+      ORDER BY updated_at DESC`,
+      [storeId]
     );
 
     const threads = rows.map((r) => {

@@ -24,12 +24,12 @@ export const defaultStoreCredentials: StoreCredentials = {
   hasRazorpayKeySecret: false,
   razorpayWebhookSecret: "",
   razorpayEnvironment: "test",
-  razorpayWebhookUrl: "https://razorpay-agent-production.up.railway.app/webhooks/razorpay",
+  razorpayWebhookUrl: "",
   whatsappPhoneNumber: "",
   whatsappPhoneNumberId: "",
   hasWhatsAppAccessToken: false,
   whatsappWebhookVerifyToken: "",
-  whatsappWebhookUrl: "https://razorpay-agent-production.up.railway.app/webhooks/whatsapp",
+  whatsappWebhookUrl: "",
 };
 
 export const emptyAnalytics: AnalyticsSummary = {
@@ -46,12 +46,12 @@ export const emptyAnalytics: AnalyticsSummary = {
 };
 
 export const defaultNegotiationRules: NegotiationRules = {
-  maxDiscountPercent: 12,
-  minimumOrderValue: 1000,
-  freeShippingAbove: 2500,
-  bundleOffersEnabled: true,
-  alternativeProductsEnabled: true,
-  humanApprovalAbove: 5000,
+  maxDiscountPercent: 0,
+  minimumOrderValue: 0,
+  freeShippingAbove: 0,
+  bundleOffersEnabled: false,
+  alternativeProductsEnabled: false,
+  humanApprovalAbove: 0,
   riskProfile: "balanced",
 };
 
@@ -65,11 +65,11 @@ export const defaultAgentProfile: AgentProfile = {
 };
 
 export const defaultMerchantProfile: MerchantProfile = {
-  name: "Store Admin",
-  email: "admin@zapai.io",
-  phone: "+91 98765 00000",
-  merchantId: "merch_01",
-  storeName: "ZapAI Store",
+  name: "",
+  email: "",
+  phone: "",
+  merchantId: "",
+  storeName: "Merchant Store",
   role: "Store Owner",
   status: "active",
 };
@@ -130,7 +130,7 @@ async function fetchJson<T>(endpoint: string, options: RequestInit = {}, fallbac
 
 let clientOnboardingSession: OnboardingState = {
   id: "onb_sess_001",
-  merchantId: "merch_runfast",
+  merchantId: "",
   currentStep: "WELCOME",
   provider: null,
   businessName: null,
@@ -538,10 +538,10 @@ export const api = {
           success: opts.status === "captured",
           status: opts.status === "captured" ? "CAPTURED" : "FAILED",
           paymentId: `pay_sim_${Date.now()}`,
-          orderId: opts.orderId || "ORD-1042",
+          orderId: opts.orderId || "",
           x402TransactionId: `x402_sim_${Date.now()}`,
-          amount: 3799,
-          message: opts.status === "captured" ? "₹3,799 settled via Razorpay Instant Settlement. Inventory deducted." : "Payment timed out. Inventory lock released in <2s.",
+          amount: 0,
+          message: opts.status === "captured" ? "Payment settled via Razorpay Instant Settlement." : "Payment timed out. Inventory lock released.",
         }
       );
     },
@@ -569,13 +569,10 @@ export const api = {
           budget,
           decision: {
             accepted: true,
-            reasoning: "Best deal found from RunFast Sports: ₹3,799 (saved ₹200).",
+            reasoning: "Autonomous negotiation completed.",
           },
-          storesScanned: [
-            { id: "a0000000-0000-0000-0000-000000000001", name: "RunFast Sports", city: "Bengaluru" },
-            { id: "b0000000-0000-0000-0000-000000000002", name: "SpeedGear", city: "Mumbai" },
-          ],
-          executionTimeMs: 1420,
+          storesScanned: [],
+          executionTimeMs: 420,
           timestamp: new Date().toISOString(),
         }
       );
@@ -655,10 +652,10 @@ export const api = {
     },
     syncShopify: async (_shopDomain: string): Promise<{ count: number; state: OnboardingState }> => {
       clientOnboardingSession.provider = "SHOPIFY";
-      clientOnboardingSession.productCount = 184;
+      clientOnboardingSession.productCount = 0;
       clientOnboardingSession.currentStep = "AGENT_SETUP";
       clientOnboardingSession.completionPercentage = 60;
-      return { count: 184, state: { ...clientOnboardingSession } };
+      return { count: 0, state: { ...clientOnboardingSession } };
     },
     completeStep: async (step: OnboardingStep): Promise<OnboardingState> => {
       clientOnboardingSession.currentStep = step;
@@ -667,7 +664,7 @@ export const api = {
     resetSession: async (): Promise<OnboardingState> => {
       clientOnboardingSession = {
         id: `onb_sess_${Date.now()}`,
-        merchantId: "merch_runfast",
+        merchantId: "",
         currentStep: "WELCOME",
         provider: null,
         businessName: null,

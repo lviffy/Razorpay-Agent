@@ -58,22 +58,22 @@ router.get("/profile", async (req: Request, res: Response) => {
 
     if (!info) {
       return res.json({
-        name: "Merchant Owner",
-        email: "merchant@zapai.in",
-        phone: "+91 98765 00000",
-        merchantId: "merch_zapai",
-        storeName: "My Store",
+        name: "",
+        email: "",
+        phone: "",
+        merchantId: "",
+        storeName: "Merchant Store",
         role: "Store Owner & Admin",
         status: "active",
       });
     }
 
     return res.json({
-      name: info.name || "Merchant Owner",
-      email: info.email || "merchant@zapai.in",
-      phone: info.phone || "+91 98765 00000",
-      merchantId: info.store_id ? `merch_${info.store_id.slice(0, 8)}` : "merch_zapai",
-      storeName: info.store_name || "My Store",
+      name: info.name || "",
+      email: info.email || "",
+      phone: info.phone || "",
+      merchantId: info.store_id ? `merch_${info.store_id.slice(0, 8)}` : "",
+      storeName: info.store_name || "Merchant Store",
       role: info.role || "Store Owner & Admin",
       status: info.is_active ? "active" : "inactive",
     });

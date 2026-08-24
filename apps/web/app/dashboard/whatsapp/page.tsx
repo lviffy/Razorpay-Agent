@@ -42,14 +42,18 @@ export default function WhatsAppPage() {
   const [testLog, setTestLog] = useState<string[]>([]);
   const [creds, setCreds] = useState<any>(null);
 
+  const [storeName, setStoreName] = useState("Store");
+
   React.useEffect(() => {
     async function loadData() {
       try {
-        const [threads, credentials] = await Promise.all([
+        const [threads, credentials, profile] = await Promise.all([
           api.conversations.list(),
           api.settings.getCredentials(),
+          api.merchant.getProfile(),
         ]);
         if (credentials) setCreds(credentials);
+        if (profile?.storeName) setStoreName(profile.storeName);
         if (threads && threads.length > 0) {
           const first = threads[0];
           const mappedMsgs: ChatMessage[] = (first.messages || []).map((m: any, idx: number) => ({
@@ -79,14 +83,14 @@ export default function WhatsAppPage() {
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
 
   const quickPrompts = [
-    "Can you do ₹3,600 for Nike Pegasus 41?",
-    "Do you have Adidas Ultraboost in UK 9?",
-    "Is shipping free to Mumbai?",
-    "Can I get a discount on Puma Velocity Nitro?",
+    "Can you offer a discount on this item?",
+    "Do you have stock available right now?",
+    "Is shipping free for this order?",
+    "What is the best deal you can give me?",
   ];
 
-  const handleOpenCheckoutModal = (amount: number = 3799, orderId: string = "ORD-1042", url?: string) => {
-    setActiveCheckoutData({ amount, orderId, paymentUrl: url });
+  const handleOpenCheckoutModal = (amount?: number, orderId?: string, url?: string) => {
+    setActiveCheckoutData({ amount: amount || 0, orderId: orderId || "", paymentUrl: url });
     setCheckoutModalOpen(true);
   };
 
@@ -95,9 +99,9 @@ export default function WhatsAppPage() {
     setIsSimulatingPayment(true);
     try {
       const res = await api.simulator.simulatePayment({
-        orderId: activeCheckoutData.orderId || "ORD-1042",
+        orderId: activeCheckoutData.orderId,
         status,
-        method: "UPI (Google Pay)",
+        method: "UPI (Razorpay)",
       });
 
       const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -106,7 +110,7 @@ export default function WhatsAppPage() {
         const confirmMsg: ChatMessage = {
           id: `sys_${Date.now()}`,
           sender: "agent",
-          text: `✅ *Payment Confirmed! (Razorpay ${res.paymentId || "pay_mock123"})*\n\nAmount: ₹${(activeCheckoutData.amount || 3799).toLocaleString("en-IN")}\nStore: RunFast Sports (Bengaluru)\n\n*Audit Trail Verified:*\n• 📱 Message ID: \`wamid.ABG984129\`\n• 💬 Conversation: \`conv_wa_user_01\`\n• 🔗 x402 Hash: \`${res.x402TransactionId || "x402_tx_verified"}\`\n• 💳 Razorpay ID: \`${res.paymentId || "pay_rzp_instant"}\`\n• 📦 Order ID: \`${res.orderId || "ORD-1042"}\`\n\nInstant settlement to merchant bank account completed in 12s via IMPS.`,
+          text: `✅ *Payment Confirmed! (Razorpay ${res.paymentId || "pay_instant"})*\n\nAmount: ₹${(activeCheckoutData.amount || 0).toLocaleString("en-IN")}\nStore: ${storeName}\n\n*Audit Trail Verified:*\n• 🔗 x402 Hash: \`${res.x402TransactionId || "x402_tx_verified"}\`\n• 💳 Razorpay ID: \`${res.paymentId || "pay_rzp_instant"}\`\n• 📦 Order ID: \`${res.orderId || activeCheckoutData.orderId || "ORD"}\`\n\nInstant UPI settlement verified.`,
           time: timeStr,
         };
         setMessages((prev) => [...prev, confirmMsg]);
@@ -114,22 +118,22 @@ export default function WhatsAppPage() {
           ...prev,
           `[${timeStr}] Razorpay Webhook: 'payment.captured' (HMAC SHA-256 Verified)`,
           `[${timeStr}] Inventory state transition: PAYMENT_PENDING -> PAID (Postgres)`,
-          `[${timeStr}] Redis lock released: lock:inventory:a0000000-0000-0000-0000-000000000001:mock-var-001`,
-          `[${timeStr}] Instant settlement: ₹${activeCheckoutData.amount || 3799} routed to IMPS node in 11.4s`,
+          `[${timeStr}] Redis inventory reservation lock released`,
+          `[${timeStr}] Settlement: ₹${activeCheckoutData.amount || 0} routed via Razorpay`,
         ]);
       } else {
         const failMsg: ChatMessage = {
           id: `sys_${Date.now()}`,
           sender: "agent",
-          text: `❌ *UPI Payment Timed Out / Declined*\n\nInventory lock was released immediately (< 1.8s). The Nike Pegasus 41 is held in temporary reserve for 90 seconds. Would you like to retry with Card/Netbanking or switch payment methods?`,
+          text: `❌ *UPI Payment Timed Out / Declined*\n\nInventory lock was released immediately. Would you like to retry or choose an alternative payment option?`,
           time: timeStr,
         };
         setMessages((prev) => [...prev, failMsg]);
         setTestLog((prev) => [
           ...prev,
-          `[${timeStr}] Razorpay Webhook: 'payment.failed' (Error: TRANSACTION_NOT_FOUND)`,
-          `[${timeStr}] Atomic recovery: Redis inventory lock deleted in 1.4s`,
-          `[${timeStr}] Restored stock level in Neon DB (AVAILABLE -> 18 units)`,
+          `[${timeStr}] Razorpay Webhook: 'payment.failed'`,
+          `[${timeStr}] Atomic recovery: Redis inventory lock released`,
+          `[${timeStr}] Restored stock level in Postgres`,
         ]);
       }
     } catch (err) {
@@ -280,11 +284,11 @@ export default function WhatsAppPage() {
         <Card className="lg:col-span-7 border-zinc-200 shadow-xs flex flex-col justify-between overflow-hidden">
           <CardHeader className="p-4 bg-zinc-900 text-white border-b border-zinc-800 flex flex-row items-center justify-between space-y-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white">
-                RF
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white uppercase">
+                {storeName ? storeName.slice(0, 2) : "AI"}
               </div>
               <div>
-                <p className="text-xs font-bold leading-none">RunFast Sports (AI Seller)</p>
+                <p className="text-xs font-bold leading-none">{storeName} (AI Seller)</p>
                 <p className="text-[10px] text-emerald-400 font-mono mt-1">online • official business account</p>
               </div>
             </div>

@@ -81,20 +81,24 @@ export default function DashboardOverviewPage() {
 
           if (ev.type === "PAYMENT_CAPTURED") {
             title = "Instant UPI Payment Captured";
-            const amt = p.amount ? p.amount / 100 : 3799;
-            description = `₹${amt.toLocaleString("en-IN")} settled via Razorpay UPI (${p.method || "UPI"})`;
+            const amt = p.amount ? (p.amount > 1000 ? p.amount / 100 : p.amount) : 0;
+            description = amt
+              ? `₹${amt.toLocaleString("en-IN")} settled via Razorpay UPI (${p.method || "UPI"})`
+              : `Payment settled via Razorpay UPI (${p.method || "UPI"})`;
 
-            setAnalytics((prev) => ({
-              ...prev,
-              agentGmv: prev.agentGmv + amt,
-              dealsClosed: prev.dealsClosed + 1,
-            }));
+            if (amt > 0) {
+              setAnalytics((prev) => ({
+                ...prev,
+                agentGmv: prev.agentGmv + amt,
+                dealsClosed: prev.dealsClosed + 1,
+              }));
+            }
           } else if (ev.type === "INVENTORY_LOCKED") {
             title = "Autonomous Inventory Reservation";
-            description = `Locked 1 unit for ${p.sku || "SKU-SHOE-001"} (Redis Redlock TTL 120s)`;
+            description = `Locked 1 unit for ${p.sku || p.productTitle || "item"} (Redis Redlock TTL 120s)`;
           } else if (ev.type === "PAYMENT_FAILED") {
             title = "Payment Timeout / Lock Released";
-            description = `Inventory restored in <2s. Reason: ${p.reason || "UPI_DECLINE"}`;
+            description = `Inventory restored. Reason: ${p.reason || "UPI_DECLINE"}`;
           }
 
           const newActivityItem: ActivityEvent = {
@@ -191,7 +195,7 @@ export default function DashboardOverviewPage() {
                     Autonomous WhatsApp Selling & Negotiation Engine
                   </h2>
                   <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
-                    Discovers buyer intent, checks inventory across Native & Shopify, negotiates within your floor price mandate ({rules.minimumOrderValue ? formatINR(rules.minimumOrderValue) + " min" : "floor protected"}), and issues instant Razorpay payment links.
+                    Discovers buyer intent, checks live catalog inventory, negotiates within your floor price mandate{rules.minimumOrderValue ? ` (${formatINR(rules.minimumOrderValue)} min)` : ""}, and issues instant Razorpay payment links.
                   </p>
                 </div>
 
@@ -201,7 +205,7 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <ShieldCheck className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Floor: {rules.minimumOrderValue ? formatINR(rules.minimumOrderValue) : "Strict"}
+                        Floor: {rules.minimumOrderValue > 0 ? formatINR(rules.minimumOrderValue) : "No minimum"}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Hard price barrier the AI agent is forbidden to breach</TooltipContent>
@@ -211,7 +215,7 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <Sliders className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Max Discount: {rules.maxDiscountPercent || 0}%
+                        Max Discount: {rules.maxDiscountPercent > 0 ? `${rules.maxDiscountPercent}%` : "Not set"}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Maximum allowed discount percentage for buyer counter-offers</TooltipContent>
@@ -221,7 +225,7 @@ export default function DashboardOverviewPage() {
                     <TooltipTrigger asChild>
                       <span className="cursor-help inline-flex items-center gap-1 text-[10px] sm:text-[11px] px-2 sm:px-2.5 py-1 rounded bg-zinc-50 border border-zinc-200 text-zinc-700 font-mono">
                         <ShoppingBag className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
-                        Free Shipping &gt; {rules.freeShippingAbove ? formatINR(rules.freeShippingAbove) : "Active"}
+                        Free Shipping: {rules.freeShippingAbove > 0 ? `> ${formatINR(rules.freeShippingAbove)}` : "Disabled"}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>Automatic closing sweetener offered above specified order value</TooltipContent>
@@ -471,7 +475,7 @@ export default function DashboardOverviewPage() {
                 <div className="bg-zinc-800/60 p-1.5 rounded border border-zinc-800">
                   <p className="text-zinc-400">Today</p>
                   <p className="font-bold text-zinc-200">
-                    {(analytics as any).todayWebhookCount || analytics.dealsClosed || 24}
+                    {(analytics as any).todayWebhookCount ?? analytics.dealsClosed ?? 0}
                   </p>
                 </div>
               </div>

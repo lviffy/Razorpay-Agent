@@ -77,15 +77,16 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
     type: string;
   }>>([]);
 
-  const displayName = user?.name || profile.name;
+  const displayName = user?.name || profile.name || currentStore?.name || "Merchant";
   const displayEmail = user?.email || profile.email;
-  const displayMerchantId = user?.merchantId || profile.merchantId;
-  const initials = (displayName || "RF")
+  const displayMerchantId = user?.merchantId || profile.merchantId || currentStore?.id || "";
+  const initials = displayName
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2) || "RF";
+    .slice(0, 2) || "M";
 
   // Load profile state & live notifications
   useEffect(() => {

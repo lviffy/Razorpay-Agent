@@ -4,16 +4,52 @@ import type { Request, Response } from "express";
 
 const router = Router();
 
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = req.query.storeId as string | undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 // GET /api/v1/analytics — Full telemetry & margin preservation metrics
 router.get("/", async (req: Request, res: Response) => {
   try {
-    let rawStoreId = (req.query.storeId as string) || (req.headers["x-store-id"] as string);
-    let storeId: string | null = null;
-
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (rawStoreId && uuidRegex.test(rawStoreId)) {
-      storeId = rawStoreId;
-    }
+    const storeId = await getStoreIdFromReq(req);
 
     // 1. Order aggregation
     const { rows: orderStats } = await db.query(
@@ -21,7 +57,7 @@ router.get("/", async (req: Request, res: Response) => {
         COALESCE(SUM(amount), 0) as total_gmv,
         COUNT(*) as total_orders,
         COUNT(CASE WHEN status = 'CAPTURED' THEN 1 END) as captured_orders,
-        COALESCE(AVG(amount), 0) as avg_order_value,
+        COALESCE(AVG(CASE WHEN status = 'CAPTURED' THEN amount END), 0) as avg_order_value,
         COALESCE(SUM(discount_applied), 0) as total_discount_given,
         COALESCE(SUM(original_price), 0) as total_original_value
        FROM orders
@@ -34,7 +70,9 @@ router.get("/", async (req: Request, res: Response) => {
       `SELECT
         COUNT(*) as total_conversations,
         COUNT(CASE WHEN status = 'deal_closed' THEN 1 END) as closed_deals
-       FROM conversations`
+       FROM conversations
+       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
+      [storeId]
     );
 
     // 3. Top selling products
@@ -55,7 +93,7 @@ router.get("/", async (req: Request, res: Response) => {
     // 4. Channel breakdown (Native vs Shopify)
     const { rows: channelRows } = await db.query(
       `SELECT
-        CASE WHEN p.shopify_product_id LIKE 'mock-prod%' THEN 'ZapAI Native Catalog' ELSE 'Shopify Connected Store' END as channel,
+        CASE WHEN p.shopify_product_id LIKE 'mock-prod%' OR p.shopify_product_id IS NULL THEN 'ZapAI Native Catalog' ELSE 'Shopify Connected Store' END as channel,
         COUNT(o.id) as order_count,
         COALESCE(SUM(o.amount), 0) as gmv
        FROM orders o
@@ -79,8 +117,10 @@ router.get("/", async (req: Request, res: Response) => {
       `SELECT max_discount_percentage FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
       [storeId]
     );
-    const maxDiscountPct = ruleRow[0] ? parseFloat(ruleRow[0].max_discount_percentage) : 12.0;
-    const theoreticalMaxDiscount = (totalGmv * maxDiscountPct) / 100;
+    const maxDiscountPct = ruleRow[0] && ruleRow[0].max_discount_percentage !== null
+      ? parseFloat(ruleRow[0].max_discount_percentage)
+      : 0.0;
+    const theoreticalMaxDiscount = maxDiscountPct > 0 ? (totalGmv * maxDiscountPct) / 100 : 0;
     const marginPreserved = Math.max(0, Math.round(theoreticalMaxDiscount - totalDiscountGiven));
 
     // WoW Growth calculation (last 7 days vs previous 7 days)
@@ -98,11 +138,13 @@ router.get("/", async (req: Request, res: Response) => {
       ? Number((((totalGmv - priorGmv) / priorGmv) * 100).toFixed(1))
       : 0;
 
-    const formattedTopProducts = topProducts.map((p) => ({
-      title: p.title,
-      salesCount: parseInt(p.sales_count, 10) || 0,
-      revenue: parseFloat(p.revenue) || 0,
-    }));
+    const formattedTopProducts = topProducts
+      .filter((p) => parseInt(p.sales_count, 10) > 0 || parseFloat(p.revenue) > 0)
+      .map((p) => ({
+        title: p.title,
+        salesCount: parseInt(p.sales_count, 10) || 0,
+        revenue: parseFloat(p.revenue) || 0,
+      }));
 
     const channelBreakdown = channelRows.map((c) => {
       const gmv = parseFloat(c.gmv);

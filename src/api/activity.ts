@@ -4,35 +4,85 @@ import type { Request, Response } from "express";
 
 const router = Router();
 
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  process.env.X402_SIGNING_SECRET ||
+  "zapai_jwt_secret_neon_auth_2026";
+
+async function getStoreIdFromReq(req: Request): Promise<string | null> {
+  const storeIdQuery = req.query.storeId as string | undefined;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (storeIdQuery && uuidRegex.test(storeIdQuery)) {
+    return storeIdQuery;
+  }
+
+  const storeIdHeader = req.headers["x-store-id"] as string | undefined;
+  if (storeIdHeader && uuidRegex.test(storeIdHeader)) {
+    return storeIdHeader;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded?.storeId && uuidRegex.test(decoded.storeId)) {
+        return decoded.storeId;
+      }
+      if (decoded?.userId) {
+        const { rows } = await db.query(
+          "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+          [decoded.userId]
+        );
+        if (rows[0]?.store_id) return rows[0].store_id;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+}
+
 // GET /api/v1/activity — List recent live activity events
 router.get("/", async (req: Request, res: Response) => {
   try {
     const limit = parseInt((req.query.limit as string) || "20", 10);
+    const storeId = await getStoreIdFromReq(req);
+
     const { rows } = await db.query(
       `SELECT id, event_type, whatsapp_message_id, conversation_id, x402_transaction_id, razorpay_payment_id, order_id, payload, event_checksum, timestamp
        FROM audit_ledger
+       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
        ORDER BY id DESC
-       LIMIT $1`,
-      [limit]
+       LIMIT $2`,
+      [storeId, limit]
     );
 
     const activity = rows.map((a) => {
       const p = typeof a.payload === "string" ? JSON.parse(a.payload) : a.payload || {};
       let title = a.event_type.replace(/_/g, " ");
-      let desc = "Verified cryptographic audit trail recorded in Postgres.";
+      let desc = "Verified cryptographic audit trail recorded.";
 
       if (a.event_type === "PAYMENT_CAPTURED") {
         title = "Instant UPI Payment Captured";
-        desc = `₹${(p.amount ? p.amount / 100 : 3799).toLocaleString("en-IN")} settled via Razorpay UPI (${p.method || "UPI"})`;
+        const amt = p.amount ? (p.amount > 1000 ? p.amount / 100 : p.amount) : null;
+        desc = amt
+          ? `₹${amt.toLocaleString("en-IN")} settled via Razorpay UPI (${p.method || "UPI"})`
+          : `Payment settled via Razorpay UPI (${p.method || "UPI"})`;
       } else if (a.event_type === "INVENTORY_LOCKED") {
         title = "Autonomous Inventory Reservation";
-        desc = `Locked 1 unit for ${p.sku || "SKU-SHOE-001"} (Redis Redlock TTL 120s)`;
+        desc = `Locked 1 unit for ${p.sku || p.productTitle || "item"} (Redis Redlock TTL 120s)`;
       } else if (a.event_type === "NEGOTIATION_COMPLETED") {
         title = "AI Counter-Offer Agreed";
-        desc = `Deal struck at ₹${p.agreedPrice || 3799} with ${p.discountPercent || 5}% concession`;
+        desc = p.agreedPrice
+          ? `Deal struck at ₹${Number(p.agreedPrice).toLocaleString("en-IN")}${p.discountPercent ? ` with ${p.discountPercent}% concession` : ""}`
+          : `Deal agreed within floor price mandate`;
       } else if (a.event_type === "INVENTORY_UPDATED") {
         title = "Catalog Stock Synchronized";
-        desc = `${p.sku || "SKU-PROD"} stock verified (${p.newStock || 18} available)`;
+        desc = `${p.sku || p.title || "Catalog SKU"} stock verified (${p.newStock ?? p.inventory ?? 0} available)`;
       }
 
       return {
@@ -58,13 +108,17 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/v1/activity/notifications — Notifications for topbar
-router.get("/notifications", async (_req: Request, res: Response) => {
+router.get("/notifications", async (req: Request, res: Response) => {
   try {
+    const storeId = await getStoreIdFromReq(req);
+
     const { rows } = await db.query(
       `SELECT id, event_type, payload, timestamp
        FROM audit_ledger
+       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
        ORDER BY id DESC
-       LIMIT 5`
+       LIMIT 5`,
+      [storeId]
     );
 
     const notifications = rows.map((a, i) => {
@@ -75,15 +129,18 @@ router.get("/notifications", async (_req: Request, res: Response) => {
 
       if (a.event_type === "PAYMENT_CAPTURED") {
         title = "UPI Payment Captured";
-        description = `₹${(p.amount ? p.amount / 100 : 3799).toLocaleString("en-IN")} received via Razorpay UPI.`;
+        const amt = p.amount ? (p.amount > 1000 ? p.amount / 100 : p.amount) : null;
+        description = amt
+          ? `₹${amt.toLocaleString("en-IN")} received via Razorpay UPI.`
+          : `Payment received via Razorpay UPI.`;
         type = "payment";
       } else if (a.event_type === "NEGOTIATION_COMPLETED") {
         title = "AI Deal Closed on WhatsApp";
-        description = `Auto-conceded discount to close ${p.product || "Nike Pegasus 41"} lead.`;
+        description = `Auto-conceded discount to close ${p.product || p.productTitle || "buyer"} lead.`;
         type = "deal";
       } else if (a.event_type === "INVENTORY_LOCKED" || a.event_type === "INVENTORY_UPDATED") {
         title = "Inventory Telemetry";
-        description = `${p.sku || "Product SKU"} inventory reserved atomically.`;
+        description = `${p.sku || p.productTitle || "Product SKU"} inventory reserved atomically.`;
         type = "inventory";
       }
 

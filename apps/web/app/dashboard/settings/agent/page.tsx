@@ -55,21 +55,21 @@ export default function AgentSettingsPage() {
       label: "Friendly & Helpful",
       desc: "Warm, welcoming, responsive with subtle emojis",
       icon: Smile,
-      preview: "Hey Rahul! 👋 Welcome to RunFast Sports! Looking for responsive road running shoes today? I can check live variant inventory for you!",
+      preview: "Hey there! 👋 Welcome to our store! Looking for anything specific today? I can check live catalog stock for you right away!",
     },
     {
       id: "professional",
       label: "Professional & Technical",
       desc: "Spec-focused, precise, engineering & performance tone",
       icon: Briefcase,
-      preview: "Hello Rahul. RunFast Sports inventory confirmed. The Pegasus 40 features dual Zoom Air pods and React foam. 18 units in stock at ₹3,999.",
+      preview: "Hello. Live catalog inventory verified. 12 units available in stock. Would you like detailed specifications or checkout assistance?",
     },
     {
       id: "persuasive",
       label: "High-Energy Closer",
       desc: "Creates urgency, highlights savings and flash stock alerts",
       icon: Flame,
-      preview: "Hey Rahul! 🔥 Great choice on the Pegasus 40—only 3 pairs left in Size 10! I can lock in ₹3,799 + Free Delivery if we confirm right now!",
+      preview: "Hey there! 🔥 High-demand item with limited stock left! I can lock in an exclusive instant concession + fast shipping if we confirm right now!",
     },
   ];
 

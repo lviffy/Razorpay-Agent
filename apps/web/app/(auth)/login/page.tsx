@@ -82,12 +82,6 @@ function LoginForm() {
     }
   };
 
-  const fillDemoCredentials = () => {
-    setEmail("merchant@runfast.in");
-    setPassword("password123");
-    setErrorMsg("");
-  };
-
   const handleForgotSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) return;
