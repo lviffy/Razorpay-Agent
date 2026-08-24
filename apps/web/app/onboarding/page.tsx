@@ -11,6 +11,7 @@ import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboardi
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import { ShopifySyncCard } from "@/components/onboarding/shopify-sync-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Send,
   Sparkles,
@@ -29,6 +30,14 @@ import {
   SlidersHorizontal,
   ChevronRight,
   ExternalLink,
+  Eye,
+  EyeOff,
+  Copy,
+  CheckCircle2,
+  AlertCircle,
+  Key,
+  Lock,
+  RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/context/auth-context";
@@ -43,6 +52,27 @@ export default function OnboardingPage() {
   const [showDrawer, setShowDrawer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // WhatsApp Credentials State (must be filled by user)
+  const [waPhone, setWaPhone] = useState("");
+  const [waPhoneId, setWaPhoneId] = useState("");
+  const [waToken, setWaToken] = useState("");
+  const [waVerifying, setWaVerifying] = useState(false);
+  const [waError, setWaError] = useState<string | null>(null);
+  const [waSuccess, setWaSuccess] = useState<string | null>(null);
+  const [showWaToken, setShowWaToken] = useState(false);
+  const [copiedWaUrl, setCopiedWaUrl] = useState(false);
+  const [copiedWaToken, setCopiedWaToken] = useState(false);
+
+  // Razorpay Credentials State (must be filled by user)
+  const [rzpKeyId, setRzpKeyId] = useState("");
+  const [rzpKeySecret, setRzpKeySecret] = useState("");
+  const [rzpWebhookSecret, setRzpWebhookSecret] = useState("");
+  const [rzpVerifying, setRzpVerifying] = useState(false);
+  const [rzpError, setRzpError] = useState<string | null>(null);
+  const [rzpSuccess, setRzpSuccess] = useState<string | null>(null);
+  const [showRzpSecret, setShowRzpSecret] = useState(false);
+  const [copiedRzpUrl, setCopiedRzpUrl] = useState(false);
 
   useEffect(() => {
     loadSession();
@@ -110,6 +140,109 @@ export default function OnboardingPage() {
     const res = await api.onboarding.syncShopify(shopDomain);
     setState(res.state);
     setLoading(false);
+  };
+
+  const handleConnectWhatsApp = async () => {
+    const cleanPhone = waPhone.trim();
+    const cleanPhoneId = waPhoneId.trim();
+    const cleanToken = waToken.trim();
+
+    if (!cleanPhone || cleanPhone === "+91") {
+      setWaError("Please enter your WhatsApp Business Phone number (e.g. +91 98765 43210).");
+      return;
+    }
+    if (!cleanPhoneId) {
+      setWaError("Please enter your Meta Phone Number ID from the Meta Developer Portal.");
+      return;
+    }
+    if (!cleanToken) {
+      setWaError("Please enter your Meta Graph API Access Token.");
+      return;
+    }
+
+    setWaVerifying(true);
+    setWaError(null);
+    setWaSuccess(null);
+
+    try {
+      const testRes = await api.settings.testWhatsApp({
+        phoneNumberId: cleanPhoneId,
+        accessToken: cleanToken,
+      });
+      if (!testRes.success) {
+        setWaError(testRes.error || "Failed to verify credentials with Meta Cloud API.");
+        setWaVerifying(false);
+        return;
+      }
+
+      await api.settings.saveCredentials({
+        whatsappPhoneNumber: cleanPhone,
+        whatsappPhoneNumberId: cleanPhoneId,
+        whatsappAccessToken: cleanToken,
+      });
+
+      setWaSuccess("WhatsApp Channel verified & connected!");
+      setLoading(true);
+      const updated = await api.onboarding.sendMessage(
+        `Connected real WhatsApp Business number ${cleanPhone} (Meta Phone ID: ${cleanPhoneId})`
+      );
+      setState(updated.state);
+    } catch (err: any) {
+      setWaError(err.message || "Failed to connect WhatsApp channel.");
+    } finally {
+      setWaVerifying(false);
+      setLoading(false);
+    }
+  };
+
+  const handleConnectRazorpay = async () => {
+    const cleanKeyId = rzpKeyId.trim();
+    const cleanKeySecret = rzpKeySecret.trim();
+
+    if (!cleanKeyId) {
+      setRzpError("Please enter your Razorpay Key ID (e.g. rzp_test_... or rzp_live_...).");
+      return;
+    }
+    if (!cleanKeySecret) {
+      setRzpError("Please enter your Razorpay Key Secret from your Razorpay Dashboard.");
+      return;
+    }
+
+    setRzpVerifying(true);
+    setRzpError(null);
+    setRzpSuccess(null);
+
+    try {
+      const testRes = await api.settings.testRazorpay({
+        keyId: cleanKeyId,
+        keySecret: cleanKeySecret,
+      });
+
+      if (!testRes.success) {
+        setRzpError(testRes.error || "Invalid Razorpay Key ID or Key Secret. Please check your credentials.");
+        setRzpVerifying(false);
+        return;
+      }
+
+      await api.settings.saveCredentials({
+        razorpayKeyId: cleanKeyId,
+        razorpayKeySecret: cleanKeySecret,
+        razorpayWebhookSecret: rzpWebhookSecret.trim() || undefined,
+      });
+
+      const isLive = cleanKeyId.startsWith("rzp_live");
+      setRzpSuccess(`Connected Razorpay ${isLive ? "Live Production" : "Test Sandbox"}!`);
+      setLoading(true);
+      const updated = await api.onboarding.sendMessage(
+        `Connected real Razorpay API keys: ${cleanKeyId} (${isLive ? "Live Mode" : "Test Mode"}) with instant settlement webhooks.`
+      );
+      setState(updated.state);
+    } catch (err: any) {
+      setRzpError(err.message || "Failed to verify Razorpay credentials.");
+    } finally {
+      setRzpVerifying(false);
+      setLoading(false);
+    }
   };
 
   const handleReset = async () => {
@@ -364,33 +497,145 @@ export default function OnboardingPage() {
                       <motion.div
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="w-full p-4 sm:p-5 rounded-2xl bg-zinc-50/70 border border-zinc-200/80 space-y-3.5"
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-4"
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                               <Smartphone className="w-4 h-4" />
                             </div>
                             <div>
                               <p className="text-xs font-bold text-zinc-900">
-                                WhatsApp Cloud API Channel
+                                Connect WhatsApp Business Cloud API
                               </p>
                               <p className="text-[11px] text-zinc-500">
-                                Autonomous 24/7 customer chat on WhatsApp
+                                Connect your Meta WhatsApp number for autonomous 24/7 AI selling
                               </p>
                             </div>
                           </div>
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium">
-                            WEBHOOK VERIFIED
+                            Meta Graph v19.0
                           </span>
                         </div>
 
+                        {/* WhatsApp Inputs */}
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                              <span>WhatsApp Business Phone Number</span>
+                              <span className="text-[10px] text-zinc-400 font-normal">With country code</span>
+                            </label>
+                            <Input
+                              type="tel"
+                              value={waPhone}
+                              onChange={(e) => setWaPhone(e.target.value)}
+                              placeholder="+91 98765 43210"
+                              className="text-xs font-mono"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                                <span>Meta Phone Number ID</span>
+                              </label>
+                              <Input
+                                value={waPhoneId}
+                                onChange={(e) => setWaPhoneId(e.target.value)}
+                                placeholder="Enter Meta Phone Number ID"
+                                className="text-xs font-mono"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                                <span>Meta Access Token</span>
+                              </label>
+                              <div className="relative">
+                                <Input
+                                  type={showWaToken ? "text" : "password"}
+                                  value={waToken}
+                                  onChange={(e) => setWaToken(e.target.value)}
+                                  placeholder="Enter Meta Graph API Token"
+                                  className="text-xs font-mono pr-8"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowWaToken(!showWaToken)}
+                                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700"
+                                >
+                                  {showWaToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Meta Webhook Endpoint Box */}
+                          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-2 text-xs">
+                            <p className="text-[11px] font-semibold text-zinc-700">Meta Webhook Configuration (for Meta App Settings):</p>
+                            <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-zinc-200 text-[11px] font-mono text-zinc-600">
+                              <span className="truncate mr-2">https://razorpay-agent-production.up.railway.app/webhooks/whatsapp</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText("https://razorpay-agent-production.up.railway.app/webhooks/whatsapp");
+                                  setCopiedWaUrl(true);
+                                  setTimeout(() => setCopiedWaUrl(false), 2000);
+                                }}
+                                className="text-zinc-500 hover:text-zinc-900 shrink-0 font-sans text-[10px] font-semibold flex items-center gap-1"
+                              >
+                                {copiedWaUrl ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                                {copiedWaUrl ? "Copied" : "Copy URL"}
+                              </button>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                              <span>Verify Token: <span className="text-zinc-800 font-bold">zapai_meta_webhook_secret_2026</span></span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText("zapai_meta_webhook_secret_2026");
+                                  setCopiedWaToken(true);
+                                  setTimeout(() => setCopiedWaToken(false), 2000);
+                                }}
+                                className="text-brand-600 hover:underline font-sans text-[10px]"
+                              >
+                                {copiedWaToken ? "Copied!" : "Copy Token"}
+                              </button>
+                            </div>
+                          </div>
+
+                          {waError && (
+                            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                              <span>{waError}</span>
+                            </div>
+                          )}
+
+                          {waSuccess && (
+                            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>{waSuccess}</span>
+                            </div>
+                          )}
+                        </div>
+
                         <Button
-                          onClick={() => handleSendMessage("Connect WhatsApp Business Number")}
-                          className="w-full text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 gap-2"
+                          type="button"
+                          onClick={handleConnectWhatsApp}
+                          disabled={waVerifying || loading}
+                          className="w-full text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 gap-2 cursor-pointer shadow-xs"
                         >
-                          <span>Connect WhatsApp Business Number</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          {waVerifying ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Verifying Meta Cloud API...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Verify & Connect WhatsApp Channel</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     )}
@@ -400,33 +645,133 @@ export default function OnboardingPage() {
                       <motion.div
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="w-full p-4 sm:p-5 rounded-2xl bg-zinc-50/70 border border-zinc-200/80 space-y-3.5"
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-4"
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
                               <CreditCard className="w-4 h-4" />
                             </div>
                             <div>
                               <p className="text-xs font-bold text-zinc-900">
-                                Razorpay Instant Checkout Engine
+                                Connect Razorpay Payment Gateway
                               </p>
                               <p className="text-[11px] text-zinc-500">
-                                Autonomous payment link generation & webhook settlement
+                                Enter your real Key ID & Secret for autonomous UPI link creation & webhooks
                               </p>
                             </div>
                           </div>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 font-medium">
-                            TEST MODE
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${rzpKeyId.startsWith("rzp_live") ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-blue-50 text-blue-700 border border-blue-200/60"}`}>
+                            {rzpKeyId.startsWith("rzp_live") ? "LIVE PRODUCTION" : "TEST / LIVE MODE"}
                           </span>
                         </div>
 
+                        {/* Razorpay Inputs */}
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                              <span>Razorpay Key ID</span>
+                              <span className="text-[10px] text-zinc-400 font-normal">rzp_test_... or rzp_live_...</span>
+                            </label>
+                            <Input
+                              value={rzpKeyId}
+                              onChange={(e) => setRzpKeyId(e.target.value)}
+                              placeholder="Enter your Razorpay Key ID"
+                              className="text-xs font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                              <span>Razorpay Key Secret</span>
+                              <span className="text-[10px] text-zinc-400 font-normal">From Razorpay Dashboard API Keys</span>
+                            </label>
+                            <div className="relative">
+                              <Input
+                                type={showRzpSecret ? "text" : "password"}
+                                value={rzpKeySecret}
+                                onChange={(e) => setRzpKeySecret(e.target.value)}
+                                placeholder="Enter Razorpay Key Secret"
+                                className="text-xs font-mono pr-8"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowRzpSecret(!showRzpSecret)}
+                                className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700"
+                              >
+                                {showRzpSecret ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-800 flex items-center justify-between">
+                              <span>Razorpay Webhook Secret</span>
+                              <span className="text-[10px] text-zinc-400 font-normal">Optional / HMAC verification</span>
+                            </label>
+                            <Input
+                              value={rzpWebhookSecret}
+                              onChange={(e) => setRzpWebhookSecret(e.target.value)}
+                              placeholder="Enter Webhook Secret (optional)"
+                              className="text-xs font-mono"
+                            />
+                          </div>
+
+                          {/* Razorpay Webhook Endpoint Box */}
+                          <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-2 text-xs">
+                            <p className="text-[11px] font-semibold text-zinc-700">Webhook Endpoint URL (configure in Razorpay Dashboard):</p>
+                            <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-zinc-200 text-[11px] font-mono text-zinc-600">
+                              <span className="truncate mr-2">https://razorpay-agent-production.up.railway.app/webhooks/razorpay</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText("https://razorpay-agent-production.up.railway.app/webhooks/razorpay");
+                                  setCopiedRzpUrl(true);
+                                  setTimeout(() => setCopiedRzpUrl(false), 2000);
+                                }}
+                                className="text-zinc-500 hover:text-zinc-900 shrink-0 font-sans text-[10px] font-semibold flex items-center gap-1"
+                              >
+                                {copiedRzpUrl ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                                {copiedRzpUrl ? "Copied" : "Copy URL"}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-zinc-500">
+                              Events to subscribe: <span className="font-mono text-zinc-700">payment.captured</span>, <span className="font-mono text-zinc-700">payment.failed</span>, <span className="font-mono text-zinc-700">order.paid</span>
+                            </p>
+                          </div>
+
+                          {rzpError && (
+                            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                              <span>{rzpError}</span>
+                            </div>
+                          )}
+
+                          {rzpSuccess && (
+                            <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                              <span>{rzpSuccess}</span>
+                            </div>
+                          )}
+                        </div>
+
                         <Button
-                          onClick={() => handleSendMessage("Connect Razorpay API Keys in Test Mode")}
-                          className="w-full text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2"
+                          type="button"
+                          onClick={handleConnectRazorpay}
+                          disabled={rzpVerifying || loading}
+                          className="w-full text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2 cursor-pointer shadow-xs"
                         >
-                          <span>Connect Razorpay Test Credentials (rzp_test_xxxx)</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          {rzpVerifying ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Validating with Razorpay API...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Verify & Connect Razorpay Credentials</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
                         </Button>
                       </motion.div>
                     )}

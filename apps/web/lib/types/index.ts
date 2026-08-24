@@ -173,6 +173,21 @@ export interface MerchantProfile {
   status: "active" | "inactive";
 }
 
+export interface StoreCredentials {
+  razorpayKeyId: string;
+  razorpayKeySecret?: string;
+  hasRazorpayKeySecret?: boolean;
+  razorpayWebhookSecret: string;
+  razorpayEnvironment: "test" | "live";
+  razorpayWebhookUrl: string;
+  whatsappPhoneNumber: string;
+  whatsappPhoneNumberId: string;
+  whatsappAccessToken?: string;
+  hasWhatsAppAccessToken?: boolean;
+  whatsappWebhookVerifyToken: string;
+  whatsappWebhookUrl: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;

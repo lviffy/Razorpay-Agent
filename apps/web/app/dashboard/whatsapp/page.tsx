@@ -40,11 +40,16 @@ export default function WhatsAppPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("simulator");
   const [testLog, setTestLog] = useState<string[]>([]);
+  const [creds, setCreds] = useState<any>(null);
 
   React.useEffect(() => {
-    async function loadLiveConversations() {
+    async function loadData() {
       try {
-        const threads = await api.conversations.list();
+        const [threads, credentials] = await Promise.all([
+          api.conversations.list(),
+          api.settings.getCredentials(),
+        ]);
+        if (credentials) setCreds(credentials);
         if (threads && threads.length > 0) {
           const first = threads[0];
           const mappedMsgs: ChatMessage[] = (first.messages || []).map((m: any, idx: number) => ({
@@ -59,10 +64,10 @@ export default function WhatsAppPage() {
           setMessages(mappedMsgs);
         }
       } catch (err) {
-        console.error("Failed to load live conversations:", err);
+        console.error("Failed to load live data:", err);
       }
     }
-    loadLiveConversations();
+    loadData();
   }, []);
 
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
@@ -214,24 +219,28 @@ export default function WhatsAppPage() {
               <span>Account Number</span>
               <Smartphone className="w-3.5 h-3.5 text-zinc-400" />
             </div>
-            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1">+91 98765 00000</CardTitle>
+            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1 truncate">
+              {creds?.whatsappPhoneNumber || "Not Configured"}
+            </CardTitle>
           </CardHeader>
           <CardFooter className="p-4 pt-1 text-[10px] text-zinc-500 font-mono flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Verified Green Badge
+            <span className={`w-1.5 h-1.5 rounded-full ${creds?.whatsappPhoneNumber ? "bg-emerald-500" : "bg-amber-400"}`} />
+            {creds?.whatsappPhoneNumber ? "Verified Channel" : "Setup Required"}
           </CardFooter>
         </Card>
 
         <Card className="border-zinc-200 shadow-xs">
           <CardHeader className="p-4 pb-1">
             <div className="flex items-center justify-between text-xs text-zinc-500">
-              <span>Meta WABA ID</span>
+              <span>Meta Phone ID</span>
               <Radio className="w-3.5 h-3.5 text-zinc-400" />
             </div>
-            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1">waba_991823481</CardTitle>
+            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1 truncate">
+              {creds?.whatsappPhoneNumberId || "Not Set"}
+            </CardTitle>
           </CardHeader>
           <CardFooter className="p-4 pt-1 text-[10px] text-zinc-500 font-mono">
-            Tier 2 (10,000 msgs/day)
+            {creds?.whatsappPhoneNumberId ? "Meta Graph API v19.0" : "Configure in Settings"}
           </CardFooter>
         </Card>
 
@@ -254,10 +263,13 @@ export default function WhatsAppPage() {
               <span>Payment Gateway</span>
               <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
             </div>
-            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1">Razorpay Instant</CardTitle>
+            <CardTitle className="text-sm font-mono font-bold text-zinc-900 mt-1 truncate">
+              {creds?.razorpayKeyId ? `${creds.razorpayKeyId.slice(0, 12)}...` : "Not Configured"}
+            </CardTitle>
           </CardHeader>
-          <CardFooter className="p-4 pt-1 text-[10px] text-zinc-500 font-mono">
-            Direct UPI Settlement
+          <CardFooter className="p-4 pt-1 text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+            <span className={`w-1.5 h-1.5 rounded-full ${creds?.razorpayKeyId ? (creds?.razorpayEnvironment === "live" ? "bg-emerald-500" : "bg-blue-500") : "bg-zinc-300"}`} />
+            {creds?.razorpayKeyId ? (creds?.razorpayEnvironment === "live" ? "Live Production" : "Test Sandbox") : "Pending Setup"}
           </CardFooter>
         </Card>
       </div>

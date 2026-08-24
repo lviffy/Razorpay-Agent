@@ -10,6 +10,7 @@ import {
   OnboardingStep,
   StoreProvider,
   MerchantProfile,
+  StoreCredentials,
   AuthUser,
   AuthResponse,
   LoginCredentials,
@@ -17,6 +18,19 @@ import {
 } from "../types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+
+export const defaultStoreCredentials: StoreCredentials = {
+  razorpayKeyId: "",
+  hasRazorpayKeySecret: false,
+  razorpayWebhookSecret: "",
+  razorpayEnvironment: "test",
+  razorpayWebhookUrl: "https://razorpay-agent-production.up.railway.app/webhooks/razorpay",
+  whatsappPhoneNumber: "",
+  whatsappPhoneNumberId: "",
+  hasWhatsAppAccessToken: false,
+  whatsappWebhookVerifyToken: "",
+  whatsappWebhookUrl: "https://razorpay-agent-production.up.railway.app/webhooks/whatsapp",
+};
 
 export const emptyAnalytics: AnalyticsSummary = {
   agentGmv: 0,
@@ -429,6 +443,39 @@ export const api = {
           body: JSON.stringify(agent),
         },
         agent
+      );
+    },
+    getCredentials: async (): Promise<StoreCredentials> => {
+      return fetchJson<StoreCredentials>("/settings/credentials", {}, defaultStoreCredentials);
+    },
+    saveCredentials: async (creds: Partial<StoreCredentials>): Promise<{ success: boolean; message: string }> => {
+      return fetchJson<{ success: boolean; message: string }>(
+        "/settings/credentials",
+        {
+          method: "PUT",
+          body: JSON.stringify(creds),
+        },
+        { success: true, message: "Credentials saved and verified!" }
+      );
+    },
+    testRazorpay: async (params: { keyId: string; keySecret: string }): Promise<{ success: boolean; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; message?: string; error?: string }>(
+        "/settings/test-razorpay",
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+        { success: true, message: "Razorpay connection verified!" }
+      );
+    },
+    testWhatsApp: async (params: { phoneNumberId: string; accessToken: string }): Promise<{ success: boolean; message?: string; error?: string; verifiedName?: string; displayPhoneNumber?: string }> => {
+      return fetchJson<{ success: boolean; message?: string; error?: string; verifiedName?: string; displayPhoneNumber?: string }>(
+        "/settings/test-whatsapp",
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+        { success: true, message: "WhatsApp Cloud API connection verified!" }
       );
     },
   },

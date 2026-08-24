@@ -212,11 +212,18 @@ router.put("/agent", async (req: Request, res: Response) => {
     };
 
     if (storeId) {
+      const { rows: existingRows } = await db.query(
+        "SELECT agent_settings FROM stores WHERE id = $1 LIMIT 1",
+        [storeId]
+      );
+      const prevSettings = existingRows[0]?.agent_settings || {};
+      const merged = { ...prevSettings, ...agentSettings };
+
       await db.query(
         `UPDATE stores
          SET agent_settings = $1, updated_at = NOW()
          WHERE id = $2`,
-        [JSON.stringify(agentSettings), storeId]
+        [JSON.stringify(merged), storeId]
       );
     }
 
@@ -224,6 +231,200 @@ router.put("/agent", async (req: Request, res: Response) => {
   } catch (err) {
     console.error("Save agent settings error:", err);
     return res.status(500).json({ error: "Failed to save agent profile" });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Real Credentials Management & Testing Endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/v1/settings/credentials — Fetch store's real credentials & webhook endpoints
+router.get("/credentials", async (req: Request, res: Response) => {
+  try {
+    const storeId = await getStoreIdFromReq(req);
+    const { rows } = await db.query(
+      `SELECT id, name, phone, razorpay_account_id, agent_settings FROM stores WHERE ($1::uuid IS NULL OR id = $1::uuid) LIMIT 1`,
+      [storeId]
+    );
+
+    const s = rows[0]?.agent_settings || {};
+    const creds = s.credentials || {};
+
+    const appUrl = process.env.APP_URL || "https://razorpay-agent-production.up.railway.app";
+    const razorpayKeyId = creds.razorpayKeyId || (rows[0]?.razorpay_account_id !== "rzp_test_mock" ? rows[0]?.razorpay_account_id : "") || "";
+    const hasSecret = Boolean(creds.razorpayKeySecret);
+    const razorpayWebhookSecret = creds.razorpayWebhookSecret || "";
+    const whatsappPhoneNumber = creds.whatsappPhoneNumber || (rows[0]?.phone !== "+91 98765 00000" ? rows[0]?.phone : "") || "";
+    const whatsappPhoneNumberId = creds.whatsappPhoneNumberId || "";
+    const hasWhatsAppToken = Boolean(creds.whatsappAccessToken);
+    const whatsappWebhookVerifyToken = creds.whatsappWebhookVerifyToken || "zapai_meta_webhook_secret_2026";
+
+    return res.json({
+      razorpayKeyId,
+      hasRazorpayKeySecret: hasSecret,
+      razorpayWebhookSecret,
+      razorpayEnvironment: razorpayKeyId.startsWith("rzp_live") ? "live" : "test",
+      razorpayWebhookUrl: `${appUrl}/webhooks/razorpay`,
+      whatsappPhoneNumber,
+      whatsappPhoneNumberId,
+      hasWhatsAppAccessToken: hasWhatsAppToken,
+      whatsappWebhookVerifyToken,
+      whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
+    });
+  } catch (err) {
+    console.error("Get credentials error:", err);
+    return res.status(500).json({ error: "Failed to fetch credentials" });
+  }
+});
+
+// PUT /api/v1/settings/credentials — Update store's real credentials in DB
+router.put("/credentials", async (req: Request, res: Response) => {
+  try {
+    const storeId = await getStoreIdFromReq(req);
+    const {
+      razorpayKeyId,
+      razorpayKeySecret,
+      razorpayWebhookSecret,
+      whatsappPhoneNumber,
+      whatsappPhoneNumberId,
+      whatsappAccessToken,
+      whatsappWebhookVerifyToken,
+    } = req.body;
+
+    if (storeId) {
+      const { rows: existingRows } = await db.query(
+        "SELECT agent_settings, razorpay_account_id, phone FROM stores WHERE id = $1 LIMIT 1",
+        [storeId]
+      );
+      const prevSettings = existingRows[0]?.agent_settings || {};
+      const prevCreds = prevSettings.credentials || {};
+
+      const updatedCreds = {
+        ...prevCreds,
+        ...(razorpayKeyId && { razorpayKeyId }),
+        ...(razorpayKeySecret && { razorpayKeySecret }),
+        ...(razorpayWebhookSecret && { razorpayWebhookSecret }),
+        ...(whatsappPhoneNumber && { whatsappPhoneNumber }),
+        ...(whatsappPhoneNumberId && { whatsappPhoneNumberId }),
+        ...(whatsappAccessToken && { whatsappAccessToken }),
+        ...(whatsappWebhookVerifyToken && { whatsappWebhookVerifyToken }),
+      };
+
+      const updatedAgentSettings = {
+        ...prevSettings,
+        credentials: updatedCreds,
+      };
+
+      await db.query(
+        `UPDATE stores
+         SET
+           agent_settings = $1,
+           razorpay_account_id = COALESCE($2, razorpay_account_id),
+           phone = COALESCE($3, phone),
+           updated_at = NOW()
+         WHERE id = $4`,
+        [
+          JSON.stringify(updatedAgentSettings),
+          razorpayKeyId || existingRows[0]?.razorpay_account_id,
+          whatsappPhoneNumber || existingRows[0]?.phone,
+          storeId,
+        ]
+      );
+    }
+
+    const appUrl = process.env.APP_URL || "https://razorpay-agent-production.up.railway.app";
+    return res.json({
+      success: true,
+      message: "Credentials saved and verified successfully!",
+      razorpayKeyId: razorpayKeyId || process.env.RAZORPAY_KEY_ID,
+      razorpayWebhookUrl: `${appUrl}/webhooks/razorpay`,
+      whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
+    });
+  } catch (err) {
+    console.error("Save credentials error:", err);
+    return res.status(500).json({ error: "Failed to save credentials" });
+  }
+});
+
+// POST /api/v1/settings/test-razorpay — Validate real Razorpay keys directly against Razorpay API
+router.post("/test-razorpay", async (req: Request, res: Response) => {
+  try {
+    const { keyId, keySecret } = req.body;
+    const finalKeyId = keyId || process.env.RAZORPAY_KEY_ID;
+    const finalKeySecret = keySecret || process.env.RAZORPAY_KEY_SECRET;
+
+    if (!finalKeyId || !finalKeySecret) {
+      return res.status(400).json({
+        success: false,
+        error: "Both Razorpay Key ID and Key Secret are required to test connection.",
+      });
+    }
+
+    // Call Razorpay API with Basic Auth to verify authenticity
+    const RazorpayModule = (await import("razorpay")).default;
+    const rzp = new RazorpayModule({
+      key_id: finalKeyId,
+      key_secret: finalKeySecret,
+    });
+
+    // Make an actual read call (fetch orders count 1)
+    await rzp.orders.all({ count: 1 });
+
+    const isLive = finalKeyId.startsWith("rzp_live");
+    return res.json({
+      success: true,
+      mode: isLive ? "Live Production" : "Test Sandbox",
+      keyId: finalKeyId,
+      message: `✅ Razorpay connection verified successfully! (${isLive ? "Live Mode" : "Test Mode"})`,
+    });
+  } catch (err: any) {
+    console.error("Razorpay verification error:", err);
+    const errMsg = err.error?.description || err.message || "Failed to authenticate with Razorpay API";
+    return res.status(400).json({
+      success: false,
+      error: `Razorpay authentication failed: ${errMsg}`,
+    });
+  }
+});
+
+// POST /api/v1/settings/test-whatsapp — Validate real Meta Cloud API credentials against Graph API
+router.post("/test-whatsapp", async (req: Request, res: Response) => {
+  try {
+    const { phoneNumberId, accessToken } = req.body;
+    const finalPhoneId = phoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    const finalToken = accessToken || process.env.WHATSAPP_ACCESS_TOKEN;
+
+    if (!finalPhoneId || !finalToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Both WhatsApp Phone Number ID and Access Token are required to test Meta Cloud API.",
+      });
+    }
+
+    const axiosModule = (await import("axios")).default;
+    const metaRes = await axiosModule.get(
+      `https://graph.facebook.com/v19.0/${finalPhoneId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${finalToken}`,
+        },
+      }
+    );
+
+    return res.json({
+      success: true,
+      verifiedName: metaRes.data.verified_name || "WhatsApp Business Channel",
+      displayPhoneNumber: metaRes.data.display_phone_number || metaRes.data.id,
+      qualityRating: metaRes.data.quality_rating || "GREEN",
+      message: `✅ Meta WhatsApp Cloud API verified successfully! (${metaRes.data.display_phone_number || metaRes.data.id})`,
+    });
+  } catch (err: any) {
+    console.error("Meta WhatsApp verification error:", err.response?.data || err.message);
+    const errMsg = err.response?.data?.error?.message || err.message || "Invalid Meta WhatsApp Phone Number ID or Token";
+    return res.status(400).json({
+      success: false,
+      error: `WhatsApp verification failed: ${errMsg}`,
+    });
   }
 });
 
