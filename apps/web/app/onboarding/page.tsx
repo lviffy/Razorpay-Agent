@@ -896,25 +896,27 @@ export default function OnboardingPage() {
                                 if (data.storeId && typeof window !== "undefined") {
                                   localStorage.setItem("zapai_selected_store_id", data.storeId);
                                 }
+                                await Promise.all([
+                                  api.settings.saveRules(negotiationRules),
+                                  api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
+                                  api.settings.saveCredentials({
+                                    razorpayKeyId: rzpKeyId,
+                                    razorpayKeySecret: rzpKeySecret,
+                                    razorpayWebhookSecret: rzpWebhookSecret,
+                                    whatsappPhoneNumber: waPhone,
+                                    whatsappPhoneNumberId: waPhoneId,
+                                    whatsappAccessToken: waToken,
+                                    whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                                  }),
+                                ]);
+                                await refreshUser();
+                                router.replace("/dashboard");
+                              } else {
+                                console.error("Onboarding complete failed:", res.status);
                               }
-                              await Promise.all([
-                                api.settings.saveRules(negotiationRules),
-                                api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
-                                api.settings.saveCredentials({
-                                  razorpayKeyId: rzpKeyId,
-                                  razorpayKeySecret: rzpKeySecret,
-                                  razorpayWebhookSecret: rzpWebhookSecret,
-                                  whatsappPhoneNumber: waPhone,
-                                  whatsappPhoneNumberId: waPhoneId,
-                                  whatsappAccessToken: waToken,
-                                  whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
-                                }),
-                              ]);
-                              await refreshUser();
                             } catch (e) {
                               console.error("Onboarding complete error:", e);
                             }
-                            router.replace("/dashboard");
                           }}
                           className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
                         >
@@ -1042,21 +1044,21 @@ export default function OnboardingPage() {
                         if (data.storeId && typeof window !== "undefined") {
                           localStorage.setItem("zapai_selected_store_id", data.storeId);
                         }
+                        await Promise.all([
+                          api.settings.saveRules(negotiationRules),
+                          api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
+                          api.settings.saveCredentials({
+                            razorpayKeyId: rzpKeyId,
+                            razorpayKeySecret: rzpKeySecret,
+                            razorpayWebhookSecret: rzpWebhookSecret,
+                            whatsappPhoneNumber: waPhone,
+                            whatsappPhoneNumberId: waPhoneId,
+                            whatsappAccessToken: waToken,
+                            whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                          }),
+                        ]);
+                        await refreshUser();
                       }
-                      await Promise.all([
-                        api.settings.saveRules(negotiationRules),
-                        api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
-                        api.settings.saveCredentials({
-                          razorpayKeyId: rzpKeyId,
-                          razorpayKeySecret: rzpKeySecret,
-                          razorpayWebhookSecret: rzpWebhookSecret,
-                          whatsappPhoneNumber: waPhone,
-                          whatsappPhoneNumberId: waPhoneId,
-                          whatsappAccessToken: waToken,
-                          whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
-                        }),
-                      ]);
-                      await refreshUser();
                     } catch (e) {}
                     router.replace("/dashboard");
                   }}
