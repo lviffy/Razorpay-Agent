@@ -171,8 +171,23 @@ export default function ProductsPage() {
                 filteredProducts.map((p) => (
                   <tr key={p.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-zinc-900">{p.title}</div>
-                      <div className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">{p.description}</div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg border border-zinc-200 bg-zinc-50 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          {p.imageUrl ? (
+                            <img
+                              src={p.imageUrl}
+                              alt={p.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Package className="w-4 h-4 text-zinc-300" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-zinc-900">{p.title}</div>
+                          <div className="text-[11px] text-zinc-500 line-clamp-1 mt-0.5">{p.description}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-3.5 px-4 font-mono text-zinc-600">{p.sku}</td>
                     <td className="py-3.5 px-4">

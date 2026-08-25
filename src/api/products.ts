@@ -156,6 +156,7 @@ async function handleBulkCreate(req: Request, res: Response) {
       const finalSku = item.sku || `SKU-${Date.now().toString().slice(-4)}${i}`;
       const variantId = `var_${Date.now()}_${i}`;
       const shopifyProdId = `prod_${Date.now()}_${i}`;
+      const itemImageUrl = item.imageUrl || item.image_url || null;
 
       const agentSchema = {
         variantId,
@@ -175,9 +176,9 @@ async function handleBulkCreate(req: Request, res: Response) {
           store_id, shopify_product_id, shopify_variant_id,
           title, sku, listed_price, floor_price,
           inventory_available, inventory_reserved, inventory_state,
-          is_ai_enabled, category, description, agent_schema,
+          is_ai_enabled, category, description, image_url, agent_schema,
           created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, $13, NOW(), NOW())
         RETURNING *`,
         [
           storeId,
@@ -191,6 +192,7 @@ async function handleBulkCreate(req: Request, res: Response) {
           item.aiSellingEnabled ?? true,
           item.category || "General",
           item.description || "",
+          itemImageUrl,
           JSON.stringify(agentSchema),
         ]
       );
@@ -210,6 +212,7 @@ async function handleBulkCreate(req: Request, res: Response) {
           maxDiscountPercent: Math.round(((listedPrice - floorPrice) / listedPrice) * 100),
           description: r.description,
           category: r.category,
+          imageUrl: r.image_url || null,
         });
       }
     }
@@ -243,6 +246,7 @@ router.post("/", async (req: Request, res: Response) => {
       inventory,
       category,
       description,
+      imageUrl,
       aiSellingEnabled = true,
     } = req.body;
 
@@ -288,9 +292,9 @@ router.post("/", async (req: Request, res: Response) => {
         store_id, shopify_product_id, shopify_variant_id,
         title, sku, listed_price, floor_price,
         inventory_available, inventory_reserved, inventory_state,
-        is_ai_enabled, category, description, agent_schema,
+        is_ai_enabled, category, description, image_url, agent_schema,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, $13, NOW(), NOW())
       RETURNING *`,
       [
         storeId,
@@ -304,6 +308,7 @@ router.post("/", async (req: Request, res: Response) => {
         aiSellingEnabled,
         category || "General",
         description || "",
+        imageUrl || null,
         JSON.stringify(agentSchema),
       ]
     );

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@/lib/types";
 import { Plus, Trash2, Layers, Sparkles, Check, PackagePlus } from "lucide-react";
+import { CloudinaryUpload } from "@/components/ui/cloudinary-upload";
 
 interface NativeProductModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
   const [inventory, setInventory] = useState("");
   const [sku, setSku] = useState("");
   const [maxDiscountPercent, setMaxDiscountPercent] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
 
   // Batch mode state
   const [batchRows, setBatchRows] = useState<BatchProductRow[]>([
@@ -54,6 +56,7 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
     setInventory("");
     setSku("");
     setMaxDiscountPercent("");
+    setImageUrl("");
   };
 
   const handlePriceChange = (val: string) => {
@@ -108,6 +111,7 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
       maxDiscountPercent: finalDiscount,
       provider: "ZAPAI",
       aiSellingEnabled: true,
+      imageUrl: imageUrl || undefined,
     };
   };
 
@@ -272,6 +276,12 @@ export function NativeProductModal({ open, onOpenChange, onSave }: NativeProduct
         {/* ── MODE 1: SINGLE PRODUCT ── */}
         {activeTab === "single" && (
           <form onSubmit={handleSaveSingleAndClose} className="space-y-4 pt-1">
+            <CloudinaryUpload
+              onUpload={(url) => setImageUrl(url)}
+              existingUrl={imageUrl}
+              label="Product Image (optional)"
+            />
+
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-700">Product Title</label>
               <Input
