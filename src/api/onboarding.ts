@@ -254,35 +254,187 @@ router.post("/complete", async (req: Request, res: Response) => {
     const {
       businessName = activeSession?.businessName || "ZapAI Store",
       provider = activeSession?.provider || "ZAPAI",
-      products = [],
+      phone,
+      whatsappPhoneNumber,
+      whatsappPhoneNumberId,
+      whatsappAccessToken,
+      whatsappWebhookVerifyToken = "zapai_meta_webhook_secret_2026",
+      razorpayKeyId,
+      razorpayKeySecret,
+      razorpayWebhookSecret,
       maxDiscountPercent = 12,
-      phone = "+91 98765 00000",
+      minimumOrderValue = 2000,
+      freeShippingAbove = 3000,
+      humanApprovalAbove = 5000,
+      riskProfile = "balanced",
+      products = [],
     } = req.body;
+
+    const finalRzpKeyId = razorpayKeyId || process.env.RAZORPAY_KEY_ID || "";
+    const finalRzpKeySecret = razorpayKeySecret || process.env.RAZORPAY_KEY_SECRET || "";
+    const finalRzpWebhookSecret = razorpayWebhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || "";
+    const finalWaPhone = whatsappPhoneNumber || phone || "+91 98765 00000";
+    const finalWaPhoneId = whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+    const finalWaToken = whatsappAccessToken || process.env.WHATSAPP_ACCESS_TOKEN || "";
+    const finalWaVerify = whatsappWebhookVerifyToken || process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || "zapai_meta_webhook_secret_2026";
 
     const { db } = await import("../db/migrate.ts");
 
-    // 1. Create store record in Neon DB
-    const { rows: storeRows } = await db.query(
-      `INSERT INTO stores (name, city, phone, is_active)
-       VALUES ($1, 'Bengaluru', $2, true)
-       RETURNING id, name`,
-      [businessName, phone]
-    );
+    let storeId: string | null = null;
 
-    const storeId = storeRows[0]?.id;
-    if (!storeId) {
-      throw new Error("Failed to create store in database");
+    // Check if current user already has a store
+    if (userId && userId !== "anonymous") {
+      const { rows: userRows } = await db.query(
+        "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+        [userId]
+      );
+      if (userRows[0]?.store_id) {
+        storeId = userRows[0].store_id;
+      }
     }
 
-    // 2. Set default negotiation rules
-    await db.query(
-      `INSERT INTO negotiation_rules (store_id, max_discount_percentage, min_order_value_for_discount, free_shipping_threshold)
-       VALUES ($1, $2, 2000, 3000)
-       ON CONFLICT DO NOTHING`,
-      [storeId, Number(maxDiscountPercent)]
+    const credentialsObj = {
+      razorpayKeyId: finalRzpKeyId,
+      razorpayKeySecret: finalRzpKeySecret,
+      razorpayWebhookSecret: finalRzpWebhookSecret,
+      whatsappPhoneNumber: finalWaPhone,
+      whatsappPhoneNumberId: finalWaPhoneId,
+      whatsappAccessToken: finalWaToken,
+      whatsappWebhookVerifyToken: finalWaVerify,
+    };
+
+    const agentSettings = {
+      name: `${businessName} AI Seller`,
+      tone: "friendly",
+      status: "active",
+      autoNegotiationEnabled: true,
+      humanEscalationEnabled: true,
+      escalationThresholdAmount: Number(humanApprovalAbove) || 5000,
+      credentials: credentialsObj,
+    };
+
+    if (storeId) {
+      // Update existing store
+      await db.query(
+        `UPDATE stores
+         SET
+           name = $1,
+           phone = $2,
+           razorpay_account_id = $3,
+           agent_settings = $4,
+           is_active = true,
+           updated_at = NOW()
+         WHERE id = $5`,
+        [
+          businessName,
+          finalWaPhone,
+          finalRzpKeyId || "rzp_test_mock",
+          JSON.stringify(agentSettings),
+          storeId,
+        ]
+      );
+    } else {
+      // 1. Create store record in Neon DB
+      const { rows: storeRows } = await db.query(
+        `INSERT INTO stores (name, city, phone, razorpay_account_id, agent_settings, is_active)
+         VALUES ($1, 'Bengaluru', $2, $3, $4, true)
+         RETURNING id, name`,
+        [
+          businessName,
+          finalWaPhone,
+          finalRzpKeyId || "rzp_test_mock",
+          JSON.stringify(agentSettings),
+        ]
+      );
+
+      storeId = storeRows[0]?.id;
+    }
+
+    if (!storeId) {
+      throw new Error("Failed to create or update store in database");
+    }
+
+    // 2. Set / update negotiation rules
+    const { rows: existingRules } = await db.query(
+      "SELECT id FROM negotiation_rules WHERE store_id = $1 LIMIT 1",
+      [storeId]
     );
 
-    // 3. Extract user from Authorization header if present and update user's store_id & onboarding_completed
+    if (existingRules.length === 0) {
+      await db.query(
+        `INSERT INTO negotiation_rules (
+          store_id, max_discount_percentage, min_order_value_for_discount,
+          free_shipping_threshold, human_approval_above, risk_profile,
+          allow_bundle_offers, alternative_products_enabled
+        ) VALUES ($1, $2, $3, $4, $5, $6, true, true)`,
+        [
+          storeId,
+          Number(maxDiscountPercent),
+          Number(minimumOrderValue),
+          Number(freeShippingAbove),
+          Number(humanApprovalAbove),
+          riskProfile,
+        ]
+      );
+    } else {
+      await db.query(
+        `UPDATE negotiation_rules
+         SET
+           max_discount_percentage = $1,
+           min_order_value_for_discount = $2,
+           free_shipping_threshold = $3,
+           human_approval_above = $4,
+           risk_profile = $5,
+           allow_bundle_offers = true,
+           alternative_products_enabled = true
+         WHERE store_id = $6`,
+        [
+          Number(maxDiscountPercent),
+          Number(minimumOrderValue),
+          Number(freeShippingAbove),
+          Number(humanApprovalAbove),
+          riskProfile,
+          storeId,
+        ]
+      );
+    }
+
+    // 3. Associate any provided products to storeId
+    if (Array.isArray(products) && products.length > 0) {
+      for (const p of products) {
+        if (!p.title) continue;
+        const listedPrice = Number(p.price) || 999;
+        const minPrice = Number(p.minPrice) || Math.round(listedPrice * (1 - (Number(maxDiscountPercent) || 12) / 100));
+        const inventory = Number(p.inventory) || 10;
+        const sku = p.sku || `SKU-${Date.now().toString().slice(-4)}`;
+
+        await db.query(
+          `INSERT INTO products (
+            store_id, title, sku, listed_price, floor_price,
+            inventory_available, is_ai_enabled, description, category
+          ) VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8)
+          ON CONFLICT DO NOTHING`,
+          [
+            storeId,
+            p.title,
+            sku,
+            listedPrice,
+            minPrice,
+            inventory,
+            p.description || "",
+            p.category || "General",
+          ]
+        );
+      }
+    }
+
+    // Also link any unassigned recent products from anonymous onboarding to this store
+    await db.query(
+      `UPDATE products SET store_id = $1 WHERE store_id IS NULL`,
+      [storeId]
+    );
+
+    // 4. Extract user from Authorization header if present and update user's store_id & onboarding_completed
     let refreshedToken: string | null = null;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
@@ -293,10 +445,10 @@ router.post("/complete", async (req: Request, res: Response) => {
         if (decoded?.userId) {
           const { rows: updatedUserRows } = await db.query(
             `UPDATE users 
-             SET store_id = $1, onboarding_completed = true, updated_at = NOW() 
-             WHERE id = $2 
+             SET store_id = $1, onboarding_completed = true, phone = COALESCE($2, phone), updated_at = NOW() 
+             WHERE id = $3 
              RETURNING id, email, name, role, store_id, onboarding_completed`,
-            [storeId, decoded.userId]
+            [storeId, finalWaPhone, decoded.userId]
           );
 
           if (updatedUserRows[0]) {
@@ -308,6 +460,7 @@ router.post("/complete", async (req: Request, res: Response) => {
                 name: u.name,
                 role: u.role,
                 storeId: u.store_id,
+                storeName: businessName,
                 onboardingCompleted: true,
               },
               JWT_SECRET,

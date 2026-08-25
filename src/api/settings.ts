@@ -250,26 +250,38 @@ router.get("/credentials", async (req: Request, res: Response) => {
     const s = rows[0]?.agent_settings || {};
     const creds = s.credentials || {};
 
-    const appUrl = process.env.APP_URL || "";
-    const razorpayKeyId = creds.razorpayKeyId || (rows[0]?.razorpay_account_id && !rows[0].razorpay_account_id.startsWith("rzp_test_mock") ? rows[0].razorpay_account_id : "") || "";
-    const hasSecret = Boolean(creds.razorpayKeySecret);
-    const razorpayWebhookSecret = creds.razorpayWebhookSecret || "";
-    const whatsappPhoneNumber = creds.whatsappPhoneNumber || (rows[0]?.phone && !rows[0].phone.includes("98765 00000") ? rows[0].phone : "") || "";
-    const whatsappPhoneNumberId = creds.whatsappPhoneNumberId || "";
-    const hasWhatsAppToken = Boolean(creds.whatsappAccessToken);
-    const whatsappWebhookVerifyToken = creds.whatsappWebhookVerifyToken || "";
+    const appUrl = process.env.APP_URL || "https://razorpay-agent-production.up.railway.app";
+    const razorpayKeyId =
+      creds.razorpayKeyId ||
+      (rows[0]?.razorpay_account_id && !rows[0].razorpay_account_id.startsWith("rzp_test_mock")
+        ? rows[0].razorpay_account_id
+        : "") ||
+      process.env.RAZORPAY_KEY_ID ||
+      "";
+    const hasSecret = Boolean(creds.razorpayKeySecret || process.env.RAZORPAY_KEY_SECRET);
+    const razorpayWebhookSecret = creds.razorpayWebhookSecret || process.env.RAZORPAY_WEBHOOK_SECRET || "";
+    const whatsappPhoneNumber =
+      creds.whatsappPhoneNumber ||
+      (rows[0]?.phone && !rows[0].phone.includes("98765 00000") ? rows[0].phone : "") ||
+      "";
+    const whatsappPhoneNumberId = creds.whatsappPhoneNumberId || process.env.WHATSAPP_PHONE_NUMBER_ID || "";
+    const hasWhatsAppToken = Boolean(creds.whatsappAccessToken || process.env.WHATSAPP_ACCESS_TOKEN);
+    const whatsappWebhookVerifyToken =
+      creds.whatsappWebhookVerifyToken ||
+      process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
+      "zapai_meta_webhook_secret_2026";
 
     return res.json({
       razorpayKeyId,
       hasRazorpayKeySecret: hasSecret,
       razorpayWebhookSecret,
       razorpayEnvironment: razorpayKeyId.startsWith("rzp_live") ? "live" : "test",
-      razorpayWebhookUrl: appUrl ? `${appUrl}/webhooks/razorpay` : "",
+      razorpayWebhookUrl: `${appUrl}/webhooks/razorpay`,
       whatsappPhoneNumber,
       whatsappPhoneNumberId,
       hasWhatsAppAccessToken: hasWhatsAppToken,
       whatsappWebhookVerifyToken,
-      whatsappWebhookUrl: appUrl ? `${appUrl}/webhooks/whatsapp` : "",
+      whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
     });
   } catch (err) {
     console.error("Get credentials error:", err);

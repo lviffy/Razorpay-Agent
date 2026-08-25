@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
-import { OnboardingState, StoreProvider } from "@/lib/types";
+import { OnboardingState, StoreProvider, NegotiationRules } from "@/lib/types";
 import { ChatMessage } from "@/components/onboarding/chat-message";
 import { ActionCard } from "@/components/onboarding/action-card";
 import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
@@ -74,6 +74,20 @@ export default function OnboardingPage() {
   const [showRzpSecret, setShowRzpSecret] = useState(false);
   const [copiedRzpUrl, setCopiedRzpUrl] = useState(false);
 
+  // Negotiation Rules State
+  const [negotiationRules, setNegotiationRules] = useState<NegotiationRules>({
+    maxDiscountPercent: 12,
+    minimumOrderValue: 2000,
+    freeShippingAbove: 3000,
+    humanApprovalAbove: 5000,
+    riskProfile: "balanced",
+    bundleOffersEnabled: true,
+    alternativeProductsEnabled: true,
+  });
+
+  // Track products added during onboarding
+  const [createdProducts, setCreatedProducts] = useState<any[]>([]);
+
   useEffect(() => {
     loadSession();
   }, []);
@@ -118,6 +132,7 @@ export default function OnboardingPage() {
 
   const handleSaveNativeProduct = async (productData: any) => {
     setLoading(true);
+    setCreatedProducts((prev) => Array.isArray(productData) ? [...prev, ...productData] : [...prev, productData]);
     if (Array.isArray(productData)) {
       await api.products.createBulk(productData);
       const summaryTitles = productData.map((p: any) => p.title).join(", ");
@@ -435,7 +450,20 @@ export default function OnboardingPage() {
                               discount: "Max 8% Off",
                               desc: "Strict gross margin defense. Holds firm on prices.",
                               tag: "High Margin",
-                              onClick: () => handleSendMessage("Conservative profile (max 8% discount)"),
+                              onClick: () => {
+                                const newRules: NegotiationRules = {
+                                  maxDiscountPercent: 8,
+                                  minimumOrderValue: 2000,
+                                  freeShippingAbove: 4000,
+                                  humanApprovalAbove: 6000,
+                                  riskProfile: "conservative",
+                                  bundleOffersEnabled: true,
+                                  alternativeProductsEnabled: true,
+                                };
+                                setNegotiationRules(newRules);
+                                api.settings.saveRules(newRules);
+                                handleSendMessage("Conservative profile (max 8% discount)");
+                              },
                             },
                             {
                               id: "balanced",
@@ -444,7 +472,20 @@ export default function OnboardingPage() {
                               desc: "Optimal balance between closure rate and profit.",
                               tag: "Recommended",
                               isRecommended: true,
-                              onClick: () => handleSendMessage("Balanced profile (max 12% discount)"),
+                              onClick: () => {
+                                const newRules: NegotiationRules = {
+                                  maxDiscountPercent: 12,
+                                  minimumOrderValue: 2000,
+                                  freeShippingAbove: 3000,
+                                  humanApprovalAbove: 5000,
+                                  riskProfile: "balanced",
+                                  bundleOffersEnabled: true,
+                                  alternativeProductsEnabled: true,
+                                };
+                                setNegotiationRules(newRules);
+                                api.settings.saveRules(newRules);
+                                handleSendMessage("Balanced profile (max 12% discount)");
+                              },
                             },
                             {
                               id: "aggressive",
@@ -452,7 +493,20 @@ export default function OnboardingPage() {
                               discount: "Max 18% Off",
                               desc: "Maximizes deal volume and immediate conversions.",
                               tag: "High Velocity",
-                              onClick: () => handleSendMessage("Aggressive profile (max 18% discount)"),
+                              onClick: () => {
+                                const newRules: NegotiationRules = {
+                                  maxDiscountPercent: 18,
+                                  minimumOrderValue: 2000,
+                                  freeShippingAbove: 2500,
+                                  humanApprovalAbove: 4000,
+                                  riskProfile: "aggressive",
+                                  bundleOffersEnabled: true,
+                                  alternativeProductsEnabled: true,
+                                };
+                                setNegotiationRules(newRules);
+                                api.settings.saveRules(newRules);
+                                handleSendMessage("Aggressive profile (max 18% discount)");
+                              },
                             },
                           ].map((profile) => (
                             <motion.button
@@ -810,13 +864,28 @@ export default function OnboardingPage() {
                               if (token) {
                                 headers["Authorization"] = `Bearer ${token}`;
                               }
+                              const payload = {
+                                businessName: state?.businessName || "ZapAI Store",
+                                provider: state?.provider || "ZAPAI",
+                                phone: waPhone || "+91 98765 00000",
+                                whatsappPhoneNumber: waPhone,
+                                whatsappPhoneNumberId: waPhoneId,
+                                whatsappAccessToken: waToken,
+                                whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                                razorpayKeyId: rzpKeyId,
+                                razorpayKeySecret: rzpKeySecret,
+                                razorpayWebhookSecret: rzpWebhookSecret,
+                                maxDiscountPercent: negotiationRules.maxDiscountPercent,
+                                minimumOrderValue: negotiationRules.minimumOrderValue,
+                                freeShippingAbove: negotiationRules.freeShippingAbove,
+                                humanApprovalAbove: negotiationRules.humanApprovalAbove,
+                                riskProfile: negotiationRules.riskProfile,
+                                products: createdProducts,
+                              };
                               const res = await fetch("/api/v1/onboarding/complete", {
                                 method: "POST",
                                 headers,
-                                body: JSON.stringify({
-                                  businessName: state.businessName || "ZapAI Store",
-                                  provider: state.provider || "ZAPAI",
-                                }),
+                                body: JSON.stringify(payload),
                               });
                               if (res.ok) {
                                 const data = await res.json();
@@ -828,6 +897,19 @@ export default function OnboardingPage() {
                                   localStorage.setItem("zapai_selected_store_id", data.storeId);
                                 }
                               }
+                              await Promise.all([
+                                api.settings.saveRules(negotiationRules),
+                                api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
+                                api.settings.saveCredentials({
+                                  razorpayKeyId: rzpKeyId,
+                                  razorpayKeySecret: rzpKeySecret,
+                                  razorpayWebhookSecret: rzpWebhookSecret,
+                                  whatsappPhoneNumber: waPhone,
+                                  whatsappPhoneNumberId: waPhoneId,
+                                  whatsappAccessToken: waToken,
+                                  whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                                }),
+                              ]);
                               await refreshUser();
                             } catch (e) {
                               console.error("Onboarding complete error:", e);
@@ -928,13 +1010,28 @@ export default function OnboardingPage() {
                       if (token) {
                         headers["Authorization"] = `Bearer ${token}`;
                       }
+                      const payload = {
+                        businessName: state?.businessName || "ZapAI Store",
+                        provider: state?.provider || "ZAPAI",
+                        phone: waPhone || "+91 98765 00000",
+                        whatsappPhoneNumber: waPhone,
+                        whatsappPhoneNumberId: waPhoneId,
+                        whatsappAccessToken: waToken,
+                        whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                        razorpayKeyId: rzpKeyId,
+                        razorpayKeySecret: rzpKeySecret,
+                        razorpayWebhookSecret: rzpWebhookSecret,
+                        maxDiscountPercent: negotiationRules.maxDiscountPercent,
+                        minimumOrderValue: negotiationRules.minimumOrderValue,
+                        freeShippingAbove: negotiationRules.freeShippingAbove,
+                        humanApprovalAbove: negotiationRules.humanApprovalAbove,
+                        riskProfile: negotiationRules.riskProfile,
+                        products: createdProducts,
+                      };
                       const res = await fetch("/api/v1/onboarding/complete", {
                         method: "POST",
                         headers,
-                        body: JSON.stringify({
-                          businessName: state.businessName || "ZapAI Store",
-                          provider: state.provider || "ZAPAI",
-                        }),
+                        body: JSON.stringify(payload),
                       });
                       if (res.ok) {
                         const data = await res.json();
@@ -946,6 +1043,19 @@ export default function OnboardingPage() {
                           localStorage.setItem("zapai_selected_store_id", data.storeId);
                         }
                       }
+                      await Promise.all([
+                        api.settings.saveRules(negotiationRules),
+                        api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
+                        api.settings.saveCredentials({
+                          razorpayKeyId: rzpKeyId,
+                          razorpayKeySecret: rzpKeySecret,
+                          razorpayWebhookSecret: rzpWebhookSecret,
+                          whatsappPhoneNumber: waPhone,
+                          whatsappPhoneNumberId: waPhoneId,
+                          whatsappAccessToken: waToken,
+                          whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                        }),
+                      ]);
                       await refreshUser();
                     } catch (e) {}
                     router.replace("/dashboard");

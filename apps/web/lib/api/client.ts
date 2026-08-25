@@ -420,9 +420,27 @@ export const api = {
 
   settings: {
     getRules: async (): Promise<NegotiationRules> => {
-      return fetchJson<NegotiationRules>("/settings/rules", {}, defaultNegotiationRules);
+      let cached: NegotiationRules = defaultNegotiationRules;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_negotiation_rules");
+          if (raw) cached = { ...defaultNegotiationRules, ...JSON.parse(raw) };
+        } catch (e) {}
+      }
+      const res = await fetchJson<NegotiationRules>("/settings/rules", {}, cached);
+      if (typeof window !== "undefined" && res) {
+        try {
+          localStorage.setItem("zapai_negotiation_rules", JSON.stringify(res));
+        } catch (e) {}
+      }
+      return res || cached;
     },
     saveRules: async (rules: NegotiationRules): Promise<NegotiationRules> => {
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("zapai_negotiation_rules", JSON.stringify(rules));
+        } catch (e) {}
+      }
       return fetchJson<NegotiationRules>(
         "/settings/rules",
         {
@@ -433,9 +451,27 @@ export const api = {
       );
     },
     getAgent: async (): Promise<AgentProfile> => {
-      return fetchJson<AgentProfile>("/settings/agent", {}, defaultAgentProfile);
+      let cached: AgentProfile = defaultAgentProfile;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_agent_profile");
+          if (raw) cached = { ...defaultAgentProfile, ...JSON.parse(raw) };
+        } catch (e) {}
+      }
+      const res = await fetchJson<AgentProfile>("/settings/agent", {}, cached);
+      if (typeof window !== "undefined" && res) {
+        try {
+          localStorage.setItem("zapai_agent_profile", JSON.stringify(res));
+        } catch (e) {}
+      }
+      return res || cached;
     },
     saveAgent: async (agent: AgentProfile): Promise<AgentProfile> => {
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("zapai_agent_profile", JSON.stringify(agent));
+        } catch (e) {}
+      }
       return fetchJson<AgentProfile>(
         "/settings/agent",
         {
@@ -446,9 +482,37 @@ export const api = {
       );
     },
     getCredentials: async (): Promise<StoreCredentials> => {
-      return fetchJson<StoreCredentials>("/settings/credentials", {}, defaultStoreCredentials);
+      let cached: StoreCredentials = defaultStoreCredentials;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_store_credentials");
+          if (raw) cached = { ...defaultStoreCredentials, ...JSON.parse(raw) };
+        } catch (e) {}
+      }
+      const res = await fetchJson<StoreCredentials>("/settings/credentials", {}, cached);
+      const merged: StoreCredentials = {
+        ...cached,
+        ...(res || {}),
+        razorpayKeyId: (res && res.razorpayKeyId) || cached.razorpayKeyId || "",
+        whatsappPhoneNumber: (res && res.whatsappPhoneNumber) || cached.whatsappPhoneNumber || "",
+        whatsappPhoneNumberId: (res && res.whatsappPhoneNumberId) || cached.whatsappPhoneNumberId || "",
+      };
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("zapai_store_credentials", JSON.stringify(merged));
+        } catch (e) {}
+      }
+      return merged;
     },
     saveCredentials: async (creds: Partial<StoreCredentials>): Promise<{ success: boolean; message: string }> => {
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_store_credentials");
+          const existing = raw ? JSON.parse(raw) : defaultStoreCredentials;
+          const merged = { ...existing, ...creds };
+          localStorage.setItem("zapai_store_credentials", JSON.stringify(merged));
+        } catch (e) {}
+      }
       return fetchJson<{ success: boolean; message: string }>(
         "/settings/credentials",
         {
@@ -482,9 +546,30 @@ export const api = {
 
   profile: {
     get: async (): Promise<MerchantProfile> => {
-      return fetchJson<MerchantProfile>("/merchant/profile", {}, defaultMerchantProfile);
+      let cached: MerchantProfile = defaultMerchantProfile;
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_merchant_profile");
+          if (raw) cached = { ...defaultMerchantProfile, ...JSON.parse(raw) };
+        } catch (e) {}
+      }
+      const res = await fetchJson<MerchantProfile>("/merchant/profile", {}, cached);
+      if (typeof window !== "undefined" && res) {
+        try {
+          localStorage.setItem("zapai_merchant_profile", JSON.stringify(res));
+        } catch (e) {}
+      }
+      return res || cached;
     },
     save: async (profile: Partial<MerchantProfile>): Promise<MerchantProfile> => {
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("zapai_merchant_profile");
+          const existing = raw ? JSON.parse(raw) : defaultMerchantProfile;
+          const merged = { ...existing, ...profile };
+          localStorage.setItem("zapai_merchant_profile", JSON.stringify(merged));
+        } catch (e) {}
+      }
       return fetchJson<MerchantProfile>(
         "/merchant/profile",
         {
