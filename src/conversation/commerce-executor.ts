@@ -7,7 +7,7 @@ import { setInventoryState, getStore, getProducts, getNegotiationRules } from ".
 import { logEvent } from "../services/audit.ts";
 import { checkBuyerVelocity } from "../services/rate-limit.ts";
 import { db } from "../db/migrate.ts";
-import type { ConversationContext, ConversationIntent, CommerceResult } from "./types.ts";
+import type { ConversationContext, ConversationIntent, CommerceResult, ConversationState } from "./types.ts";
 import type { Product, AgentProductSchema } from "../types/index.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,17 +31,24 @@ export async function executeCommerceAction(
 
   // ── 2. Catalog Browsing ───────────────────────────────────────────────────
   if (intent.intent === "CATALOG_BROWSE") {
-    const catalogItems = availableProducts.slice(0, 5).map((p) => ({
+    const catalogItems = availableProducts.slice(0, 10).map((p) => ({
       title: p.title,
       price: p.listedPrice,
       sku: p.sku,
       inStock: p.inventoryAvailable > 0,
     }));
 
-    // Find top featured product with a valid public image URL
-    const featuredProductWithImage = availableProducts.find(
-      (p) => p.imageUrl && p.imageUrl.startsWith("http") && !p.imageUrl.startsWith("blob:")
-    ) || availableProducts[0];
+    // Collect images for ALL available products with valid public URLs (up to 5 items)
+    const productsWithImages = availableProducts
+      .filter((p) => p.imageUrl && p.imageUrl.startsWith("http") && !p.imageUrl.startsWith("blob:"))
+      .slice(0, 5);
+
+    const mediaList = productsWithImages.map((p) => ({
+      mediaUrl: p.imageUrl!,
+      caption: `• *${p.title}* — ₹${p.listedPrice.toLocaleString("en-IN")} (${p.inventoryAvailable} in stock) 📸`,
+    }));
+
+    const featuredProductWithImage = productsWithImages[0] || availableProducts[0];
 
     return {
       type: "CATALOG_LIST",
@@ -54,10 +61,12 @@ export async function executeCommerceAction(
             listedPrice: featuredProductWithImage.listedPrice,
             floorPrice: featuredProductWithImage.floorPrice,
             offeredPrice: featuredProductWithImage.listedPrice,
+            inventoryAvailable: featuredProductWithImage.inventoryAvailable,
             imageUrl: featuredProductWithImage.imageUrl,
             sku: featuredProductWithImage.sku,
           }
         : undefined,
+      mediaList,
       mediaUrlToSend: featuredProductWithImage?.imageUrl,
       mediaCaption: featuredProductWithImage
         ? `Featured: ${featuredProductWithImage.title} (₹${featuredProductWithImage.listedPrice.toLocaleString("en-IN")}) 📸`
@@ -121,7 +130,7 @@ export async function executeCommerceAction(
   if (intent.isPhotoRequest || (intent.intent === "PRODUCT_QUESTION" && intent.isPhotoRequest)) {
     const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct);
     if (targetProduct) {
-      const offeredPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+      const offeredPrice = getProductKnownPrice(targetProduct, state);
       const isQtyAsk = /how many|how much stock|qty|quantity|in stock|units available|stock/i.test(userMessage);
       return {
         type: "PHOTO_FOUND",
@@ -138,7 +147,7 @@ export async function executeCommerceAction(
         },
         infoDetails: isQtyAsk ? `Live stock: Exactly ${targetProduct.inventoryAvailable} unit(s) available in stock.` : undefined,
         mediaUrlToSend: targetProduct.imageUrl,
-        mediaCaption: `Featured: ${targetProduct.title} (₹${offeredPrice.toLocaleString("en-IN")}) 📸`,
+        mediaCaption: `Here is ${targetProduct.title} (₹${offeredPrice.toLocaleString("en-IN")}) 📸`,
       };
     }
   }
@@ -156,10 +165,7 @@ export async function executeCommerceAction(
       );
 
       // Determine starting reference price
-      const currentKnownPrice =
-        state.currentOffer?.offeredPrice ||
-        state.activeProduct?.offeredPrice ||
-        targetProduct.listedPrice;
+      const currentKnownPrice = getProductKnownPrice(targetProduct, state);
 
       let counterPrice: number;
       let reasoning: string;
@@ -261,7 +267,7 @@ export async function executeCommerceAction(
       };
     }
 
-    const unitPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+    const unitPrice = getProductKnownPrice(targetProduct, state);
     const totalAmount = unitPrice * quantity;
 
     // Velocity / Fraud check
@@ -367,6 +373,14 @@ export async function executeCommerceAction(
       callbackUrl: `${process.env.APP_URL || "http://localhost:3000"}/payment-complete`,
       referenceId: orderRef,
       customerPhone: phoneNumber,
+      notes: {
+        product_id: targetProduct.id,
+        conversation_id: conversationId,
+        phone_number: phoneNumber,
+        quantity: String(quantity),
+        reference_id: orderRef,
+        sku: targetProduct.sku || "",
+      },
     })) as unknown as { short_url: string; id: string };
 
     return {
@@ -506,4 +520,20 @@ function resolveTargetProduct(
   }
 
   return availableProducts[0] || null;
+}
+
+function getProductKnownPrice(targetProduct: Product, state: ConversationState): number {
+  const isSameProduct =
+    state.activeProduct &&
+    (state.activeProduct.id === targetProduct.id ||
+     state.activeProduct.variantId === targetProduct.shopifyVariantId ||
+     state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim() ||
+     targetProduct.title.toLowerCase().trim().includes(state.activeProduct.title.toLowerCase().trim()) ||
+     state.activeProduct.title.toLowerCase().trim().includes(targetProduct.title.toLowerCase().trim()));
+
+  if (isSameProduct) {
+    return state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+  }
+
+  return targetProduct.listedPrice;
 }

@@ -30,6 +30,7 @@ export async function generateCustomerResponse(
 
     return {
       text: `Here are our featured items at ${store.name}:\n\n${listText}\n\nLet me know which one you'd like to check out!`,
+      mediaList: commerceResult.mediaList,
       mediaUrl: commerceResult.mediaUrlToSend,
       mediaCaption: commerceResult.mediaCaption,
     };

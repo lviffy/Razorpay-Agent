@@ -122,29 +122,40 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   const response = await generateCustomerResponse(msg.text, intent, commerceResult, context);
 
   // ── 7. Send Outbound WhatsApp Communication ───────────────────────────────
-  // Avoid re-sending the same image on every subsequent follow-up turn
-  const wasImageAlreadySent = state.transcript.some(
-    (t: any) => t.mediaUrl && t.mediaUrl === response.mediaUrl
-  );
-
-  const shouldSendImage =
-    response.mediaUrl &&
-    response.mediaUrl.startsWith("http") &&
-    !response.mediaUrl.startsWith("blob:") &&
-    (intent.isPhotoRequest || commerceResult.type === "CATALOG_LIST" || !wasImageAlreadySent);
-
-  if (shouldSendImage) {
-    try {
-      const shortCaption =
-        response.mediaCaption ||
-        (updatedActiveProduct ? `Featured: ${updatedActiveProduct.title} (₹${updatedActiveProduct.offeredPrice || updatedActiveProduct.listedPrice}) 📸` : undefined);
-
-      await sendImage(phoneNumber, response.mediaUrl!, shortCaption);
-      if (commerceResult.type === "PHOTO_FOUND") {
-        return; // Photo sent with dedicated caption
+  if (response.mediaList && response.mediaList.length > 0) {
+    for (const item of response.mediaList) {
+      try {
+        await sendImage(phoneNumber, item.mediaUrl, item.caption);
+      } catch (imgErr) {
+        console.warn("[Orchestrator] Catalog multi-image send warning:", imgErr);
       }
-    } catch (imgErr) {
-      console.warn("[Orchestrator] Image send warning, proceeding with text:", imgErr);
+    }
+  } else {
+    // Avoid re-sending the same single image on every subsequent follow-up turn
+    const wasImageAlreadySent = state.transcript.some(
+      (t: any) => t.mediaUrl && t.mediaUrl === response.mediaUrl
+    );
+
+    const shouldSendImage =
+      response.mediaUrl &&
+      response.mediaUrl.startsWith("http") &&
+      !response.mediaUrl.startsWith("blob:") &&
+      (intent.isPhotoRequest || !wasImageAlreadySent);
+
+    if (shouldSendImage) {
+      try {
+        const prod = commerceResult.product || updatedActiveProduct;
+        const shortCaption =
+          response.mediaCaption ||
+          (prod ? `Featured: ${prod.title} (₹${(prod.offeredPrice || prod.listedPrice).toLocaleString("en-IN")}) 📸` : undefined);
+
+        await sendImage(phoneNumber, response.mediaUrl!, shortCaption);
+        if (commerceResult.type === "PHOTO_FOUND") {
+          return; // Photo sent with dedicated caption
+        }
+      } catch (imgErr) {
+        console.warn("[Orchestrator] Image send warning, proceeding with text:", imgErr);
+      }
     }
   }
 

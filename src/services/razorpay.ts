@@ -57,6 +57,7 @@ interface CreatePaymentLinkOptions {
   customerPhone?: string;
   callbackUrl: string;
   referenceId: string;   // order_id for reconciliation
+  notes?: Record<string, string>;
 }
 
 export async function createStandardPaymentLink(opts: CreatePaymentLinkOptions) {
@@ -76,6 +77,7 @@ export async function createStandardPaymentLink(opts: CreatePaymentLinkOptions) 
     notes: {
       source: "zapai",
       reference_id: opts.referenceId,
+      ...(opts.notes || {}),
     },
   }) as { short_url: string; id: string };
 

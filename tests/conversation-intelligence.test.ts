@@ -72,6 +72,31 @@ const mockProducts: Product[] = [
     imageUrl: "https://images.unsplash.com/photo-nike.jpg",
     updatedAt: new Date(),
   },
+  {
+    id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+    storeId: mockStore.id,
+    shopifyProductId: "sp_3",
+    shopifyVariantId: "var_shayanna_002",
+    title: "Shayanna",
+    sku: "SKU-002",
+    listedPrice: 23000,
+    floorPrice: 22000,
+    inventoryAvailable: 7,
+    inventoryReserved: 0,
+    inventoryState: "AVAILABLE",
+    agentSchema: {
+      variantId: "var_shayanna_002",
+      title: "Shayanna",
+      sku: "SKU-002",
+      listedPrice: 23000,
+      floorPrice: 22000,
+      inventoryAvailable: 7,
+      imageUrl: "https://images.unsplash.com/photo-shayanna.jpg",
+      attributes: { category: "Luxury", brand: "Shayanna" },
+    },
+    imageUrl: "https://images.unsplash.com/photo-shayanna.jpg",
+    updatedAt: new Date(),
+  },
 ];
 
 function createMockContext(stateOverrides?: Partial<ConversationState>): ConversationContext {
@@ -234,35 +259,43 @@ async function runTestSuite() {
     resp4.text
   );
 
-  // ── SCENARIO 5: Photo Delivery ("show me rohan pic") ──────────────────────────
-  console.log("\n▶️ Scenario 5: Direct Photo Delivery ('show me rohan pic')");
+  // ── SCENARIO 5: Photo Delivery & Product Switching ("shw me rohan") ─────────
+  console.log("\n▶️ Scenario 5: Direct Photo Delivery with Product Switching ('shw me rohan' after Shayanna ₹23,000)");
   const ctx5 = createMockContext({
     activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "Rohan Shirt",
-      listedPrice: 1200,
-      floorPrice: 1080,
-      offeredPrice: 1080,
-      variantId: "var_rohan_001",
-      imageUrl: mockProducts[0].imageUrl,
+      id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+      title: "Shayanna",
+      listedPrice: 23000,
+      floorPrice: 22000,
+      offeredPrice: 23000,
+      variantId: "var_shayanna_002",
     },
   });
 
-  const intent5 = await resolveIntent("show me rohan pic", ctx5);
+  const intent5 = await resolveIntent("shw me rohan", ctx5);
   assert(
     intent5.isPhotoRequest === true,
     "Recognized photo request",
     `isPhotoRequest: ${intent5.isPhotoRequest}`
   );
 
-  const comm5 = await executeCommerceAction(intent5, ctx5, "show me rohan pic");
+  const comm5 = await executeCommerceAction(intent5, ctx5, "shw me rohan");
   assert(
     comm5.type === "PHOTO_FOUND" && Boolean(comm5.mediaUrlToSend?.startsWith("http")),
     "Found product image URL for delivery",
     comm5.mediaUrlToSend
   );
+  assert(
+    Boolean(
+      comm5.product?.title.toLowerCase().includes("rohan") &&
+      comm5.mediaCaption?.includes("1,200") &&
+      !comm5.mediaCaption?.includes("23,000")
+    ),
+    "Photo caption shows correct price for Rohan (₹1,200) and not stale Shayanna price (₹23,000)",
+    comm5.mediaCaption
+  );
 
-  const resp5 = await generateCustomerResponse("show me rohan pic", intent5, comm5, ctx5);
+  const resp5 = await generateCustomerResponse("shw me rohan", intent5, comm5, ctx5);
   assert(
     !resp5.text.toLowerCase().includes("would you like me to send you its picture") &&
     Boolean(resp5.mediaUrl),

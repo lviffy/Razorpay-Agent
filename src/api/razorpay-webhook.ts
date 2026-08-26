@@ -69,17 +69,21 @@ router.post("/", async (req, res) => {
 async function handlePaymentCaptured(
   payment: RazorpayPaymentEntity
 ): Promise<void> {
-  // Find our order by Razorpay order_id
+  const refId = payment.notes?.reference_id || payment.notes?.order_id;
+
+  // Find our order by Razorpay order_id OR reference_id (ORD-xxxx)
   const { rows: orderRows } = await db.query(
     `SELECT o.*, s.name as store_name
      FROM orders o
      JOIN stores s ON o.store_id = s.id
-     WHERE o.razorpay_order_id = $1`,
-    [payment.order_id]
+     WHERE (o.razorpay_order_id = $1 AND $1 IS NOT NULL)
+        OR (o.order_id = $2 AND $2 IS NOT NULL)
+     ORDER BY o.created_at DESC LIMIT 1`,
+    [payment.order_id, refId]
   );
 
   if (!orderRows[0]) {
-    console.warn(`Order not found for Razorpay order: ${payment.order_id}`);
+    console.warn(`Order not found for Razorpay order: ${payment.order_id || refId}`);
     return;
   }
 
@@ -88,23 +92,33 @@ async function handlePaymentCaptured(
   // Update order with payment ID and status
   await db.query(
     `UPDATE orders SET razorpay_payment_id = $1, status = 'CAPTURED', updated_at = NOW()
-     WHERE razorpay_order_id = $2`,
-    [payment.id, payment.order_id]
+     WHERE id = $2`,
+    [payment.id, order.id]
   );
 
-  // Find product and update inventory: PAYMENT_PENDING → PAID
-  // Scope to exact product via notes.product_id to avoid cross-order collisions
-  const notesProductId = payment.notes?.product_id;
-  const productQuery = notesProductId
-    ? "SELECT id, shopify_variant_id, store_id FROM products WHERE id = $1 AND inventory_state = 'PAYMENT_PENDING'"
-    : "SELECT id, shopify_variant_id, store_id FROM products WHERE store_id = $1 AND inventory_state = 'PAYMENT_PENDING'";
-  const productParam = notesProductId ?? order.store_id;
+  // Extract quantity paid (from product_title e.g. "2x Shayanna" or payment notes)
+  const qtyMatch = order.product_title?.match(/^(\d+)x\s+/);
+  const paidQty = payment.notes?.quantity ? parseInt(payment.notes.quantity, 10) : (qtyMatch ? parseInt(qtyMatch[1], 10) : 1);
 
-  const { rows: productRows } = await db.query(productQuery, [productParam]);
+  // Find product and finalize inventory deduction
+  const notesProductId = payment.notes?.product_id;
+  const cleanTitle = order.product_title?.replace(/^\d+x\s+/, "");
+
+  const { rows: productRows } = await db.query(
+    `SELECT id, shopify_variant_id, store_id, title
+     FROM products
+     WHERE id = $1
+        OR (sku = $2 AND $2 != '')
+        OR (title = $3 AND $3 != '')
+     LIMIT 1`,
+    [notesProductId || null, order.sku || null, cleanTitle || null]
+  );
 
   for (const product of productRows) {
+    // Deduct reservation and clear expiration so stock reduction is permanent
     await setInventoryState(product.id, "PAID", {
-      reservedDelta: -1,
+      reservedDelta: -paidQty,
+      reservationExpiresAt: null,
     });
 
     // Release Redis lock

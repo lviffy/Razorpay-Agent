@@ -85,6 +85,7 @@ export interface CommerceResult {
   catalogItems?: Array<{ title: string; price: number; sku?: string; inStock: boolean }>;
   mediaUrlToSend?: string;
   mediaCaption?: string;
+  mediaList?: Array<{ mediaUrl: string; caption: string }>;
   errorMessage?: string;
 }
 
@@ -92,6 +93,7 @@ export interface GeneratedCustomerResponse {
   text: string;
   mediaUrl?: string;
   mediaCaption?: string;
+  mediaList?: Array<{ mediaUrl: string; caption: string }>;
   isPaymentLink?: boolean;
   paymentAmount?: number;
   paymentUrl?: string;
