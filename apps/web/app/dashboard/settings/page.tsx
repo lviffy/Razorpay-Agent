@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Zap,
+  ShoppingBag,
 } from "lucide-react";
 
 export default function GeneralSettingsPage() {
@@ -38,6 +39,7 @@ export default function GeneralSettingsPage() {
   // Visibility toggles
   const [showRzpSecret, setShowRzpSecret] = useState(false);
   const [showWaToken, setShowWaToken] = useState(false);
+  const [showShopifyToken, setShowShopifyToken] = useState(false);
 
   // Test states
   const [testingRzp, setTestingRzp] = useState(false);
@@ -45,6 +47,11 @@ export default function GeneralSettingsPage() {
 
   const [testingWa, setTestingWa] = useState(false);
   const [waTestResult, setWaTestResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
+
+  const [testingShopify, setTestingShopify] = useState(false);
+  const [shopifyTestResult, setShopifyTestResult] = useState<{ success?: boolean; message?: string; error?: string; shop?: any } | null>(null);
+  const [syncingShopify, setSyncingShopify] = useState(false);
+  const [shopifySyncResult, setShopifySyncResult] = useState<{ success?: boolean; message?: string; error?: string; syncedCount?: number } | null>(null);
 
   // Copy states
   const [copiedRzpUrl, setCopiedRzpUrl] = useState(false);
@@ -117,6 +124,59 @@ export default function GeneralSettingsPage() {
     }
   };
 
+  const handleTestShopify = async () => {
+    if (!creds.shopifyShopDomain) {
+      setShopifyTestResult({ error: "Please enter your Shopify store domain (e.g., your-store.myshopify.com)" });
+      return;
+    }
+    if (!creds.shopifyAccessToken) {
+      setShopifyTestResult({ error: "Please enter your Shopify Admin API Access Token (shpat_...)" });
+      return;
+    }
+    setTestingShopify(true);
+    setShopifyTestResult(null);
+    try {
+      const res = await api.settings.testShopify({
+        shopDomain: creds.shopifyShopDomain,
+        accessToken: creds.shopifyAccessToken,
+      });
+      setShopifyTestResult(res);
+    } catch (err: any) {
+      setShopifyTestResult({ error: err.message || "Failed to test Shopify connection" });
+    } finally {
+      setTestingShopify(false);
+    }
+  };
+
+  const handleSyncShopify = async () => {
+    if (!creds.shopifyShopDomain || !creds.shopifyAccessToken) {
+      setShopifySyncResult({ error: "Please configure and test your Shopify domain and token first." });
+      return;
+    }
+    setSyncingShopify(true);
+    setShopifySyncResult(null);
+    try {
+      const res = await api.shopify.verifyAndSync({
+        shopDomain: creds.shopifyShopDomain,
+        accessToken: creds.shopifyAccessToken,
+        maxDiscountPercent: rules.maxDiscountPercent || 15,
+      });
+      if (res.success) {
+        setShopifySyncResult({
+          success: true,
+          syncedCount: res.syncedCount,
+          message: `Synced ${res.syncedCount} products from ${res.shop?.name || creds.shopifyShopDomain}!`,
+        });
+      } else {
+        setShopifySyncResult({ error: res.error || "Failed to sync Shopify products" });
+      }
+    } catch (err: any) {
+      setShopifySyncResult({ error: err.message || "Failed to sync Shopify catalog" });
+    } finally {
+      setSyncingShopify(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!rules) return;
@@ -133,6 +193,8 @@ export default function GeneralSettingsPage() {
           whatsappPhoneNumberId: creds.whatsappPhoneNumberId,
           whatsappAccessToken: creds.whatsappAccessToken,
           whatsappWebhookVerifyToken: creds.whatsappWebhookVerifyToken,
+          shopifyShopDomain: creds.shopifyShopDomain,
+          shopifyAccessToken: creds.shopifyAccessToken,
         }),
       ]);
       setSaved(true);
@@ -605,6 +667,105 @@ export default function GeneralSettingsPage() {
               >
                 {testingWa ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 text-emerald-600" />}
                 <span>Test Meta Cloud API Connection</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 5. Shopify Store Integration */}
+        <Card className="border-zinc-200 shadow-xs">
+          <CardHeader className="pb-3 border-b border-zinc-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+                <div>
+                  <CardTitle className="text-sm font-bold text-zinc-900">Shopify Connected Store & Catalog Sync</CardTitle>
+                  <CardDescription className="text-xs text-zinc-500">
+                    Connect your Shopify store using an authenticated Admin API Access Token (<code className="font-mono text-[10px]">shpat_...</code>).
+                  </CardDescription>
+                </div>
+              </div>
+              <Badge variant="outline" className="text-[11px] font-mono bg-emerald-50 text-emerald-700 border-emerald-200">
+                {creds.hasShopifyAccessToken ? "Connected" : "Custom App"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700">Shopify Store Subdomain</label>
+                <Input
+                  value={creds.shopifyShopDomain || ""}
+                  onChange={(e) => setCreds({ ...creds, shopifyShopDomain: e.target.value })}
+                  placeholder="your-brand.myshopify.com"
+                  className="bg-white border-zinc-200 text-xs font-mono"
+                />
+                <p className="text-[11px] text-zinc-400">Your primary Shopify admin myshopify.com subdomain</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-700">Admin API Access Token</label>
+                  <span className="text-[10px] text-zinc-400 font-mono">Starts with shpat_</span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showShopifyToken ? "text" : "password"}
+                    value={creds.shopifyAccessToken || ""}
+                    onChange={(e) => setCreds({ ...creds, shopifyAccessToken: e.target.value })}
+                    placeholder={creds.hasShopifyAccessToken ? "shpat_•••••••• (Saved in DB)" : "shpat_xxxxxxxxxxxxxxxxxxxxxxxx"}
+                    className="bg-white border-zinc-200 text-xs font-mono pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowShopifyToken(!showShopifyToken)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  >
+                    {showShopifyToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-zinc-400">Requires <code className="bg-zinc-100 px-1 rounded text-[10px]">read_products</code> and <code className="bg-zinc-100 px-1 rounded text-[10px]">read_inventory</code></p>
+              </div>
+            </div>
+
+            {shopifyTestResult && (
+              <div className={`p-3 rounded-lg text-xs flex items-center gap-2.5 ${shopifyTestResult.success ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-800"}`}>
+                {shopifyTestResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" /> : <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />}
+                <span>{shopifyTestResult.message || shopifyTestResult.error}</span>
+              </div>
+            )}
+
+            {shopifySyncResult && (
+              <div className={`p-3 rounded-lg text-xs flex items-center gap-2.5 ${shopifySyncResult.success ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-800"}`}>
+                {shopifySyncResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" /> : <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />}
+                <span>{shopifySyncResult.message || shopifySyncResult.error}</span>
+              </div>
+            )}
+
+            <div className="pt-2 flex flex-wrap items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleTestShopify}
+                disabled={testingShopify}
+                className="h-8 text-xs gap-1.5"
+              >
+                {testingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
+                <span>Test Shopify Connection</span>
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={handleSyncShopify}
+                disabled={syncingShopify}
+                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
+              >
+                {syncingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                <span>Sync Catalog Now</span>
               </Button>
             </div>
           </CardContent>

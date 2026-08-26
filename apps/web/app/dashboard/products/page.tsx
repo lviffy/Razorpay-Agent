@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
+import { CSVImportModal } from "@/components/products/csv-import-modal";
 import {
   Plus,
   Search,
@@ -17,6 +18,8 @@ import {
   Check,
   Package,
   ShieldCheck,
+  RefreshCw,
+  Upload,
 } from "lucide-react";
 
 export default function ProductsPage() {
@@ -24,6 +27,9 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [syncingShopify, setSyncingShopify] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -32,6 +38,27 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     const list = await api.products.list();
     setProducts(list);
+  };
+
+  const handleResyncShopify = async () => {
+    setSyncingShopify(true);
+    setSyncNotice(null);
+    try {
+      const res = await api.shopify.resync();
+      if (res.success) {
+        setSyncNotice(`Synced ${res.syncedCount} products from Shopify!`);
+        await loadProducts();
+        setTimeout(() => setSyncNotice(null), 3500);
+      } else {
+        setSyncNotice(res.error || "No Shopify store connected. Configure in Settings.");
+        setTimeout(() => setSyncNotice(null), 4000);
+      }
+    } catch (err: any) {
+      setSyncNotice(err.message || "Failed to resync Shopify products");
+      setTimeout(() => setSyncNotice(null), 4000);
+    } finally {
+      setSyncingShopify(false);
+    }
   };
 
   const handleToggleAI = async (id: string, current: boolean) => {
@@ -88,15 +115,43 @@ export default function ProductsPage() {
             Omnichannel inventory synced across ZapAI Native database and connected Shopify stores.
           </p>
         </div>
-        <Button
-          onClick={() => setModalOpen(true)}
-          size="sm"
-          className="gap-2 text-xs h-8 bg-blue-600 hover:bg-blue-700 font-medium text-white shadow-xs"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Native Product</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => setCsvModalOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-8 bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium"
+          >
+            <Upload className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Import CSV</span>
+          </Button>
+          <Button
+            onClick={handleResyncShopify}
+            disabled={syncingShopify}
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs h-8 bg-white border-zinc-200 text-zinc-700 hover:bg-zinc-50 font-medium"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingShopify ? "animate-spin text-emerald-600" : "text-zinc-500"}`} />
+            <span>{syncingShopify ? "Syncing..." : "Sync Shopify"}</span>
+          </Button>
+          <Button
+            onClick={() => setModalOpen(true)}
+            size="sm"
+            className="gap-2 text-xs h-8 bg-blue-600 hover:bg-blue-700 font-medium text-white shadow-xs"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Add Native Product</span>
+          </Button>
+        </div>
       </div>
+
+      {syncNotice && (
+        <div className="p-3 bg-zinc-900 text-white text-xs rounded-xl flex items-center justify-between shadow-sm">
+          <span>{syncNotice}</span>
+          <button onClick={() => setSyncNotice(null)} className="text-zinc-400 hover:text-white text-xs">✕</button>
+        </div>
+      )}
 
       {/* Catalog KPI Quick Bar using shadcn Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -263,6 +318,12 @@ export default function ProductsPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSave={handleSaveProduct}
+      />
+
+      <CSVImportModal
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onImportComplete={handleSaveProduct}
       />
     </div>
   );

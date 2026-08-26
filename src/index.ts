@@ -25,6 +25,7 @@ import activityRouter from "./api/activity.ts";
 import simulatorRouter from "./api/simulator.ts";
 import onboardingRouter from "./api/onboarding.ts";
 import authRouter from "./api/auth.ts";
+import shopifyRouter from "./api/shopify.ts";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "8000", 10);
@@ -130,6 +131,7 @@ app.use("/api/v1/merchant", merchantRouter);
 app.use("/api/v1/activity", activityRouter);
 app.use("/api/v1/simulator", simulatorRouter);
 app.use("/api/v1/onboarding", onboardingRouter);
+app.use("/api/v1/shopify", shopifyRouter);
 
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function start() {

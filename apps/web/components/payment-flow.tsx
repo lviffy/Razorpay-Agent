@@ -39,7 +39,7 @@ const flowSteps = [
     step: '03',
     actor: 'ZapAI',
     badge: 'Protocol Adapter',
-    title: 'Bridge Maps to Razorpay Order',
+    title: 'ZapAI Maps to Razorpay Order',
     desc: 'ZapAI intercepts x402 challenge and creates an idempotent order on Razorpay Orders API.',
     payload: 'POST /v1/orders { amount: 379900, currency: "INR", receipt: "x402_9f1a" }',
     accent: 'text-blue-700 bg-blue-50 border-blue-200',

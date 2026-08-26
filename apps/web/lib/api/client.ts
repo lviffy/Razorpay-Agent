@@ -30,6 +30,9 @@ export const defaultStoreCredentials: StoreCredentials = {
   hasWhatsAppAccessToken: false,
   whatsappWebhookVerifyToken: "",
   whatsappWebhookUrl: "",
+  shopifyShopDomain: "",
+  shopifyAccessToken: "",
+  hasShopifyAccessToken: false,
 };
 
 export const emptyAnalytics: AnalyticsSummary = {
@@ -542,6 +545,53 @@ export const api = {
         { success: true, message: "WhatsApp Cloud API connection verified!" }
       );
     },
+    testShopify: async (params: { shopDomain: string; accessToken: string }): Promise<{ success: boolean; shop?: any; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; shop?: any; message?: string; error?: string }>(
+        "/settings/test-shopify",
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+        { success: false, error: "Failed to connect to Shopify" }
+      );
+    },
+  },
+
+  shopify: {
+    verifyAndSync: async (params: { shopDomain: string; accessToken: string; maxDiscountPercent?: number }): Promise<{ success: boolean; syncedCount: number; shop?: any; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; syncedCount: number; shop?: any; message?: string; error?: string }>(
+        "/shopify/verify-and-sync",
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+        { success: false, syncedCount: 0, error: "Failed to verify and sync Shopify store" }
+      );
+    },
+    getStatus: async (): Promise<{ connected: boolean; shopDomain?: string; shopName?: string; currency?: string; productCount?: number; lastSyncedAt?: string; maskedToken?: string }> => {
+      return fetchJson<{ connected: boolean; shopDomain?: string; shopName?: string; currency?: string; productCount?: number; lastSyncedAt?: string; maskedToken?: string }>(
+        "/shopify/status",
+        {},
+        { connected: false }
+      );
+    },
+    resync: async (): Promise<{ success: boolean; syncedCount: number; shop?: any; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; syncedCount: number; shop?: any; message?: string; error?: string }>(
+        "/shopify/resync",
+        { method: "POST" },
+        { success: false, syncedCount: 0, error: "Failed to resync catalog" }
+      );
+    },
+    test: async (params: { shopDomain: string; accessToken: string }): Promise<{ success: boolean; shop?: any; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; shop?: any; message?: string; error?: string }>(
+        "/shopify/test",
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+        { success: false, error: "Failed to test connection" }
+      );
+    },
   },
 
   profile: {
@@ -752,12 +802,33 @@ export const api = {
       }
       return clientOnboardingSession;
     },
-    syncShopify: async (_shopDomain: string): Promise<{ count: number; state: OnboardingState }> => {
-      clientOnboardingSession.provider = "SHOPIFY";
-      clientOnboardingSession.productCount = 0;
-      clientOnboardingSession.currentStep = "AGENT_SETUP";
-      clientOnboardingSession.completionPercentage = 60;
-      return { count: 0, state: { ...clientOnboardingSession } };
+    syncShopify: async (payload: { shopDomain: string; accessToken: string; maxDiscountPercent?: number } | string): Promise<{ count: number; state: OnboardingState; error?: string }> => {
+      const body = typeof payload === "string" ? { shopDomain: payload, accessToken: "" } : payload;
+      const res = await fetchJson<{ success: boolean; count: number; state?: OnboardingState; error?: string }>(
+        "/onboarding/sync-shopify",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+        {
+          success: false,
+          count: 0,
+          state: {
+            ...clientOnboardingSession,
+            provider: "SHOPIFY",
+            currentStep: "AGENT_SETUP",
+            completionPercentage: 60,
+          },
+        }
+      );
+      if (res.state) {
+        clientOnboardingSession = res.state;
+      } else {
+        clientOnboardingSession.provider = "SHOPIFY";
+        clientOnboardingSession.currentStep = "AGENT_SETUP";
+        clientOnboardingSession.completionPercentage = 60;
+      }
+      return { count: res.count || 0, state: clientOnboardingSession, error: res.error };
     },
     completeStep: async (step: OnboardingStep): Promise<OnboardingState> => {
       clientOnboardingSession.currentStep = step;

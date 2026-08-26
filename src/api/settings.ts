@@ -290,6 +290,9 @@ router.get("/credentials", async (req: Request, res: Response) => {
       process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ||
       "zapai_meta_webhook_secret_2026";
 
+    const shopifyShopDomain = creds.shopifyShopDomain || "";
+    const hasShopifyToken = Boolean(creds.shopifyAccessToken);
+
     return res.json({
       razorpayKeyId,
       hasRazorpayKeySecret: hasSecret,
@@ -301,6 +304,9 @@ router.get("/credentials", async (req: Request, res: Response) => {
       hasWhatsAppAccessToken: hasWhatsAppToken,
       whatsappWebhookVerifyToken,
       whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
+      shopifyShopDomain,
+      hasShopifyAccessToken: hasShopifyToken,
+      shopifyAccessToken: hasShopifyToken ? `${creds.shopifyAccessToken.slice(0, 8)}••••••••` : "",
     });
   } catch (err) {
     console.error("Get credentials error:", err);
@@ -320,6 +326,8 @@ router.put("/credentials", async (req: Request, res: Response) => {
       whatsappPhoneNumberId,
       whatsappAccessToken,
       whatsappWebhookVerifyToken,
+      shopifyShopDomain,
+      shopifyAccessToken,
     } = req.body;
 
     if (storeId) {
@@ -332,13 +340,16 @@ router.put("/credentials", async (req: Request, res: Response) => {
 
       const updatedCreds = {
         ...prevCreds,
-        ...(razorpayKeyId && { razorpayKeyId }),
+        ...(razorpayKeyId !== undefined && { razorpayKeyId }),
         ...(razorpayKeySecret && { razorpayKeySecret }),
-        ...(razorpayWebhookSecret && { razorpayWebhookSecret }),
-        ...(whatsappPhoneNumber && { whatsappPhoneNumber }),
-        ...(whatsappPhoneNumberId && { whatsappPhoneNumberId }),
+        ...(razorpayWebhookSecret !== undefined && { razorpayWebhookSecret }),
+        ...(whatsappPhoneNumber !== undefined && { whatsappPhoneNumber }),
+        ...(whatsappPhoneNumberId !== undefined && { whatsappPhoneNumberId }),
         ...(whatsappAccessToken && { whatsappAccessToken }),
-        ...(whatsappWebhookVerifyToken && { whatsappWebhookVerifyToken }),
+        ...(whatsappWebhookVerifyToken !== undefined && { whatsappWebhookVerifyToken }),
+        ...(shopifyShopDomain !== undefined && { shopifyShopDomain }),
+        ...(shopifyAccessToken && { shopifyAccessToken }),
+        ...(shopifyAccessToken && { hasShopifyAccessToken: true }),
       };
 
       const updatedAgentSettings = {
@@ -455,6 +466,41 @@ router.post("/test-whatsapp", async (req: Request, res: Response) => {
     return res.status(400).json({
       success: false,
       error: `WhatsApp verification failed: ${errMsg}`,
+    });
+  }
+});
+
+// POST /api/v1/settings/test-shopify — Validate Shopify credentials against Shopify Admin API
+router.post("/test-shopify", async (req: Request, res: Response) => {
+  try {
+    const { shopDomain, accessToken } = req.body;
+    if (!shopDomain || !accessToken) {
+      return res.status(400).json({
+        success: false,
+        error: "Both Shopify Store Domain and Admin API Access Token are required.",
+      });
+    }
+
+    const { verifyShopifyCredentials } = await import("../services/shopify.ts");
+    const verification = await verifyShopifyCredentials(shopDomain, accessToken);
+
+    if (!verification.valid || !verification.shop) {
+      return res.status(400).json({
+        success: false,
+        error: verification.error || "Failed to authenticate with Shopify Admin API",
+      });
+    }
+
+    return res.json({
+      success: true,
+      shop: verification.shop,
+      message: `✅ Shopify connected successfully with "${verification.shop.name}" (${verification.shop.myshopify_domain})`,
+    });
+  } catch (err: any) {
+    console.error("Shopify test error:", err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || "Failed to test Shopify connection",
     });
   }
 });

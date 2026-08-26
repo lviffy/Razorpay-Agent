@@ -10,8 +10,11 @@ import { ActionCard } from "@/components/onboarding/action-card";
 import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import { ShopifySyncCard } from "@/components/onboarding/shopify-sync-card";
+import { CSVImportModal } from "@/components/products/csv-import-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { formatINR } from "@/lib/utils";
 import {
   Send,
   Sparkles,
@@ -38,6 +41,10 @@ import {
   Key,
   Lock,
   RefreshCw,
+  Upload,
+  Smile,
+  Briefcase,
+  Flame,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/context/auth-context";
@@ -49,6 +56,7 @@ export default function OnboardingPage() {
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [nativeModalOpen, setNativeModalOpen] = useState(false);
+  const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [showDrawer, setShowDrawer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -84,6 +92,15 @@ export default function OnboardingPage() {
     bundleOffersEnabled: true,
     alternativeProductsEnabled: true,
   });
+
+  // Custom Requirements Fine-Tuning State
+  const [agentSetupMode, setAgentSetupMode] = useState<"presets" | "custom">("presets");
+  const [customDiscount, setCustomDiscount] = useState<number>(12);
+  const [customMinOrder, setCustomMinOrder] = useState<number>(1500);
+  const [customFreeShipping, setCustomFreeShipping] = useState<number>(3000);
+  const [customEscalation, setCustomEscalation] = useState<number>(5000);
+  const [customTone, setCustomTone] = useState<"friendly" | "professional" | "persuasive">("friendly");
+  const [customUpsell, setCustomUpsell] = useState<boolean>(true);
 
   // Track products added during onboarding
   const [createdProducts, setCreatedProducts] = useState<any[]>([]);
@@ -150,10 +167,12 @@ export default function OnboardingPage() {
     setLoading(false);
   };
 
-  const handleShopifySyncComplete = async (shopDomain: string) => {
+  const handleShopifySyncComplete = async (shopDomain: string, accessToken?: string) => {
     setLoading(true);
-    const res = await api.onboarding.syncShopify(shopDomain);
-    setState(res.state);
+    const res = await api.onboarding.syncShopify({ shopDomain, accessToken: accessToken || "" });
+    if (res.state) {
+      setState(res.state);
+    }
     setLoading(false);
   };
 
@@ -294,10 +313,10 @@ export default function OnboardingPage() {
         <div className="flex items-center gap-3.5">
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-xs group-hover:bg-brand-600 transition-colors">
-              A
+              Z
             </div>
             <span className="font-bold text-base tracking-tight text-zinc-900">
-              Agent<span className="text-brand-600">Bridge</span>
+              Zap<span className="text-brand-600">AI</span>
             </span>
           </Link>
           <span className="text-zinc-300">/</span>
@@ -396,15 +415,26 @@ export default function OnboardingPage() {
                             id: "native",
                             label: "Create Native Catalog",
                             description: "Fast in-browser setup with instant price floor & discount mandates.",
-                            badge: "Recommended",
+                            badge: "Manual / Batch",
                             icon: <Store className="w-4 h-4" />,
                             onClick: () => handleSelectProvider("ZAPAI"),
                           },
                           {
+                            id: "csv",
+                            label: "Import from CSV File",
+                            description: "Upload spreadsheet to bulk-index SKUs, stock levels, and price floors.",
+                            badge: "Bulk Import",
+                            icon: <Upload className="w-4 h-4" />,
+                            onClick: () => {
+                              handleSelectProvider("ZAPAI");
+                              setCsvModalOpen(true);
+                            },
+                          },
+                          {
                             id: "shopify",
                             label: "Sync Shopify Store",
-                            description: "Connect store domain to auto-import live products, inventory & variants.",
-                            badge: "Instant Import",
+                            description: "Connect Admin API to auto-import live products, inventory & variants.",
+                            badge: "Shopify Sync",
                             icon: <ShoppingBag className="w-4 h-4" />,
                             onClick: () => handleSelectProvider("SHOPIFY"),
                           },
@@ -431,118 +461,367 @@ export default function OnboardingPage() {
                               icon: <Layers className="w-4 h-4" />,
                               onClick: () => setNativeModalOpen(true),
                             },
+                            {
+                              id: "csv_modal",
+                              label: "Upload CSV Spreadsheet",
+                              description: "Bulk import multiple products from .csv file with auto-calculated price floors.",
+                              badge: "Spreadsheet",
+                              icon: <Upload className="w-4 h-4" />,
+                              onClick: () => setCsvModalOpen(true),
+                            },
                           ]}
                         />
                       </div>
                     )}
 
-                    {/* Step: AGENT_SETUP (Interactive Segmented Risk Profile in Middle) */}
+                    {/* Step: AGENT_SETUP (Interactive Risk Profile & Custom Requirements) */}
                     {state.currentStep === "AGENT_SETUP" && (
-                      <div className="space-y-2.5 pt-1">
-                        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider pl-0.5">
-                          Choose Negotiation Risk Policy:
-                        </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                          {[
-                            {
-                              id: "conservative",
-                              title: "Conservative",
-                              discount: "Max 8% Off",
-                              desc: "Strict gross margin defense. Holds firm on prices.",
-                              tag: "High Margin",
-                              onClick: () => {
-                                const newRules: NegotiationRules = {
-                                  maxDiscountPercent: 8,
-                                  minimumOrderValue: 2000,
-                                  freeShippingAbove: 4000,
-                                  humanApprovalAbove: 6000,
-                                  riskProfile: "conservative",
-                                  bundleOffersEnabled: true,
-                                  alternativeProductsEnabled: true,
-                                };
-                                setNegotiationRules(newRules);
-                                api.settings.saveRules(newRules);
-                                handleSendMessage("Conservative profile (max 8% discount)");
-                              },
-                            },
-                            {
-                              id: "balanced",
-                              title: "Balanced",
-                              discount: "Max 12% Off",
-                              desc: "Optimal balance between closure rate and profit.",
-                              tag: "Recommended",
-                              isRecommended: true,
-                              onClick: () => {
-                                const newRules: NegotiationRules = {
-                                  maxDiscountPercent: 12,
-                                  minimumOrderValue: 2000,
-                                  freeShippingAbove: 3000,
-                                  humanApprovalAbove: 5000,
-                                  riskProfile: "balanced",
-                                  bundleOffersEnabled: true,
-                                  alternativeProductsEnabled: true,
-                                };
-                                setNegotiationRules(newRules);
-                                api.settings.saveRules(newRules);
-                                handleSendMessage("Balanced profile (max 12% discount)");
-                              },
-                            },
-                            {
-                              id: "aggressive",
-                              title: "Aggressive",
-                              discount: "Max 18% Off",
-                              desc: "Maximizes deal volume and immediate conversions.",
-                              tag: "High Velocity",
-                              onClick: () => {
-                                const newRules: NegotiationRules = {
-                                  maxDiscountPercent: 18,
-                                  minimumOrderValue: 2000,
-                                  freeShippingAbove: 2500,
-                                  humanApprovalAbove: 4000,
-                                  riskProfile: "aggressive",
-                                  bundleOffersEnabled: true,
-                                  alternativeProductsEnabled: true,
-                                };
-                                setNegotiationRules(newRules);
-                                api.settings.saveRules(newRules);
-                                handleSendMessage("Aggressive profile (max 18% discount)");
-                              },
-                            },
-                          ].map((profile) => (
-                            <motion.button
-                              key={profile.id}
-                              whileHover={{ y: -2 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={profile.onClick}
-                              className={`p-3.5 rounded-xl text-left border transition-all flex flex-col justify-between ${
-                                profile.isRecommended
-                                  ? "bg-brand-50/40 border-brand-300 ring-1 ring-brand-200/60 shadow-xs"
-                                  : "bg-white border-zinc-200/80 hover:border-zinc-300 shadow-2xs"
+                      <div className="space-y-4 pt-1">
+                        {/* Mode Switcher */}
+                        <div className="flex items-center justify-between pb-1 border-b border-zinc-100">
+                          <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
+                            Configure AI Seller Policy:
+                          </p>
+                          <div className="flex items-center gap-1 bg-zinc-100 p-0.5 rounded-lg text-xs">
+                            <button
+                              type="button"
+                              onClick={() => setAgentSetupMode("presets")}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                                agentSetupMode === "presets"
+                                  ? "bg-white text-zinc-900 shadow-2xs"
+                                  : "text-zinc-500 hover:text-zinc-900"
                               }`}
                             >
-                              <div className="space-y-1">
+                              Quick Presets
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAgentSetupMode("custom")}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                                agentSetupMode === "custom"
+                                  ? "bg-white text-zinc-900 shadow-2xs"
+                                  : "text-zinc-500 hover:text-zinc-900"
+                              }`}
+                            >
+                              Fine-Tune Specifics
+                            </button>
+                          </div>
+                        </div>
+
+                        {agentSetupMode === "presets" ? (
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                              {[
+                                {
+                                  id: "conservative",
+                                  title: "Conservative",
+                                  discount: "Max 8% Off",
+                                  desc: "Strict gross margin defense. Holds firm on prices.",
+                                  tag: "High Margin",
+                                  onClick: () => {
+                                    const newRules: NegotiationRules = {
+                                      maxDiscountPercent: 8,
+                                      minimumOrderValue: 2000,
+                                      freeShippingAbove: 4000,
+                                      humanApprovalAbove: 6000,
+                                      riskProfile: "conservative",
+                                      bundleOffersEnabled: true,
+                                      alternativeProductsEnabled: true,
+                                    };
+                                    setNegotiationRules(newRules);
+                                    api.settings.saveRules(newRules);
+                                    handleSendMessage("Conservative profile (max 8% discount)");
+                                  },
+                                },
+                                {
+                                  id: "balanced",
+                                  title: "Balanced",
+                                  discount: "Max 12% Off",
+                                  desc: "Optimal balance between closure rate and profit.",
+                                  tag: "Recommended",
+                                  isRecommended: true,
+                                  onClick: () => {
+                                    const newRules: NegotiationRules = {
+                                      maxDiscountPercent: 12,
+                                      minimumOrderValue: 2000,
+                                      freeShippingAbove: 3000,
+                                      humanApprovalAbove: 5000,
+                                      riskProfile: "balanced",
+                                      bundleOffersEnabled: true,
+                                      alternativeProductsEnabled: true,
+                                    };
+                                    setNegotiationRules(newRules);
+                                    api.settings.saveRules(newRules);
+                                    handleSendMessage("Balanced profile (max 12% discount)");
+                                  },
+                                },
+                                {
+                                  id: "aggressive",
+                                  title: "Aggressive",
+                                  discount: "Max 18% Off",
+                                  desc: "Maximizes deal volume and immediate conversions.",
+                                  tag: "High Velocity",
+                                  onClick: () => {
+                                    const newRules: NegotiationRules = {
+                                      maxDiscountPercent: 18,
+                                      minimumOrderValue: 2000,
+                                      freeShippingAbove: 2500,
+                                      humanApprovalAbove: 4000,
+                                      riskProfile: "aggressive",
+                                      bundleOffersEnabled: true,
+                                      alternativeProductsEnabled: true,
+                                    };
+                                    setNegotiationRules(newRules);
+                                    api.settings.saveRules(newRules);
+                                    handleSendMessage("Aggressive profile (max 18% discount)");
+                                  },
+                                },
+                              ].map((profile) => (
+                                <motion.button
+                                  key={profile.id}
+                                  whileHover={{ y: -2 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={profile.onClick}
+                                  className={`p-3.5 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                                    profile.isRecommended
+                                      ? "bg-brand-50/40 border-brand-300 ring-1 ring-brand-200/60 shadow-xs"
+                                      : "bg-white border-zinc-200/80 hover:border-zinc-300 shadow-2xs"
+                                  }`}
+                                >
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold text-zinc-900">{profile.title}</span>
+                                      <span
+                                        className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                                          profile.isRecommended
+                                            ? "bg-brand-500 text-white"
+                                            : "bg-zinc-100 text-zinc-600"
+                                        }`}
+                                      >
+                                        {profile.tag}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs font-mono font-bold text-brand-600">{profile.discount}</p>
+                                    <p className="text-[11px] text-zinc-500 leading-snug pt-1">{profile.desc}</p>
+                                  </div>
+                                  <div className="pt-3 flex items-center justify-between text-[10px] font-medium text-zinc-400 border-t border-zinc-100 mt-2">
+                                    <span>Click to set</span>
+                                    <ArrowRight className="w-3 h-3 text-brand-600" />
+                                  </div>
+                                </motion.button>
+                              ))}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setAgentSetupMode("custom")}
+                              className="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1.5 pt-1"
+                            >
+                              <Sliders className="w-3.5 h-3.5" />
+                              <span>Want to customize exact discount caps, shipping upsells & conversation tone? Click here</span>
+                            </button>
+                          </div>
+                        ) : (
+                          /* Fine-Tune Requirements Interactive Builder */
+                          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-4 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Max Discount Slider */}
+                              <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-zinc-900">{profile.title}</span>
-                                  <span
-                                    className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                                      profile.isRecommended
-                                        ? "bg-brand-500 text-white"
-                                        : "bg-zinc-100 text-zinc-600"
-                                    }`}
-                                  >
-                                    {profile.tag}
+                                  <label className="font-semibold text-zinc-800">
+                                    Max Discount Allowance:
+                                  </label>
+                                  <Badge variant="outline" className="font-mono text-xs font-bold text-brand-600 bg-brand-50 border-brand-200">
+                                    {customDiscount}% Max
+                                  </Badge>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="2"
+                                  max="25"
+                                  step="1"
+                                  value={customDiscount}
+                                  onChange={(e) => setCustomDiscount(Number(e.target.value))}
+                                  className="w-full h-1.5 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-brand-600"
+                                />
+                                <p className="text-[11px] text-zinc-400">
+                                  The AI will negotiate between 0% and {customDiscount}% off, never selling below this floor.
+                                </p>
+                              </div>
+
+                              {/* Free Shipping Upsell */}
+                              <div className="space-y-1.5">
+                                <label className="font-semibold text-zinc-800">
+                                  Free Shipping Threshold:
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 font-mono text-xs">₹</span>
+                                  <Input
+                                    type="number"
+                                    value={customFreeShipping}
+                                    onChange={(e) => setCustomFreeShipping(Number(e.target.value))}
+                                    className="pl-6 font-mono text-xs h-8 bg-zinc-50 border-zinc-200"
+                                    placeholder="3000"
+                                  />
+                                </div>
+                                <p className="text-[11px] text-zinc-400">
+                                  AI proactively suggests add-ons when cart value is near ₹{customFreeShipping}.
+                                </p>
+                              </div>
+
+                              {/* Minimum Order for Discount */}
+                              <div className="space-y-1.5">
+                                <label className="font-semibold text-zinc-800">
+                                  Min Order for Concession:
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 font-mono text-xs">₹</span>
+                                  <Input
+                                    type="number"
+                                    value={customMinOrder}
+                                    onChange={(e) => setCustomMinOrder(Number(e.target.value))}
+                                    className="pl-6 font-mono text-xs h-8 bg-zinc-50 border-zinc-200"
+                                    placeholder="1500"
+                                  />
+                                </div>
+                                <p className="text-[11px] text-zinc-400">
+                                  Items below ₹{customMinOrder} are held strictly at full retail price.
+                                </p>
+                              </div>
+
+                              {/* Human Escalation Threshold */}
+                              <div className="space-y-1.5">
+                                <label className="font-semibold text-zinc-800">
+                                  Human Approval Required Above:
+                                </label>
+                                <div className="relative">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 font-mono text-xs">₹</span>
+                                  <Input
+                                    type="number"
+                                    value={customEscalation}
+                                    onChange={(e) => setCustomEscalation(Number(e.target.value))}
+                                    className="pl-6 font-mono text-xs h-8 bg-zinc-50 border-zinc-200"
+                                    placeholder="5000"
+                                  />
+                                </div>
+                                <p className="text-[11px] text-zinc-400">
+                                  Orders above ₹{customEscalation} trigger a notification to your WhatsApp.
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Conversation Persona Tone */}
+                            <div className="space-y-2 pt-2 border-t border-zinc-100">
+                              <label className="font-semibold text-zinc-800 block">
+                                AI Seller Persona Voice:
+                              </label>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {[
+                                  {
+                                    id: "friendly",
+                                    title: "Friendly & Warm",
+                                    icon: Smile,
+                                    preview: "Hey there! 👋 Happy to help check stock and get you the best price!",
+                                  },
+                                  {
+                                    id: "professional",
+                                    title: "Professional & Precise",
+                                    icon: Briefcase,
+                                    preview: "Hello. Live stock confirmed. Here are the specifications and checkout details.",
+                                  },
+                                  {
+                                    id: "persuasive",
+                                    title: "High-Energy Closer",
+                                    icon: Flame,
+                                    preview: "High-demand item with limited stock! 🔥 I can lock in special savings right now.",
+                                  },
+                                ].map((t) => {
+                                  const Icon = t.icon;
+                                  const isSel = customTone === t.id;
+                                  return (
+                                    <button
+                                      key={t.id}
+                                      type="button"
+                                      onClick={() => setCustomTone(t.id as any)}
+                                      className={`p-3 rounded-xl text-left border transition-all ${
+                                        isSel
+                                          ? "bg-brand-50/50 border-brand-400 ring-1 ring-brand-300 shadow-2xs"
+                                          : "bg-zinc-50/60 border-zinc-200 hover:border-zinc-300"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-1.5 font-semibold text-zinc-900">
+                                        <Icon className={`w-3.5 h-3.5 ${isSel ? "text-brand-600" : "text-zinc-500"}`} />
+                                        <span>{t.title}</span>
+                                      </div>
+                                      <p className="text-[11px] text-zinc-500 mt-1 italic leading-snug">
+                                        "{t.preview}"
+                                      </p>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Live Margin Calculation Shield */}
+                            <div className="p-3 bg-zinc-900 text-white rounded-xl flex items-center justify-between text-xs">
+                              <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                                <div>
+                                  <span className="font-semibold text-zinc-200">Margin Guard Active: </span>
+                                  <span className="text-zinc-400 text-[11px]">
+                                    On a ₹4,000 product, AI counters at <strong className="text-emerald-400 font-mono">{formatINR(Math.round(4000 * (1 - customDiscount / 100)))}</strong> ({customDiscount}% off), protecting <strong className="text-zinc-200 font-mono">{formatINR(Math.round(4000 * (customDiscount / 100)))}</strong> dealer margin.
                                   </span>
                                 </div>
-                                <p className="text-xs font-mono font-bold text-brand-600">{profile.discount}</p>
-                                <p className="text-[11px] text-zinc-500 leading-snug pt-1">{profile.desc}</p>
                               </div>
-                              <div className="pt-3 flex items-center justify-between text-[10px] font-medium text-zinc-400 border-t border-zinc-100 mt-2">
-                                <span>Click to set</span>
-                                <ArrowRight className="w-3 h-3 text-brand-600" />
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
+                            </div>
+
+                            {/* Apply Button */}
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAgentSetupMode("presets")}
+                                className="text-xs h-8"
+                              >
+                                Back to Presets
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={async () => {
+                                  const customRulesObj: NegotiationRules = {
+                                    maxDiscountPercent: customDiscount,
+                                    minimumOrderValue: customMinOrder,
+                                    freeShippingAbove: customFreeShipping,
+                                    humanApprovalAbove: customEscalation,
+                                    riskProfile: customDiscount <= 10 ? "conservative" : customDiscount <= 15 ? "balanced" : "aggressive",
+                                    bundleOffersEnabled: customUpsell,
+                                    alternativeProductsEnabled: true,
+                                  };
+                                  setNegotiationRules(customRulesObj);
+                                  await api.settings.saveRules(customRulesObj);
+                                  await api.settings.saveAgent({
+                                    name: "ZapAI Concierge",
+                                    tone: customTone,
+                                    status: "active",
+                                    autoNegotiationEnabled: true,
+                                    humanEscalationEnabled: true,
+                                    escalationThresholdAmount: customEscalation,
+                                    bundleUpsellEnabled: customUpsell,
+                                  });
+                                  handleSendMessage(
+                                    `Configured custom mandates: Max ${customDiscount}% discount, Free shipping above ₹${customFreeShipping}, ${customTone} tone.`
+                                  );
+                                }}
+                                className="text-xs h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-xs"
+                              >
+                                <span>Save & Activate Custom Requirements</span>
+                                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1079,6 +1358,12 @@ export default function OnboardingPage() {
         open={nativeModalOpen}
         onOpenChange={setNativeModalOpen}
         onSave={handleSaveNativeProduct}
+      />
+
+      <CSVImportModal
+        open={csvModalOpen}
+        onOpenChange={setCsvModalOpen}
+        onImportComplete={handleSaveNativeProduct}
       />
     </div>
   );

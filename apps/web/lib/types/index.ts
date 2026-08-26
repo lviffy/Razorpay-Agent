@@ -188,6 +188,9 @@ export interface StoreCredentials {
   hasWhatsAppAccessToken?: boolean;
   whatsappWebhookVerifyToken: string;
   whatsappWebhookUrl: string;
+  shopifyShopDomain?: string;
+  shopifyAccessToken?: string;
+  hasShopifyAccessToken?: boolean;
 }
 
 export interface AuthUser {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+import { db } from "../db/migrate.ts";
 
 const router = Router();
 
@@ -540,6 +541,75 @@ router.post("/complete", async (req: Request, res: Response) => {
     console.error("Onboarding complete error:", err);
     return res.status(500).json({
       error: err?.message || "Failed to complete onboarding",
+    });
+  }
+});
+
+// POST /api/v1/onboarding/sync-shopify — Authenticate & sync Shopify catalog in onboarding
+router.post("/sync-shopify", async (req: Request, res: Response) => {
+  try {
+    const { shopDomain, accessToken, maxDiscountPercent = 15 } = req.body;
+    const userId = getUserIdFromReq(req) || "anonymous";
+    const activeSession = getSession(userId);
+
+    if (!shopDomain || !accessToken) {
+      return res.status(400).json({ error: "shopDomain and accessToken are required" });
+    }
+
+    const { verifyShopifyCredentials, fetchShopifyProducts, syncShopifyToStore } = await import("../services/shopify.ts");
+
+    // 1. Verify credentials with Shopify
+    const verification = await verifyShopifyCredentials(shopDomain, accessToken);
+    if (!verification.valid || !verification.shop) {
+      return res.status(400).json({
+        success: false,
+        error: verification.error || "Failed to authenticate with Shopify Admin API",
+      });
+    }
+
+    const shop = verification.shop;
+
+    // 2. Fetch products
+    const products = await fetchShopifyProducts(shopDomain, accessToken, Number(maxDiscountPercent) || 15);
+
+    // 3. Update active session
+    activeSession.provider = "SHOPIFY";
+    activeSession.businessName = shop.name;
+    activeSession.productCount = products.length;
+    activeSession.currentStep = "AGENT_SETUP";
+    activeSession.completionPercentage = 60;
+    activeSession.history.push({
+      id: `msg_shp_${Date.now()}`,
+      sender: "assistant",
+      content: `Authenticated with Shopify ("${shop.name}"). Successfully synced ${products.length} live SKUs with stock levels and price floors! Now let's configure your AI Seller's negotiation rules.`,
+      step: "AGENT_SETUP",
+      createdAt: new Date().toISOString(),
+    });
+
+    // 4. If user has a store or user session, save products into DB right away
+    if (userId && userId !== "anonymous") {
+      const { rows: userRows } = await db.query(
+        "SELECT store_id FROM users WHERE id = $1 LIMIT 1",
+        [userId]
+      );
+      if (userRows[0]?.store_id) {
+        const userStoreId = userRows[0].store_id as string;
+        await syncShopifyToStore(userStoreId, shopDomain, accessToken, Number(maxDiscountPercent) || 15);
+      }
+    }
+
+    return res.json({
+      success: true,
+      count: products.length,
+      shop,
+      products,
+      state: activeSession,
+      message: `Verified and indexed ${products.length} products from ${shop.name}`,
+    });
+  } catch (err: any) {
+    console.error("Onboarding sync-shopify error:", err);
+    return res.status(500).json({
+      error: err.message || "Failed to sync Shopify store in onboarding",
     });
   }
 });

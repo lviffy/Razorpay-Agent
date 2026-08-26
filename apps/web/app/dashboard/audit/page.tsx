@@ -427,7 +427,7 @@ export default function AuditExplorerPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="text-[10px] text-zinc-500">x402 Protocol Transaction ID</span>
-                        <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono">PROTOCOL BRIDGE</span>
+                        <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono">ZAPAI ADAPTER</span>
                       </div>
                       <span className="font-mono text-amber-700 font-semibold break-all text-[11px]">
                         {active.x402TransactionId}

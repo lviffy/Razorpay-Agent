@@ -9,10 +9,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="mb-6 flex flex-col items-center gap-2 relative z-10">
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-lg border border-brand-600 group-hover:bg-brand-600 transition-colors">
-            A
+            Z
           </div>
           <span className="font-display font-extrabold text-2xl text-surface-900 tracking-tight">
-            Agent<span className="text-brand-600">Bridge</span>
+            Zap<span className="text-brand-600">AI</span>
           </span>
         </Link>
       </div>
