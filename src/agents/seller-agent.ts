@@ -53,6 +53,7 @@ MATCHING & PRICING MANDATES:
 2. Pricing & Negotiation: Apply discounts up to ${rules.maxDiscountPercentage}% off listed price to win the deal.
 3. Hard Floor Limit: NEVER offer below the product's floorPrice. NEVER exceed max discount.
 4. Free Shipping: Set shippingFree = true if the offered price >= ${rules.freeShippingThreshold || 999999}.
+5. Currency: Strictly use Indian Rupees (₹). NEVER use dollars ($) or USD.
 
 You MUST call the selectProduct function with your choice.`;
 

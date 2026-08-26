@@ -13,24 +13,38 @@ import {
   Search,
   Check,
   Copy,
+  Edit2,
 } from "lucide-react";
+import { EditOrderModal } from "@/components/orders/edit-order-modal";
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const list = await api.orders.list();
-        if (list) setOrders(list);
-      } catch (err) {
-        console.error("Failed to load orders", err);
-      }
-    }
-    load();
+    loadOrders();
   }, []);
+
+  const loadOrders = async () => {
+    try {
+      const list = await api.orders.list();
+      if (list) setOrders(list);
+    } catch (err) {
+      console.error("Failed to load orders", err);
+    }
+  };
+
+  const handleOpenEdit = (order: Order) => {
+    setSelectedOrder(order);
+    setIsEditModalOpen(true);
+  };
+
+  const handleOrderUpdated = (updated: Order) => {
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -122,12 +136,13 @@ export default function OrdersPage() {
                 <th className="py-3 px-4">Payment ID</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 text-zinc-700">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-zinc-400">
+                  <td colSpan={8} className="text-center py-8 text-zinc-400">
                     No orders match your search query.
                   </td>
                 </tr>
@@ -187,6 +202,17 @@ export default function OrdersPage() {
                     <td className="py-3.5 px-4 font-mono text-[11px] text-zinc-500">
                       {formatDate(o.createdAt)}
                     </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenEdit(o)}
+                        className="text-xs h-7 px-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-300 font-medium inline-flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -194,6 +220,17 @@ export default function OrdersPage() {
           </table>
         </div>
       </Card>
+
+      {/* Edit Order Modal */}
+      <EditOrderModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedOrder(null);
+        }}
+        order={selectedOrder}
+        onOrderUpdated={handleOrderUpdated}
+      />
     </div>
   );
 }

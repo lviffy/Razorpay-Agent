@@ -158,15 +158,14 @@ export async function sendConfirmation(
   ids: ConfirmationIds
 ): Promise<void> {
   const text =
-    `✅ *Payment Confirmed!*\n\n` +
-    `Amount: ₹${ids.amount.toLocaleString("en-IN")}\n` +
-    `Store: ${ids.storeName}\n\n` +
-    `*Audit Trail:*\n` +
-    `📱 WA Message: \`${ids.whatsappMessageId}\`\n` +
-    `💬 Conversation: \`${ids.conversationId}\`\n` +
-    `🔗 x402 Tx: \`${ids.x402TransactionId}\`\n` +
-    `💳 Razorpay: \`${ids.razorpayPaymentId}\`\n` +
-    `📦 Order: \`${ids.orderId}\``;
+    `🎉 *Payment Confirmed!*\n\n` +
+    `Thank you for your order! Your purchase *${ids.orderId}* has been confirmed and settled via Razorpay.\n\n` +
+    `💰 *Amount Paid:* ₹${ids.amount.toLocaleString("en-IN")}\n` +
+    `🏪 *Store:* ${ids.storeName}\n\n` +
+    `🧾 *Settlement Details:*\n` +
+    `💳 Razorpay Payment: \`${ids.razorpayPaymentId}\`\n` +
+    `🔗 x402 Audit Hash: \`${ids.x402TransactionId}\`\n\n` +
+    `🚚 Your order is being packed for dispatch. Thank you for shopping with us!`;
 
   await sendText(to, text);
 }

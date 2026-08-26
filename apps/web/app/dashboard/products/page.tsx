@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeProductModal } from "@/components/onboarding/native-product-modal";
 import { CSVImportModal } from "@/components/products/csv-import-modal";
+import { EditProductModal } from "@/components/products/edit-product-modal";
 import {
   Plus,
   Search,
@@ -20,6 +21,7 @@ import {
   ShieldCheck,
   RefreshCw,
   Upload,
+  Edit2,
 } from "lucide-react";
 
 export default function ProductsPage() {
@@ -28,6 +30,8 @@ export default function ProductsPage() {
   const [filter, setFilter] = useState<string>("ALL");
   const [modalOpen, setModalOpen] = useState(false);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [syncingShopify, setSyncingShopify] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
@@ -38,6 +42,15 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     const list = await api.products.list();
     setProducts(list);
+  };
+
+  const handleOpenEdit = (prod: Product) => {
+    setSelectedProduct(prod);
+    setEditModalOpen(true);
+  };
+
+  const handleProductUpdated = (updated: Product) => {
+    setProducts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
   };
 
   const handleResyncShopify = async () => {
@@ -236,12 +249,15 @@ export default function ProductsPage() {
                   <tr key={p.id} className="hover:bg-zinc-50 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg border border-zinc-200 bg-zinc-50 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg border border-zinc-200 bg-zinc-50 flex-shrink-0 overflow-hidden flex items-center justify-center relative">
                           {p.imageUrl ? (
                             <img
                               src={p.imageUrl}
                               alt={p.title}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = "none";
+                              }}
                             />
                           ) : (
                             <Package className="w-4 h-4 text-zinc-300" />
@@ -297,14 +313,25 @@ export default function ProductsPage() {
                       </button>
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
-                        className="text-[11px] h-7 px-2.5 text-zinc-600 hover:text-zinc-900"
-                      >
-                        {p.aiSellingEnabled ? "Pause" : "Enable"}
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenEdit(p)}
+                          className="text-[11px] h-7 px-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200 inline-flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleAI(p.id, p.aiSellingEnabled)}
+                          className="text-[11px] h-7 px-2 text-zinc-500 hover:text-zinc-900"
+                        >
+                          {p.aiSellingEnabled ? "Pause" : "Enable"}
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -313,6 +340,16 @@ export default function ProductsPage() {
           </table>
         </div>
       </Card>
+
+      <EditProductModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        product={selectedProduct}
+        onProductUpdated={handleProductUpdated}
+      />
 
       <NativeProductModal
         open={modalOpen}

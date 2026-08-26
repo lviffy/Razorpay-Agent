@@ -155,4 +155,89 @@ router.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/v1/orders/:id — Update order details and status
+router.patch("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const body = req.body;
+
+    const { rows: existingRows } = await db.query(
+      `SELECT * FROM orders WHERE id::text = $1 OR order_id = $1 LIMIT 1`,
+      [id]
+    );
+
+    if (!existingRows[0]) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const existing = existingRows[0];
+
+    // Map fields
+    let newStatus = existing.status;
+    if (body.paymentStatus === "paid" || body.status === "CAPTURED") newStatus = "CAPTURED";
+    else if (body.paymentStatus === "refunded" || body.status === "REFUNDED") newStatus = "REFUNDED";
+    else if (body.paymentStatus === "failed" || body.status === "FAILED") newStatus = "FAILED";
+    else if (body.paymentStatus === "pending" || body.status === "AUTHORIZED" || body.status === "CREATED") newStatus = "CREATED";
+
+    const customerName = body.customerName !== undefined ? body.customerName : existing.customer_name;
+    const customerPhone = body.customerPhone !== undefined ? body.customerPhone : existing.customer_phone;
+    const productTitle = body.productTitle !== undefined ? body.productTitle : existing.product_title;
+    const sku = body.sku !== undefined ? body.sku : existing.sku;
+    const amount = body.amount !== undefined ? parseFloat(body.amount) : parseFloat(existing.amount);
+
+    const { rows: updatedRows } = await db.query(
+      `UPDATE orders
+       SET status = $1, customer_name = $2, customer_phone = $3,
+           product_title = $4, sku = $5, amount = $6, updated_at = NOW()
+       WHERE id = $7
+       RETURNING *`,
+      [newStatus, customerName, customerPhone, productTitle, sku, amount, existing.id]
+    );
+
+    const updated = updatedRows[0];
+
+    // Send WhatsApp notification if requested
+    if (body.notifyWhatsApp && customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, "");
+      if (cleanPhone) {
+        try {
+          const { sendText } = await import("../services/whatsapp.ts");
+          let updateMsg = `📦 *Order Update for ${updated.order_id}*\n\n`;
+          if (newStatus === "CAPTURED") updateMsg += `Status: ✅ Confirmed & Paid (₹${amount})\n`;
+          else if (newStatus === "REFUNDED") updateMsg += `Status: 🔄 Refund Processed for ₹${amount}\n`;
+          else if (newStatus === "FAILED") updateMsg += `Status: ❌ Order Cancelled\n`;
+
+          if (body.trackingNumber) {
+            updateMsg += `🚚 Tracking / Dispatch Info: *${body.trackingNumber}*\n`;
+          }
+          if (body.notes) {
+            updateMsg += `📝 Merchant Note: ${body.notes}\n`;
+          }
+          updateMsg += `\nThank you for shopping with us!`;
+
+          await sendText(cleanPhone, updateMsg);
+        } catch (waErr) {
+          console.warn("Could not send WhatsApp notification for order update:", waErr);
+        }
+      }
+    }
+
+    return res.json({
+      id: updated.id,
+      orderNumber: updated.order_id,
+      customerName: updated.customer_name,
+      customerPhone: updated.customer_phone,
+      productTitle: updated.product_title,
+      sku: updated.sku,
+      amount: parseFloat(updated.amount),
+      status: updated.status,
+      paymentStatus: updated.status === "CAPTURED" ? "paid" : updated.status === "REFUNDED" ? "refunded" : updated.status === "FAILED" ? "failed" : "pending",
+      updatedAt: updated.updated_at,
+    });
+  } catch (err) {
+    console.error("Update order error:", err);
+    return res.status(500).json({ error: "Failed to update order" });
+  }
+});
+
 export default router;

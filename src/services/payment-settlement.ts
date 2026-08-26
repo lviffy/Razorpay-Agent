@@ -81,7 +81,12 @@ export async function processOrderPaymentSuccess(opts: {
   const { rows: convRows } = await db.query(
     `SELECT phone_number, conversation_id, last_message_id FROM conversations ORDER BY updated_at DESC LIMIT 1`
   );
-  const targetPhone = order.customer_phone || convRows[0]?.phone_number;
+  const fallbackPhone = convRows[0]?.phone_number;
+  let rawPhone = order.customer_phone;
+  if (!rawPhone || rawPhone.includes("9876543210") || rawPhone.includes("98765 43210")) {
+    rawPhone = fallbackPhone;
+  }
+  const targetPhone = rawPhone ? rawPhone.replace(/\D/g, "") : null;
   if (targetPhone) {
     try {
       await sendConfirmation(targetPhone, {

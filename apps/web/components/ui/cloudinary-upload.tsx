@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useState, useCallback } from "react";
-import { ImagePlus, X, Loader2, UploadCloud, CheckCircle2 } from "lucide-react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
+import { ImagePlus, X, Loader2, UploadCloud, CheckCircle2, Link as LinkIcon } from "lucide-react";
 
 interface CloudinaryUploadProps {
   onUpload: (url: string) => void;
@@ -10,7 +10,6 @@ interface CloudinaryUploadProps {
   label?: string;
 }
 
-// Cloudinary free-tier constraints
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"];
 const ALLOWED_EXT_LABEL = "JPG, PNG, WEBP, GIF, BMP";
@@ -27,18 +26,24 @@ export function CloudinaryUpload({
   const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
   const [dragging, setDragging] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [directUrl, setDirectUrl] = useState("");
+  const [mode, setMode] = useState<"upload" | "url">("upload");
 
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
+  useEffect(() => {
+    if (existingUrl) {
+      setPreview(existingUrl);
+    }
+  }, [existingUrl]);
+
   const uploadFile = useCallback(
     async (file: File) => {
       if (!cloudName || !uploadPreset) {
-        // Dev fallback: just show local preview without uploading
-        const localUrl = URL.createObjectURL(file);
-        setPreview(localUrl);
-        setStatus("done");
-        onUpload(localUrl);
+        setErrorMsg("Cloudinary not configured in .env.local. Please paste a public image URL below.");
+        setStatus("error");
+        setMode("url");
         return;
       }
 
@@ -56,10 +61,6 @@ export function CloudinaryUpload({
 
       setStatus("uploading");
       setErrorMsg(null);
-
-      // Show local preview immediately
-      const localUrl = URL.createObjectURL(file);
-      setPreview(localUrl);
 
       try {
         const formData = new FormData();
@@ -83,7 +84,7 @@ export function CloudinaryUpload({
         setStatus("done");
         onUpload(secureUrl);
       } catch (err: any) {
-        setErrorMsg(err?.message || "Upload failed. Try again.");
+        setErrorMsg(err?.message || "Upload failed. Please try pasting a direct image link.");
         setStatus("error");
         setPreview(null);
       }
@@ -91,18 +92,12 @@ export function CloudinaryUpload({
     [cloudName, uploadPreset, onUpload]
   );
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) uploadFile(file);
-    // reset so same file can be re-selected
-    e.target.value = "";
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) uploadFile(file);
+  const handleApplyDirectUrl = (url: string) => {
+    if (!url.trim()) return;
+    setPreview(url.trim());
+    setStatus("done");
+    setErrorMsg(null);
+    onUpload(url.trim());
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -110,112 +105,148 @@ export function CloudinaryUpload({
     setPreview(null);
     setStatus("idle");
     setErrorMsg(null);
+    setDirectUrl("");
     onUpload("");
   };
 
   return (
-    <div className={`space-y-1.5 ${className}`}>
-      <label className="text-xs font-semibold text-zinc-700">{label}</label>
-
-      <div
-        onClick={() => !preview && inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        className={[
-          "relative flex items-center justify-center rounded-xl border-2 border-dashed transition-all duration-200 overflow-hidden",
-          preview ? "h-36 cursor-default border-zinc-200 bg-zinc-50" : "h-24 cursor-pointer",
-          dragging ? "border-blue-400 bg-blue-50 scale-[1.01]" : "",
-          !preview && !dragging ? "border-zinc-200 bg-zinc-50/60 hover:border-blue-300 hover:bg-blue-50/40" : "",
-          status === "error" ? "border-red-300 bg-red-50" : "",
-        ].filter(Boolean).join(" ")}
-      >
-        {/* Preview image */}
-        {preview && (
-          <img
-            src={preview}
-            alt="Product preview"
-            className="h-full w-full object-contain p-1"
-          />
-        )}
-
-        {/* Uploading overlay */}
-        {status === "uploading" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm gap-1.5">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-            <span className="text-[11px] font-medium text-zinc-500">Uploading…</span>
-          </div>
-        )}
-
-        {/* Done badge */}
-        {status === "done" && preview && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 bg-green-500/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-            <CheckCircle2 className="w-3 h-3" /> Uploaded
-          </div>
-        )}
-
-        {/* Clear button */}
-        {preview && status !== "uploading" && (
+    <div className={`space-y-2 ${className}`}>
+      <div className="flex items-center justify-between">
+        <label className="text-xs font-semibold text-zinc-300">{label}</label>
+        <div className="flex items-center gap-1 text-[11px]">
           <button
             type="button"
-            onClick={handleClear}
-            className="absolute top-2 right-2 bg-white/90 hover:bg-red-50 border border-zinc-200 hover:border-red-300 text-zinc-500 hover:text-red-500 rounded-full p-1 shadow-sm transition-all"
-            title="Remove image"
+            onClick={() => setMode("upload")}
+            className={`px-2 py-0.5 rounded-md transition-colors ${
+              mode === "upload" ? "bg-zinc-800 text-zinc-100 font-medium" : "text-zinc-400 hover:text-zinc-200"
+            }`}
           >
-            <X className="w-3.5 h-3.5" />
+            Upload
           </button>
-        )}
-
-        {/* Change button (when image is set) */}
-        {preview && status !== "uploading" && (
+          <span className="text-zinc-600">|</span>
           <button
             type="button"
-            onClick={() => inputRef.current?.click()}
-            className="absolute bottom-2 right-2 bg-white/90 hover:bg-blue-50 border border-zinc-200 hover:border-blue-300 text-zinc-500 hover:text-blue-600 rounded-lg px-2 py-1 text-[10px] font-semibold shadow-sm transition-all flex items-center gap-1"
+            onClick={() => setMode("url")}
+            className={`px-2 py-0.5 rounded-md transition-colors ${
+              mode === "url" ? "bg-zinc-800 text-zinc-100 font-medium" : "text-zinc-400 hover:text-zinc-200"
+            }`}
           >
-            <ImagePlus className="w-3 h-3" /> Change
+            Image Link
           </button>
-        )}
-
-        {/* Empty state */}
-        {!preview && status !== "uploading" && (
-          <div className="flex flex-col items-center gap-1.5 text-zinc-400 select-none">
-            <UploadCloud className={`w-6 h-6 ${dragging ? "text-blue-500 scale-110" : ""} transition-all`} />
-            <div className="text-center">
-              <p className="text-[11px] font-semibold text-zinc-600">
-                {dragging ? "Drop it!" : "Click or drag photo here"}
-              </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5">{ALLOWED_EXT_LABEL} · max {MAX_SIZE_LABEL}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Error state */}
-        {status === "error" && !preview && (
-          <div className="flex flex-col items-center gap-1 text-red-500">
-            <X className="w-5 h-5" />
-            <p className="text-[11px] font-semibold">{errorMsg}</p>
-            <button
-              type="button"
-              onClick={() => { setStatus("idle"); setErrorMsg(null); }}
-              className="text-[10px] underline text-red-400 hover:text-red-600"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif,image/bmp"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        </div>
       </div>
 
-      {errorMsg && preview && (
-        <p className="text-[11px] text-red-500 font-medium">{errorMsg}</p>
+      {mode === "upload" ? (
+        <div
+          onClick={() => !preview && inputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) uploadFile(file);
+          }}
+          className={[
+            "relative flex items-center justify-center rounded-xl border-2 border-dashed transition-all duration-200 overflow-hidden",
+            preview ? "h-32 cursor-default border-zinc-700 bg-zinc-950/40" : "h-24 cursor-pointer",
+            dragging ? "border-blue-500 bg-blue-950/30 scale-[1.01]" : "",
+            !preview && !dragging ? "border-zinc-700/80 bg-zinc-800/40 hover:border-blue-500/60 hover:bg-zinc-800/80" : "",
+            status === "error" ? "border-red-800/80 bg-red-950/20" : "",
+          ].filter(Boolean).join(" ")}
+        >
+          {preview ? (
+            <div className="relative h-full w-full flex items-center justify-center p-2">
+              <img
+                src={preview}
+                alt="Product preview"
+                className="h-full max-w-full object-contain rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute top-2 right-2 p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1.5 p-3 text-center">
+              {status === "uploading" ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
+                  <span className="text-xs text-zinc-400">Uploading to Cloudinary...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-5 h-5 text-zinc-400" />
+                  <p className="text-xs font-medium text-zinc-300">
+                    Click to upload or drag image here
+                  </p>
+                  <p className="text-[10px] text-zinc-500">
+                    PNG, JPG, WEBP up to 10MB
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          <input
+            ref={inputRef}
+            type="file"
+            accept={ALLOWED_MIME_TYPES.join(",")}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadFile(file);
+              e.target.value = "";
+            }}
+            className="hidden"
+          />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <LinkIcon className="absolute left-3 top-2.5 w-3.5 h-3.5 text-zinc-500" />
+              <input
+                type="url"
+                value={directUrl}
+                onChange={(e) => setDirectUrl(e.target.value)}
+                placeholder="Paste public image URL (https://...)"
+                className="w-full bg-zinc-800/80 border border-zinc-700 rounded-xl pl-8 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => handleApplyDirectUrl(directUrl)}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3.5 py-2 rounded-xl font-medium transition-colors"
+            >
+              Apply
+            </button>
+          </div>
+
+          {preview && (
+            <div className="relative h-28 rounded-xl border border-zinc-700 bg-zinc-950/40 p-2 flex items-center justify-center">
+              <img
+                src={preview}
+                alt="Product preview"
+                className="h-full object-contain rounded-lg"
+                onError={() => setErrorMsg("Could not load image from this URL. Please check the link.")}
+              />
+              <button
+                type="button"
+                onClick={handleClear}
+                className="absolute top-2 right-2 p-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 text-zinc-300 border border-zinc-700"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {errorMsg && (
+        <p className="text-[11px] text-red-400 leading-tight">{errorMsg}</p>
       )}
     </div>
   );

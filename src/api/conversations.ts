@@ -99,6 +99,7 @@ router.get("/", async (req: Request, res: Response) => {
           sender: m.sender || "customer",
           content: m.content || "",
           timestamp: m.timestamp || "Just now",
+          mediaUrl: m.mediaUrl || undefined,
           metadata: m.metadata || undefined,
         })),
         traces: traces.map((t: any, idx: number) => ({

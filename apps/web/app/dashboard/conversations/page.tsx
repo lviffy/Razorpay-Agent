@@ -216,7 +216,17 @@ export default function ConversationsPage() {
                         : "bg-zinc-900 text-white rounded-tr-none"
                     }`}
                   >
-                    <p className="text-xs">{m.content}</p>
+                    {m.mediaUrl && (
+                      <div className="mb-2 rounded-lg overflow-hidden border border-zinc-200/20 bg-black/10">
+                        <img
+                          src={m.mediaUrl}
+                          alt="Product preview"
+                          className="max-h-48 w-full object-cover rounded-lg transition-transform hover:scale-105 duration-200 cursor-pointer"
+                          onClick={() => window.open(m.mediaUrl, "_blank")}
+                        />
+                      </div>
+                    )}
+                    <p className="text-xs whitespace-pre-wrap">{m.content}</p>
                     {m.metadata?.isPaymentLink && (
                       <div className="mt-2 pt-2 border-t border-zinc-700 flex items-center justify-between text-[11px]">
                         <span className="text-zinc-200 font-mono font-bold">

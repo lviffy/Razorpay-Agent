@@ -44,6 +44,7 @@ export interface Product {
   provider: StoreProvider;
   aiSellingEnabled: boolean;
   minPrice: number;
+  floorPrice?: number;
   maxDiscountPercent: number;
   description: string;
   imageUrl?: string;
@@ -58,6 +59,7 @@ export interface ConversationMessage {
   sender: "customer" | "seller_agent" | "system";
   content: string;
   timestamp: string;
+  mediaUrl?: string;
   metadata?: {
     intent?: string;
     offerAmount?: number;

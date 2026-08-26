@@ -344,8 +344,9 @@ export async function handleJob(job: WorkerJob): Promise<void> {
   await db.query(
     `INSERT INTO orders (
       store_id, razorpay_order_id, order_id, x402_tx_hash,
-      mandate_id, amount, currency, status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      mandate_id, amount, currency, status,
+      customer_phone, customer_name, product_title, sku
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       storeId,
       rzpOrder.id,
@@ -355,6 +356,10 @@ export async function handleJob(job: WorkerJob): Promise<void> {
       offer.offeredPrice,
       "INR",
       "CREATED",
+      msg.from,
+      conv.customerName || "Customer",
+      offer.product.title,
+      offer.product.sku || "",
     ]
   );
 
@@ -462,7 +467,8 @@ GUIDELINES:
 - Remember the ongoing conversation context. If the user previously asked about an item and now says "yes", "sure", or "tell me more", continue on that same item.
 - If the customer wants to buy, tell them the price (e.g. ₹${conv.activeProduct?.listedPrice || availableProducts[0]?.listed_price || 1200}) and ask if they would like you to lock it in and send the payment link.
 - Never make up products or prices not in the catalog above.
-- Use 1 emoji maximum. Use Indian English and ₹ for currency.`;
+- Use 1 emoji maximum.
+- ONLY use Indian Rupee currency symbol ₹ (INR). NEVER use dollar ($) signs or USD.`;
 
     // Build multi-turn messages array from previous turns
     const historyMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
@@ -520,7 +526,8 @@ GUIDELINES:
               });
             }
 
-            await sendText(to, reply);
+            const cleanReply = reply.replace(/\$([0-9,]+(\.[0-9]+)?)/g, "₹$1").replace(/\$/g, "₹");
+            await sendText(to, cleanReply);
             return;
           }
         } catch {
@@ -538,7 +545,8 @@ GUIDELINES:
         const result = await model.generateContent(`${systemPrompt}\n\nChat History:\n${convoSummary}\nAgent:`);
         const reply = result.response.text()?.trim();
         if (reply) {
-          await sendText(to, reply);
+          const cleanReply = reply.replace(/\$([0-9,]+(\.[0-9]+)?)/g, "₹$1").replace(/\$/g, "₹");
+          await sendText(to, cleanReply);
           return;
         }
       } catch (geminiErr: any) {

@@ -411,6 +411,19 @@ export const api = {
     get: async (id: string): Promise<Order | null> => {
       return fetchJson<Order | null>(`/orders/${id}`, {}, null);
     },
+    update: async (
+      id: string,
+      payload: Partial<Order> & { notifyWhatsApp?: boolean; trackingNumber?: string; notes?: string }
+    ): Promise<Order | null> => {
+      return fetchJson<Order | null>(
+        `/orders/${id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        },
+        null
+      );
+    },
   },
 
   conversations: {
