@@ -5,7 +5,7 @@ import { sendText, sendImage, sendPaymentLink } from "../services/whatsapp.ts";
 import { resolveIntent } from "./intent-resolver.ts";
 import { executeCommerceAction } from "./commerce-executor.ts";
 import { generateCustomerResponse } from "./response-generator.ts";
-import type { WorkerJob, Product } from "../types/index.ts";
+import type { WorkerJob } from "../types/index.ts";
 import type { ConversationContext } from "./types.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,8 +61,8 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   console.log(`[Orchestrator] Commerce result: ${commerceResult.type}`);
 
   // ── 5. Update Conversation State & Memory ─────────────────────────────────
-  const updatedActiveProduct = commerceResult.product || state.activeProduct;
-  const updatedOffer = commerceResult.offer
+  let updatedActiveProduct = commerceResult.product || state.activeProduct;
+  let updatedOffer = commerceResult.offer
     ? {
         productTitle: commerceResult.product?.title || state.activeProduct?.title || "Product",
         variantId: commerceResult.product?.variantId || state.activeProduct?.variantId || "",
@@ -73,19 +73,34 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
       }
     : state.currentOffer;
 
+  // On clean greeting, reset active product so old focus is not carried over
+  if (intent.intent === "SMALL_TALK") {
+    updatedActiveProduct = undefined;
+    updatedOffer = undefined;
+  }
+
   const nextSessionState =
     commerceResult.type === "PAYMENT_LINK_CREATED"
       ? "AWAITING_PAYMENT"
       : commerceResult.type === "OFFER_PROPOSED" || commerceResult.type === "COUNTER_OFFER"
       ? "NEGOTIATING"
+      : intent.intent === "SMALL_TALK"
+      ? "IDLE"
       : state.sessionState;
+
+  const awaitingConf =
+    commerceResult.type === "OFFER_PROPOSED" || commerceResult.type === "COUNTER_OFFER"
+      ? ("PAYMENT_LINK" as const)
+      : commerceResult.type === "GREETING"
+      ? ("CATALOG" as const)
+      : null;
 
   await updateConversationContext(conversationId, phoneNumber, {
     activeProduct: updatedActiveProduct,
     currentOffer: updatedOffer,
-    buyerBudget: intent.extractedBudget || intent.requestedPrice || state.buyerBudget,
+    buyerBudget: intent.extractedBudget || intent.requestedPrice || (intent.intent === "SMALL_TALK" ? undefined : state.buyerBudget),
     lastIntent: intent.intent,
-    awaitingConfirmation: commerceResult.type === "OFFER_PROPOSED" || commerceResult.type === "COUNTER_OFFER" ? "PAYMENT_LINK" : null,
+    awaitingConfirmation: awaitingConf,
     sessionState: nextSessionState,
     dealAmount: commerceResult.paymentAmount || commerceResult.product?.offeredPrice,
   });
@@ -94,12 +109,13 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   const response = await generateCustomerResponse(msg.text, intent, commerceResult, context);
 
   // ── 7. Send Outbound WhatsApp Communication ───────────────────────────────
-  // Send product image if available and requested/relevant
-  if (response.mediaUrl && response.mediaUrl.startsWith("http") && !response.mediaUrl.startsWith("blob:")) {
+  // Handle photo delivery cleanly
+  if (commerceResult.type === "PHOTO_FOUND" && response.mediaUrl && response.mediaUrl.startsWith("http") && !response.mediaUrl.startsWith("blob:")) {
     try {
-      await sendImage(phoneNumber, response.mediaUrl, response.mediaCaption);
+      await sendImage(phoneNumber, response.mediaUrl, response.mediaCaption || response.text);
+      return; // Image sent with caption, no need for second text
     } catch (imgErr) {
-      console.warn("[Orchestrator] Image send warning (proceeding with text):", imgErr);
+      console.warn("[Orchestrator] Image send warning, falling back to text:", imgErr);
     }
   }
 

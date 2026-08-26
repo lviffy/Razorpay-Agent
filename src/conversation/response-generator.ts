@@ -1,4 +1,4 @@
-import { getGroqClient, getGeminiClient } from "../services/ai.ts";
+import { getGroqClient } from "../services/ai.ts";
 import type { ConversationContext, ConversationIntent, CommerceResult, GeneratedCustomerResponse } from "./types.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11,9 +11,53 @@ export async function generateCustomerResponse(
   commerceResult: CommerceResult,
   context: ConversationContext
 ): Promise<GeneratedCustomerResponse> {
-  const { state, store } = context;
+  const { store } = context;
 
-  // Direct fast paths for deterministic outcomes
+  // ── 1. Fast Direct Paths for Deterministic Outcomes ───────────────────────
+
+  // Greeting
+  if (commerceResult.type === "GREETING") {
+    return {
+      text: `Hey there! 👋 Welcome to ${store.name}. What can I help you find today?`,
+    };
+  }
+
+  // Catalog Listing
+  if (commerceResult.type === "CATALOG_LIST" && commerceResult.catalogItems?.length) {
+    const listText = commerceResult.catalogItems
+      .map((item) => `• *${item.title}* — ₹${item.price.toLocaleString("en-IN")}`)
+      .join("\n");
+
+    return {
+      text: `Here are some of our featured items right now:\n\n${listText}\n\nLet me know which one you'd like to check out!`,
+    };
+  }
+
+  // Photo Delivery
+  if (commerceResult.type === "PHOTO_FOUND") {
+    const title = commerceResult.product?.title || "item";
+    const price = commerceResult.product?.offeredPrice || commerceResult.product?.listedPrice || 0;
+    return {
+      text: `Here is the picture of *${title}* (₹${price.toLocaleString("en-IN")}) 📸 Let me know if you'd like to grab it or see other options!`,
+      mediaUrl: commerceResult.mediaUrlToSend,
+      mediaCaption: `Here is ${title} (₹${price.toLocaleString("en-IN")}) 📸`,
+    };
+  }
+
+  // Payment Link Created
+  if (commerceResult.type === "PAYMENT_LINK_CREATED" && commerceResult.paymentUrl) {
+    const title = commerceResult.product?.title || "your item";
+    const amount = commerceResult.paymentAmount || commerceResult.product?.offeredPrice || 0;
+    return {
+      text: `Deal locked for *${title}* at ₹${amount.toLocaleString("en-IN")}! 🚚\n\nTap below to complete payment via Razorpay:\n${commerceResult.paymentUrl}`,
+      isPaymentLink: true,
+      paymentAmount: amount,
+      paymentUrl: commerceResult.paymentUrl,
+      mediaUrl: commerceResult.mediaUrlToSend,
+    };
+  }
+
+  // Payment Retry
   if (commerceResult.type === "PAYMENT_RETRY_READY" && commerceResult.paymentUrl) {
     return {
       text: `Here's your updated checkout link for ₹${commerceResult.paymentAmount?.toLocaleString("en-IN")}:\n${commerceResult.paymentUrl}`,
@@ -23,31 +67,21 @@ export async function generateCustomerResponse(
     };
   }
 
-  if (commerceResult.type === "PAYMENT_LINK_CREATED" && commerceResult.paymentUrl) {
-    const title = commerceResult.product?.title || "your item";
-    const amount = commerceResult.paymentAmount || commerceResult.product?.offeredPrice || 0;
-    return {
-      text: `Deal locked for *${title}* at ₹${amount.toLocaleString("en-IN")} with free express shipping! 🚚\n\nPay here to complete your order:\n${commerceResult.paymentUrl}`,
-      isPaymentLink: true,
-      paymentAmount: amount,
-      paymentUrl: commerceResult.paymentUrl,
-      mediaUrl: commerceResult.mediaUrlToSend,
-    };
-  }
-
+  // Order Cancelled
   if (commerceResult.type === "ORDER_CANCELLED") {
     return {
       text: "No problem, I've cancelled that search. Let me know whenever you'd like to explore other items!",
     };
   }
 
+  // Clarification
   if (commerceResult.type === "CLARIFICATION_NEEDED") {
     return {
       text: "Sure! What type of product are you looking for, or do you have a specific budget in mind?",
     };
   }
 
-  // Multi-turn natural dialogue generation via LLM
+  // ── 2. Natural Multi-Turn Negotiation / Inquiry Response via LLM ──────────
   const prompt = buildResponsePrompt(userMessage, intent, commerceResult, context);
 
   const groq = getGroqClient();
@@ -60,19 +94,19 @@ export async function generateCustomerResponse(
           messages: [
             {
               role: "system",
-              content: `You are ZapAI, a helpful, conversational shopping assistant on WhatsApp for ${store.name} in ${store.city}.
+              content: `You are ZapAI, a helpful, natural shopping assistant on WhatsApp for ${store.name} in ${store.city}.
 GUIDELINES:
-- Reply in 1 to 3 short sentences.
-- Speak naturally and confidently in Indian English.
+- Reply in 1 to 2 short sentences.
+- Speak naturally and warmly in Indian English.
 - Use strictly Indian Rupee symbol (₹). Never use dollars ($) or USD.
 - Use 1 emoji maximum.
-- NEVER narrate backend execution (do not say "searching database", "locking inventory", "calculating margin", "mandate verified", "calling tool").
-- State the final customer-facing result directly and warmly.`,
+- NEVER narrate backend execution (do not say "searching database", "locking inventory", "calculating margin", "mandate verified").
+- Avoid repetitive template endings. Speak like a real human shop assistant.`,
             },
             { role: "user", content: prompt },
           ],
           temperature: 0.6,
-          max_tokens: 1500,
+          max_tokens: 512,
         });
 
         let reply = chat.choices[0]?.message?.content?.trim() || "";
@@ -107,22 +141,20 @@ function buildResponsePrompt(
   const { state, store } = context;
 
   const productInfo = commerce.product
-    ? `Product: ${commerce.product.title}, Listed: ₹${commerce.product.listedPrice}, Offered Deal: ₹${commerce.product.offeredPrice}`
+    ? `Product: ${commerce.product.title}, Listed: ₹${commerce.product.listedPrice}, Offered Price: ₹${commerce.product.offeredPrice}`
     : state.activeProduct
-    ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}`
+    ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}, Current Offered: ₹${state.currentOffer?.offeredPrice || state.activeProduct.listedPrice}`
     : "None";
 
   return `CUSTOMER MESSAGE: "${userMessage}"
 DETECTED INTENT: ${intent.intent}
 OUTCOME TYPE: ${commerce.type}
-CURRENT PRODUCT ON TABLE: ${productInfo}
+CURRENT PRODUCT: ${productInfo}
 STORE: ${store.name} (${store.city})
-ADDITIONAL CONTEXT: ${commerce.infoDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}
+NEGOTIATION CONTEXT: ${commerce.infoDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}
 
 TASK:
-Write the natural WhatsApp response to the customer reflecting this outcome. 
-If a price deal is proposed, mention the exact price in ₹ and ask if they would like you to lock it in.
-Keep it strictly 1-3 sentences.`;
+Write a warm, concise WhatsApp response (1-2 sentences). State the price in ₹ clearly if negotiating.`;
 }
 
 function cleanAndSanitizeResponse(text: string): string {
@@ -144,7 +176,7 @@ function cleanAndSanitizeResponse(text: string): string {
 
 function fallbackResponseText(commerce: CommerceResult): string {
   if (commerce.product) {
-    return `I found the *${commerce.product.title}* for ₹${commerce.product.offeredPrice.toLocaleString("en-IN")}! Want me to lock in this deal for you?`;
+    return `We can offer *${commerce.product.title}* for ₹${commerce.product.offeredPrice.toLocaleString("en-IN")}! Let me know if you'd like to take it.`;
   }
   if (commerce.errorMessage) {
     return commerce.errorMessage;

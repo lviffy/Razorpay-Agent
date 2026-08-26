@@ -33,7 +33,7 @@ export interface ConversationState {
   };
   buyerBudget?: number;
   lastIntent?: string;
-  awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+  awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
   activeCategory?: string;
   transcript: ChatMessage[];
   productsDiscussed: string[];
@@ -94,7 +94,7 @@ export async function appendMessage(
     currentOffer?: any;
     buyerBudget?: number;
     lastIntent?: string;
-    awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+    awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
     activeCategory?: string;
     sessionState?: string;
   }
@@ -163,7 +163,7 @@ export async function updateConversationContext(
     currentOffer?: any;
     buyerBudget?: number;
     lastIntent?: string;
-    awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+    awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
     activeCategory?: string;
     sessionState?: "IDLE" | "NEGOTIATING" | "AWAITING_PAYMENT" | "COMPLETE";
     dealAmount?: number;

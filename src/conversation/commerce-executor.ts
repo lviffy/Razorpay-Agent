@@ -21,7 +21,30 @@ export async function executeCommerceAction(
 ): Promise<CommerceResult> {
   const { state, availableProducts, store, rules, phoneNumber, conversationId } = context;
 
-  // ── 1. Payment Retry Flow ──────────────────────────────────────────────────
+  // ── 1. Greetings & Small Talk ─────────────────────────────────────────────
+  if (intent.intent === "SMALL_TALK") {
+    return {
+      type: "GREETING",
+      infoDetails: `Welcome to ${store.name}!`,
+    };
+  }
+
+  // ── 2. Catalog Browsing ───────────────────────────────────────────────────
+  if (intent.intent === "CATALOG_BROWSE") {
+    const catalogItems = availableProducts.slice(0, 5).map((p) => ({
+      title: p.title,
+      price: p.listedPrice,
+      sku: p.sku,
+      inStock: p.inventoryAvailable > 0,
+    }));
+
+    return {
+      type: "CATALOG_LIST",
+      catalogItems,
+    };
+  }
+
+  // ── 3. Payment Retry Flow ──────────────────────────────────────────────────
   if (intent.intent === "PAYMENT_RETRY") {
     // Correct customer-scoped order lookup
     const { rows } = await db.query(
@@ -57,7 +80,7 @@ export async function executeCommerceAction(
     };
   }
 
-  // ── 2. Order Cancellation ──────────────────────────────────────────────────
+  // ── 4. Order Cancellation ──────────────────────────────────────────────────
   if (intent.intent === "CANCELLATION") {
     return {
       type: "ORDER_CANCELLED",
@@ -65,7 +88,7 @@ export async function executeCommerceAction(
     };
   }
 
-  // ── 3. Handle Ambiguous Requests (Preserve Uncertainty) ────────────────────
+  // ── 5. Handle Ambiguous Requests (Preserve Uncertainty) ────────────────────
   if (intent.intent === "AMBIGUOUS") {
     return {
       type: "CLARIFICATION_NEEDED",
@@ -73,10 +96,11 @@ export async function executeCommerceAction(
     };
   }
 
-  // ── 4. Photo / Picture Requests ───────────────────────────────────────────
+  // ── 6. Photo / Picture Requests ───────────────────────────────────────────
   if (intent.isPhotoRequest || (intent.intent === "PRODUCT_QUESTION" && intent.isPhotoRequest)) {
     const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct);
     if (targetProduct) {
+      const offeredPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
       return {
         type: "PHOTO_FOUND",
         product: {
@@ -85,30 +109,66 @@ export async function executeCommerceAction(
           variantId: targetProduct.shopifyVariantId,
           listedPrice: targetProduct.listedPrice,
           floorPrice: targetProduct.floorPrice,
-          offeredPrice: state.activeProduct?.offeredPrice || targetProduct.listedPrice,
+          offeredPrice,
           imageUrl: targetProduct.imageUrl,
           sku: targetProduct.sku,
         },
         mediaUrlToSend: targetProduct.imageUrl,
-        mediaCaption: `${targetProduct.title} (₹${targetProduct.listedPrice.toLocaleString("en-IN")}) 📸`,
+        mediaCaption: `Here is ${targetProduct.title} (₹${offeredPrice.toLocaleString("en-IN")}) 📸`,
       };
     }
   }
 
-  // ── 5. Price Negotiation on Active Product ────────────────────────────────
-  if (intent.intent === "PRICE_NEGOTIATION" && state.activeProduct) {
-    const targetProduct = availableProducts.find(
-      (p) => p.shopifyVariantId === state.activeProduct?.variantId || p.title.toLowerCase() === state.activeProduct?.title.toLowerCase()
-    ) || availableProducts[0];
+  // ── 7. Price Negotiation on Active Product ────────────────────────────────
+  if (intent.intent === "PRICE_NEGOTIATION" && (state.activeProduct || intent.referencedProductTitle)) {
+    const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct) || availableProducts[0];
 
     if (targetProduct) {
-      const seller = new SellerAgent(store.id);
-      const buyerTargetPrice = intent.requestedPrice || intent.extractedBudget || (state.activeProduct.listedPrice * 0.9);
-      
-      const counter = await seller.generateCounter(
-        targetProduct.agentSchema,
-        buyerTargetPrice,
-        rules
+      const maxDiscountPct = rules.maxDiscountPercentage || 10;
+      const minAllowedPrice = Math.max(
+        targetProduct.floorPrice,
+        Math.round(targetProduct.listedPrice * (1 - maxDiscountPct / 100))
+      );
+
+      // Determine starting reference price
+      const currentKnownPrice =
+        state.currentOffer?.offeredPrice ||
+        state.activeProduct?.offeredPrice ||
+        targetProduct.listedPrice;
+
+      let counterPrice: number;
+      let reasoning: string;
+
+      if (intent.requestedPrice) {
+        if (intent.requestedPrice >= minAllowedPrice) {
+          counterPrice = intent.requestedPrice;
+          reasoning = `Accepted customer requested price of ₹${counterPrice}.`;
+        } else {
+          counterPrice = minAllowedPrice;
+          reasoning = `₹${minAllowedPrice} is our rock-bottom floor price for ${targetProduct.title}.`;
+        }
+      } else {
+        // Progressive negotiation: if current price is listed price, drop to first discount tier
+        if (currentKnownPrice >= targetProduct.listedPrice) {
+          counterPrice = minAllowedPrice;
+          reasoning = `Special discount of ${maxDiscountPct}% applied: ₹${counterPrice}.`;
+        } else if (currentKnownPrice > minAllowedPrice) {
+          counterPrice = minAllowedPrice;
+          reasoning = `Dropped to our absolute floor price: ₹${counterPrice}.`;
+        } else {
+          // Already at rock bottom
+          counterPrice = currentKnownPrice;
+          reasoning = `₹${currentKnownPrice} is our absolute lowest rock-bottom price. We cannot go below this.`;
+        }
+      }
+
+      // Enforce strict monotonicity: counter price must NEVER be higher than previously offered price
+      if (state.currentOffer?.offeredPrice && counterPrice > state.currentOffer.offeredPrice) {
+        counterPrice = state.currentOffer.offeredPrice;
+      }
+
+      const shippingFree = Boolean(
+        rules.freeShippingThreshold && counterPrice >= rules.freeShippingThreshold
       );
 
       return {
@@ -119,23 +179,24 @@ export async function executeCommerceAction(
           variantId: targetProduct.shopifyVariantId,
           listedPrice: targetProduct.listedPrice,
           floorPrice: targetProduct.floorPrice,
-          offeredPrice: counter.offeredPrice,
+          offeredPrice: counterPrice,
           imageUrl: targetProduct.imageUrl,
           sku: targetProduct.sku,
         },
         offer: {
           status: "COUNTER",
           product: targetProduct.agentSchema,
-          offeredPrice: counter.offeredPrice,
-          shippingFree: counter.shippingFree,
-          reasoningTrace: counter.reasoning,
+          offeredPrice: counterPrice,
+          shippingFree,
+          reasoningTrace: reasoning,
           sessionId: conversationId,
         },
+        mediaUrlToSend: targetProduct.imageUrl,
       };
     }
   }
 
-  // ── 6. Accept Offer / Payment Generation ──────────────────────────────────
+  // ── 8. Accept Offer / Payment Generation ──────────────────────────────────
   if (
     intent.intent === "ACCEPT_OFFER" ||
     intent.intent === "PAYMENT_REQUEST" ||
@@ -273,7 +334,7 @@ export async function executeCommerceAction(
     };
   }
 
-  // ── 7. Product Search & Catalog Evaluation ────────────────────────────────
+  // ── 9. Product Search & Catalog Evaluation ────────────────────────────────
   const spendingLimit = intent.requestedPrice || intent.extractedBudget || state.buyerBudget || 999999;
   const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct);
 
@@ -355,12 +416,15 @@ function resolveTargetProduct(
   availableProducts: Product[],
   activeProduct?: any
 ): Product | null {
+  if (availableProducts.length === 0) return null;
+
   // 1. Check referenced title
   if (intent.referencedProductTitle) {
-    const p = availableProducts.find(
-      (item) => item.title.toLowerCase().includes(intent.referencedProductTitle!.toLowerCase()) ||
-                intent.referencedProductTitle!.toLowerCase().includes(item.title.toLowerCase())
-    );
+    const refLower = intent.referencedProductTitle.toLowerCase().trim();
+    const p = availableProducts.find((item) => {
+      const tLower = item.title.toLowerCase().trim();
+      return tLower.includes(refLower) || refLower.includes(tLower) || (item.sku && refLower.includes(item.sku.toLowerCase()));
+    });
     if (p) return p;
   }
 
@@ -372,8 +436,9 @@ function resolveTargetProduct(
 
   // 3. Check active product in state
   if (activeProduct?.title) {
+    const actLower = activeProduct.title.toLowerCase().trim();
     const p = availableProducts.find(
-      (item) => item.title.toLowerCase() === activeProduct.title.toLowerCase() ||
+      (item) => item.title.toLowerCase().trim() === actLower ||
                 item.shopifyVariantId === activeProduct.variantId
     );
     if (p) return p;

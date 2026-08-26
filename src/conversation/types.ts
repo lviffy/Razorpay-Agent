@@ -3,10 +3,11 @@ export type { ConversationState };
 import type { Product, Store, NegotiationRules, SellerOffer, Mandate } from "../types/index.ts";
 
 export type ConversationIntentType =
-  | "PRODUCT_SEARCH"       // Customer looking for new item / brand / style
+  | "PRODUCT_SEARCH"       // Customer looking for specific item / brand / style
+  | "CATALOG_BROWSE"       // Asking to view catalog / featured products / "what do you have?"
   | "PRODUCT_QUESTION"     // Question about stock, color, specs, photo, etc.
-  | "PRICE_NEGOTIATION"    // Asking for lower price / counter / "can you do 3500?" / "cheaper"
-  | "ACCEPT_OFFER"         // Agreeing to price / "yes" / "ok" / "deal" / "send link"
+  | "PRICE_NEGOTIATION"    // Asking for lower price / counter / "any discounts?" / "anything less" / "can you do 3500?"
+  | "ACCEPT_OFFER"         // Agreeing to price / "yes" / "ok" / "deal" / "send link" / "buy"
   | "REJECT_OFFER"         // Declining / "too expensive" / "no thanks"
   | "PURCHASE_INTENT"      // Direct purchase command / "buy it"
   | "PAYMENT_REQUEST"      // Requesting payment checkout link directly
@@ -14,7 +15,7 @@ export type ConversationIntentType =
   | "CANCELLATION"         // Cancel ongoing flow
   | "PRODUCT_SWITCH"       // Switching focus e.g. "what about adidas?" or "show me socks"
   | "FOLLOW_UP"            // "how much was that again?" / "what colors?"
-  | "SMALL_TALK"           // "hi", "how are you"
+  | "SMALL_TALK"           // "hi", "hello", "hey", "how are you"
   | "AMBIGUOUS";           // "something good", "for college" - needs clarification
 
 export interface ConversationIntent {
@@ -42,6 +43,8 @@ export interface ConversationContext {
 }
 
 export type CommerceResultType =
+  | "GREETING"
+  | "CATALOG_LIST"
   | "OFFER_PROPOSED"
   | "OFFER_ACCEPTED"
   | "COUNTER_OFFER"
@@ -76,6 +79,7 @@ export interface CommerceResult {
   razorpayOrderId?: string;
   clarificationPrompt?: string;
   infoDetails?: string;
+  catalogItems?: Array<{ title: string; price: number; sku?: string; inStock: boolean }>;
   mediaUrlToSend?: string;
   mediaCaption?: string;
   errorMessage?: string;

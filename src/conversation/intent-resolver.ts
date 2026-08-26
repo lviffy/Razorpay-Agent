@@ -29,10 +29,42 @@ export async function resolveIntent(
     };
   }
 
-  // ── 2. Check for photo request ─────────────────────────────────────────────
-  const isPhotoRequest = /picture|photo|image|pic|look like|show me|photos/i.test(rawLower);
+  // ── 2. Explicit Greetings (Reset Stale Focus) ─────────────────────────────
+  const isPureGreeting = /^(hi|hello|hey|greetings|good morning|good afternoon|good evening|yo|namaste|hola)(\s*[!👋😊]*)?$/i.test(rawLower);
+  if (isPureGreeting) {
+    return {
+      intent: "SMALL_TALK",
+      confidence: 1.0,
+      referencedProductTitle: undefined,
+    };
+  }
 
-  // ── 3. Build compact grounded catalog context ─────────────────────────────
+  // ── 3. Check for Photo / Picture Request ───────────────────────────────────
+  const isPhotoRequest = /picture|photo|image|pic|look like|show me.*pic|photos|send.*pic/i.test(rawLower);
+
+  // ── 4. Check for Catalog Browsing ─────────────────────────────────────────
+  const isCatalogAsk = /catalog|what do you have|what products|show products|all products|list products|menu|collection|browse|what do you sell/i.test(rawLower);
+  if (isCatalogAsk) {
+    return {
+      intent: "CATALOG_BROWSE",
+      confidence: 0.98,
+    };
+  }
+
+  // ── 5. Context-driven Short Confirmations ("yes", "ok", "deal", "sure") ──
+  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|send payment link|i want this|take it|let's do it|go ahead|send it|please send)$/i.test(rawLower);
+  const isNegative = /^(no|nah|nope|not interested|too expensive|too much|cancel|don't want|n)$/i.test(rawLower);
+  const isPriceAsk = /any discount|anything less|any deal|cheaper|less|discount|lower|best price|counter|can you do|reduce|margin|rock bottom/i.test(rawLower);
+
+  // If user previously asked/offered catalog and replies "yes"
+  if (isAffirmative && state.awaitingConfirmation === "CATALOG") {
+    return {
+      intent: "CATALOG_BROWSE",
+      confidence: 0.95,
+    };
+  }
+
+  // ── 6. Build compact grounded catalog context ─────────────────────────────
   const catalogSummary = availableProducts.slice(0, 15).map((p) => ({
     id: p.id,
     variantId: p.shopifyVariantId,
@@ -44,7 +76,7 @@ export async function resolveIntent(
     category: p.agentSchema?.attributes?.category || "General",
   }));
 
-  // ── 4. Build prompt with active conversation context ──────────────────────
+  // ── 7. Build prompt with active conversation context ──────────────────────
   const activeProductDesc = state.activeProduct
     ? `Title: "${state.activeProduct.title}" (Listed: ₹${state.activeProduct.listedPrice}${state.activeProduct.offeredPrice ? `, Offered: ₹${state.activeProduct.offeredPrice}` : ""})`
     : "None currently active";
@@ -77,21 +109,24 @@ ${JSON.stringify(catalogSummary, null, 1)}
 
 TASK:
 Analyze the user message IN LIGHT OF THE ACTIVE CONVERSATION CONTEXT.
-Determine the accurate intent and resolve any pronouns ("this", "that", "same one", "cheaper", "yes", "okay", "send link").
+Determine the accurate intent and resolve any pronouns ("this", "that", "same one", "cheaper", "anything less", "show me pic", "yes", "okay", "send link").
 
 RULES:
-1. Short affirmative replies ("yes", "ok", "sure", "deal", "send link", "buy it", "go ahead") when an active offer or product is discussed mean ACCEPT_OFFER or PAYMENT_REQUEST for the ACTIVE product.
-2. Price counter-offers ("can you do 3500?", "cheaper", "little less", "best price?") when an active product exists mean PRICE_NEGOTIATION on the ACTIVE product.
-3. Pronouns ("this one", "that", "same", "it") refer to the ACTIVE product.
-4. Switching ("what about adidas?", "do you have socks?") means PRODUCT_SWITCH or PRODUCT_SEARCH.
-5. Vague requests ("show me something good", "something for college", "something under 4000") without specific product/category must NOT guess shoes/socks. Classify as AMBIGUOUS with confidence < 0.8.
-6. Extract requestedPrice if the user specifies a target price in ₹.
-7. NEVER invent categories or products not in the catalog.
+1. Greetings ("hi", "hello", "hey") MUST be classified as SMALL_TALK without referencing any previous product.
+2. If the user asks to see the catalog / all products or says "yes" to seeing the catalog, classify as CATALOG_BROWSE.
+3. If the user asks for a picture / photo ("show me pic", "send rohan picture", "what does it look like"), classify as PRODUCT_QUESTION with isPhotoRequest=true.
+4. If asking for a discount or cheaper price ("any discounts?", "anything less", "can you do 3500?", "best price?"), classify as PRICE_NEGOTIATION on the ACTIVE product.
+5. Short affirmative replies ("yes", "ok", "sure", "deal", "send link", "buy it", "go ahead") when an active offer or product is discussed mean ACCEPT_OFFER or PAYMENT_REQUEST for the ACTIVE product.
+6. Pronouns ("this one", "that", "same", "it") refer to the ACTIVE product.
+7. Switching ("what about adidas?", "do you have socks?") means PRODUCT_SWITCH or PRODUCT_SEARCH.
+8. Vague requests ("show me something good", "something for college") without specific product/category must NOT guess shoes/socks. Classify as AMBIGUOUS.
+9. Extract requestedPrice if the user specifies a target price in ₹.
+10. NEVER invent categories or products not in the catalog.
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object matching this schema:
 {
-  "intent": "PRODUCT_SEARCH" | "PRODUCT_QUESTION" | "PRICE_NEGOTIATION" | "ACCEPT_OFFER" | "REJECT_OFFER" | "PURCHASE_INTENT" | "PAYMENT_REQUEST" | "PAYMENT_RETRY" | "CANCELLATION" | "PRODUCT_SWITCH" | "FOLLOW_UP" | "SMALL_TALK" | "AMBIGUOUS",
+  "intent": "PRODUCT_SEARCH" | "CATALOG_BROWSE" | "PRODUCT_QUESTION" | "PRICE_NEGOTIATION" | "ACCEPT_OFFER" | "REJECT_OFFER" | "PURCHASE_INTENT" | "PAYMENT_REQUEST" | "PAYMENT_RETRY" | "CANCELLATION" | "PRODUCT_SWITCH" | "FOLLOW_UP" | "SMALL_TALK" | "AMBIGUOUS",
   "referencedProductTitle": string | null,
   "referencedVariantId": string | null,
   "requestedPrice": number | null,
@@ -105,7 +140,7 @@ Return ONLY a valid JSON object matching this schema:
   "rawReasoning": string
 }`;
 
-  // ── 5. Query LLM (Qwen 3.6 27B -> GPT-OSS 120B -> Gemini) ────────────────
+  // ── 8. Query LLM (Qwen 3.6 27B -> GPT-OSS 120B -> Gemini) ────────────────
   const groq = getGroqClient();
   if (groq) {
     const models = ["qwen/qwen3.6-27b", "openai/gpt-oss-120b"];
@@ -129,8 +164,8 @@ Return ONLY a valid JSON object matching this schema:
           if (parsed.intent) {
             return {
               intent: parsed.intent as ConversationIntentType,
-              referencedProductTitle: parsed.referencedProductTitle || state.activeProduct?.title,
-              referencedVariantId: parsed.referencedVariantId || state.activeProduct?.variantId,
+              referencedProductTitle: parsed.referencedProductTitle || (parsed.intent !== "SMALL_TALK" ? state.activeProduct?.title : undefined),
+              referencedVariantId: parsed.referencedVariantId || (parsed.intent !== "SMALL_TALK" ? state.activeProduct?.variantId : undefined),
               requestedPrice: parsed.requestedPrice ? Number(parsed.requestedPrice) : undefined,
               extractedBudget: parsed.extractedBudget ? Number(parsed.extractedBudget) : (extractBudgetFromText(userMessage) || undefined),
               category: parsed.category || undefined,
@@ -149,7 +184,7 @@ Return ONLY a valid JSON object matching this schema:
     }
   }
 
-  // ── 6. Deterministic Context-First Fallback ────────────────────────────────
+  // ── 9. Deterministic Context-First Fallback ────────────────────────────────
   return fallbackIntentResolution(userMessage, context, isPhotoRequest);
 }
 
@@ -165,9 +200,9 @@ function fallbackIntentResolution(
   const extractedBudget = extractBudgetFromText(message);
 
   // Short affirmative check
-  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|i want this|take it|let's do it|go ahead|send it)$/i.test(lower);
+  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|send payment link|i want this|take it|let's do it|go ahead|send it)$/i.test(lower);
   const isNegative = /^(no|nah|nope|not interested|too expensive|too much|cancel|don't want)$/i.test(lower);
-  const isPriceAsk = /cheaper|less|discount|lower|best price|counter|can you do|reduce|margin/i.test(lower);
+  const isPriceAsk = /any discount|anything less|any deal|cheaper|less|discount|lower|best price|counter|can you do|reduce|margin|rock bottom/i.test(lower);
 
   // If there's an active product and user confirms
   if (isAffirmative && state.activeProduct) {
@@ -197,14 +232,6 @@ function fallbackIntentResolution(
       referencedVariantId: state.activeProduct.variantId,
       requestedPrice: extractedBudget || undefined,
       confidence: 0.9,
-    };
-  }
-
-  // Check for greetings
-  if (/^(hi|hello|hey|greetings|good morning|good evening|yo)$/i.test(lower)) {
-    return {
-      intent: "SMALL_TALK",
-      confidence: 0.95,
     };
   }
 
