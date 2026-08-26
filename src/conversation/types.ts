@@ -68,6 +68,7 @@ export interface CommerceResult {
     listedPrice: number;
     floorPrice: number;
     offeredPrice: number;
+    inventoryAvailable?: number;
     imageUrl?: string;
     sku?: string;
   };

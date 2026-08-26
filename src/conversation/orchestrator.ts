@@ -1,6 +1,6 @@
 import { loadConversation, updateConversationContext } from "../services/conversation-memory.ts";
 import { db } from "../db/migrate.ts";
-import { getProducts, getNegotiationRules, getStore } from "../services/merchant.ts";
+import { getProducts, getAllActiveProducts, getNegotiationRules, getStore } from "../services/merchant.ts";
 import { sendText, sendImage, sendPaymentLink } from "../services/whatsapp.ts";
 import { resolveIntent } from "./intent-resolver.ts";
 import { executeCommerceAction } from "./commerce-executor.ts";
@@ -22,7 +22,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   // ── 1. Load multi-turn conversation state ──────────────────────────────────
   const state = await loadConversation(conversationId, phoneNumber);
 
-  // ── 2. Load active store & live catalog ────────────────────────────────────
+  // ── 2. Load active store & live catalog across all merchant stores ──────────
   const { rows: storeRows } = await db.query(
     "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
   );
@@ -33,7 +33,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   }
 
   const [availableProducts, rules, store] = await Promise.all([
-    getProducts(activeStoreId),
+    getAllActiveProducts(),
     getNegotiationRules(activeStoreId),
     getStore(activeStoreId),
   ]);
@@ -121,12 +121,26 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   const response = await generateCustomerResponse(msg.text, intent, commerceResult, context);
 
   // ── 7. Send Outbound WhatsApp Communication ───────────────────────────────
-  // Handle image delivery (photo requests, catalog browsing, offer proposals)
-  if (response.mediaUrl && response.mediaUrl.startsWith("http") && !response.mediaUrl.startsWith("blob:")) {
+  // Avoid re-sending the same image on every subsequent follow-up turn
+  const wasImageAlreadySent = state.transcript.some(
+    (t: any) => t.mediaUrl && t.mediaUrl === response.mediaUrl
+  );
+
+  const shouldSendImage =
+    response.mediaUrl &&
+    response.mediaUrl.startsWith("http") &&
+    !response.mediaUrl.startsWith("blob:") &&
+    (intent.isPhotoRequest || commerceResult.type === "CATALOG_LIST" || !wasImageAlreadySent);
+
+  if (shouldSendImage) {
     try {
-      await sendImage(phoneNumber, response.mediaUrl, response.mediaCaption || response.text);
+      const shortCaption =
+        response.mediaCaption ||
+        (updatedActiveProduct ? `Featured: ${updatedActiveProduct.title} (₹${updatedActiveProduct.offeredPrice || updatedActiveProduct.listedPrice}) 📸` : undefined);
+
+      await sendImage(phoneNumber, response.mediaUrl!, shortCaption);
       if (commerceResult.type === "PHOTO_FOUND") {
-        return; // Image sent with caption, no need for duplicate second text message
+        return; // Photo sent with dedicated caption
       }
     } catch (imgErr) {
       console.warn("[Orchestrator] Image send warning, proceeding with text:", imgErr);

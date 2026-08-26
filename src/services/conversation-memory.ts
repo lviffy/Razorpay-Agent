@@ -19,6 +19,7 @@ export interface ConversationState {
     listedPrice: number;
     floorPrice?: number;
     offeredPrice?: number;
+    inventoryAvailable?: number;
     imageUrl?: string;
     sku?: string;
     variantId?: string;

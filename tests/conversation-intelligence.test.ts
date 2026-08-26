@@ -310,6 +310,31 @@ async function runTestSuite() {
     resp7.text
   );
 
+  // ── SCENARIO 8: Quantity & Live Stock Query ('how many qty are available') ──
+  console.log("\n▶️ Scenario 8: Quantity & Live Stock Query ('yes i want to order rohann how many qty are available')");
+  const ctx8 = createMockContext({
+    activeProduct: {
+      id: "prod_rohan_shirt",
+      title: "rohann",
+      listedPrice: 1200,
+      floorPrice: 1100,
+      offeredPrice: 1200,
+      inventoryAvailable: 1,
+      variantId: "var_rohan_001",
+    },
+  });
+
+  const intent8 = await resolveIntent("yes i want to order rohann how many qty are available", ctx8);
+  const comm8 = await executeCommerceAction(intent8, ctx8, "yes i want to order rohann how many qty are available");
+  const resp8 = await generateCustomerResponse("yes i want to order rohann how many qty are available", intent8, comm8, ctx8);
+
+  assert(
+    !resp8.text.toLowerCase().includes("plenty") &&
+    (resp8.text.includes("1 unit") || resp8.text.includes("1 item") || resp8.text.includes("1 available") || resp8.text.includes("1 in stock") || resp8.text.includes("1")),
+    "States exact stock of 1 unit and does NOT claim 'plenty in stock'",
+    resp8.text
+  );
+
   console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);
   if (passed === total) {
     console.log("🎉 ALL REAL-WORLD CONVERSATIONAL SCENARIOS PASSED!");

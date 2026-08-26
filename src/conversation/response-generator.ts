@@ -149,21 +149,25 @@ function buildResponsePrompt(
 ): string {
   const { state, store } = context;
 
+  const exactStock = commerce.product?.inventoryAvailable ?? state.activeProduct?.inventoryAvailable ?? 1;
+
   const productInfo = commerce.product
-    ? `Product: ${commerce.product.title}, Listed: ₹${commerce.product.listedPrice}, Offered Price: ₹${commerce.product.offeredPrice}`
+    ? `Product: ${commerce.product.title}, Listed: ₹${commerce.product.listedPrice}, Offered Price: ₹${commerce.product.offeredPrice}, Exact Stock in Inventory: ${exactStock} unit(s)`
     : state.activeProduct
-    ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}, Current Offered: ₹${state.currentOffer?.offeredPrice || state.activeProduct.listedPrice}`
+    ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}, Current Offered: ₹${state.currentOffer?.offeredPrice || state.activeProduct.listedPrice}, Exact Stock in Inventory: ${exactStock} unit(s)`
     : "None";
 
   return `CUSTOMER MESSAGE: "${userMessage}"
 DETECTED INTENT: ${intent.intent}
 OUTCOME TYPE: ${commerce.type}
-CURRENT PRODUCT: ${productInfo}
+CURRENT PRODUCT & LIVE STOCK: ${productInfo}
 STORE: ${store.name} (${store.city})
-NEGOTIATION CONTEXT: ${commerce.infoDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}
+CONTEXT & STOCK DETAILS: ${commerce.infoDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}
 
 TASK:
-Write a warm, concise WhatsApp response (1-2 sentences). State the price in ₹ clearly if negotiating.`;
+Write a warm, concise WhatsApp response (1-2 sentences).
+If the customer asks how many are available or about stock quantity, state the exact live stock (${exactStock} unit${exactStock === 1 ? "" : "s"}). Never say "plenty" or guess stock.
+If a price or purchase is discussed, invite them to confirm so you can set up their checkout.`;
 }
 
 function cleanAndSanitizeResponse(text: string): string {

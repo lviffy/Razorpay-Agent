@@ -39,7 +39,7 @@ export async function getProducts(storeId: string): Promise<Product[]> {
   }
 
   // 2. Fetch available catalog for active store(s)
-  let { rows } = await db.query(
+  const { rows } = await db.query(
     `SELECT
       id, store_id, shopify_variant_id, title, sku,
       listed_price, floor_price, image_url,
@@ -51,19 +51,38 @@ export async function getProducts(storeId: string): Promise<Product[]> {
     [storeId]
   );
 
-  if (rows.length === 0) {
-    const { rows: fallbackRows } = await db.query(
-      `SELECT
-        id, store_id, shopify_variant_id, title, sku,
-        listed_price, floor_price, image_url,
-        inventory_available, inventory_reserved, reservation_expires_at,
-        inventory_state, agent_schema, updated_at
-      FROM products
-      WHERE inventory_state = 'AVAILABLE' AND inventory_available > 0
-      ORDER BY created_at DESC LIMIT 20`
+  return rows.map(mapProductRow);
+}
+
+export async function getAllActiveProducts(): Promise<Product[]> {
+  try {
+    await db.query(
+      `UPDATE products
+       SET inventory_state = 'AVAILABLE',
+           inventory_available = inventory_available + inventory_reserved,
+           inventory_reserved = 0,
+           reservation_expires_at = NULL
+       WHERE inventory_state IN ('RESERVED', 'PAYMENT_PENDING')
+         AND reservation_expires_at IS NOT NULL
+         AND reservation_expires_at < NOW()`
     );
-    rows = fallbackRows;
+  } catch (e) {
+    // ignore
   }
+
+  const { rows } = await db.query(
+    `SELECT
+      p.id, p.store_id, p.shopify_variant_id, p.title, p.sku,
+      p.listed_price, p.floor_price, p.image_url,
+      p.inventory_available, p.inventory_reserved, p.reservation_expires_at,
+      p.inventory_state, p.agent_schema, p.updated_at
+    FROM products p
+    JOIN stores s ON p.store_id = s.id
+    WHERE s.is_active = true
+      AND p.inventory_state = 'AVAILABLE'
+      AND p.inventory_available > 0
+    ORDER BY p.created_at DESC`
+  );
 
   return rows.map(mapProductRow);
 }

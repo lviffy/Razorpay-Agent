@@ -122,6 +122,7 @@ export async function executeCommerceAction(
     const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct);
     if (targetProduct) {
       const offeredPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+      const isQtyAsk = /how many|how much stock|qty|quantity|in stock|units available|stock/i.test(userMessage);
       return {
         type: "PHOTO_FOUND",
         product: {
@@ -131,17 +132,20 @@ export async function executeCommerceAction(
           listedPrice: targetProduct.listedPrice,
           floorPrice: targetProduct.floorPrice,
           offeredPrice,
+          inventoryAvailable: targetProduct.inventoryAvailable,
           imageUrl: targetProduct.imageUrl,
           sku: targetProduct.sku,
         },
+        infoDetails: isQtyAsk ? `Live stock: Exactly ${targetProduct.inventoryAvailable} unit(s) available in stock.` : undefined,
         mediaUrlToSend: targetProduct.imageUrl,
-        mediaCaption: `Here is ${targetProduct.title} (₹${offeredPrice.toLocaleString("en-IN")}) 📸`,
+        mediaCaption: `Featured: ${targetProduct.title} (₹${offeredPrice.toLocaleString("en-IN")}) 📸`,
       };
     }
   }
 
-  // ── 7. Price Negotiation on Active Product ────────────────────────────────
-  if (intent.intent === "PRICE_NEGOTIATION" && (state.activeProduct || intent.referencedProductTitle)) {
+  // ── 7. Price Negotiation & Product Stock Inquiry ──────────────────────────
+  const isQtyOrStockAsk = /how many|how much stock|qty|quantity|in stock|units available|stock/i.test(userMessage);
+  if ((intent.intent === "PRICE_NEGOTIATION" || isQtyOrStockAsk) && (state.activeProduct || intent.referencedProductTitle)) {
     const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct) || availableProducts[0];
 
     if (targetProduct) {
@@ -168,6 +172,9 @@ export async function executeCommerceAction(
           counterPrice = minAllowedPrice;
           reasoning = `₹${minAllowedPrice} is our rock-bottom floor price for ${targetProduct.title}.`;
         }
+      } else if (isQtyOrStockAsk) {
+        counterPrice = currentKnownPrice;
+        reasoning = `Live stock: We have exactly ${targetProduct.inventoryAvailable} unit(s) of ${targetProduct.title} available in stock.`;
       } else {
         // Progressive negotiation: if current price is listed price, drop to first discount tier
         if (currentKnownPrice >= targetProduct.listedPrice) {
@@ -193,7 +200,7 @@ export async function executeCommerceAction(
       );
 
       return {
-        type: "COUNTER_OFFER",
+        type: isQtyOrStockAsk ? "INFO_ONLY" : "COUNTER_OFFER",
         product: {
           id: targetProduct.id,
           title: targetProduct.title,
@@ -201,9 +208,11 @@ export async function executeCommerceAction(
           listedPrice: targetProduct.listedPrice,
           floorPrice: targetProduct.floorPrice,
           offeredPrice: counterPrice,
+          inventoryAvailable: targetProduct.inventoryAvailable,
           imageUrl: targetProduct.imageUrl,
           sku: targetProduct.sku,
         },
+        infoDetails: reasoning,
         offer: {
           status: "COUNTER",
           product: targetProduct.agentSchema,
