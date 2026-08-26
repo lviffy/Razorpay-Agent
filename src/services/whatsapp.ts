@@ -53,9 +53,14 @@ async function sendRequest(body: Record<string, unknown>): Promise<void> {
   }
 }
 
+import { appendMessage } from "./conversation-memory.ts";
+
 // ── Message types ──────────────────────────────────────────────────────────────
 
 export async function sendText(to: string, text: string): Promise<void> {
+  const convId = `conv_${to}`;
+  await appendMessage(convId, to, "seller_agent", text);
+
   await sendRequest({
     messaging_product: "whatsapp",
     to,
@@ -69,6 +74,9 @@ export async function sendImage(
   imageUrl: string,
   caption?: string
 ): Promise<void> {
+  const convId = `conv_${to}`;
+  await appendMessage(convId, to, "seller_agent", caption || "Product Image", { mediaUrl: imageUrl });
+
   await sendRequest({
     messaging_product: "whatsapp",
     to,
@@ -85,6 +93,9 @@ export async function sendInteractive(
   bodyText: string,
   buttons: Array<{ id: string; title: string }>
 ): Promise<void> {
+  const convId = `conv_${to}`;
+  await appendMessage(convId, to, "seller_agent", bodyText);
+
   await sendRequest({
     messaging_product: "whatsapp",
     to,
@@ -108,6 +119,10 @@ export async function sendPaymentLink(
   link: string,
   storeName: string
 ): Promise<void> {
+  const convId = `conv_${to}`;
+  const textMsg = `✅ Deal locked!\n\n*₹${amount.toLocaleString("en-IN")}* from ${storeName}\n\nRazorpay Checkout Link: ${link}`;
+  await appendMessage(convId, to, "seller_agent", textMsg, { sessionState: "AWAITING_PAYMENT" });
+
   await sendRequest({
     messaging_product: "whatsapp",
     to,

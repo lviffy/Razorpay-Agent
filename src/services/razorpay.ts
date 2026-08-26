@@ -32,14 +32,10 @@ interface CreateOrderOptions {
 }
 
 export async function createOrder(opts: CreateOrderOptions) {
-  const idempotencyKey = `order_${opts.sessionId}`;
-
   const order = await razorpay.orders.create({
     amount: opts.amountInPaise,
     currency: opts.currency ?? "INR",
     receipt: opts.receipt,
-    // @ts-ignore — Razorpay SDK types don't expose idempotency_key
-    idempotency_key: idempotencyKey,
     notes: {
       x402_tx_hash: opts.receipt,
       session_id: opts.sessionId,

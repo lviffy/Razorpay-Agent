@@ -146,14 +146,10 @@ function parseInboundMessage(
   return null;
 }
 
+import { appendMessage } from "../services/conversation-memory.ts";
+
 async function persistMessage(msg: WhatsAppInboundMessage): Promise<void> {
-  await db.query(
-    `INSERT INTO conversations (conversation_id, phone_number, last_message_id, updated_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (conversation_id)
-     DO UPDATE SET last_message_id = $3, updated_at = NOW()`,
-    [msg.conversationId, msg.from, msg.messageId]
-  );
+  await appendMessage(msg.conversationId, msg.from, "customer", msg.text);
 }
 
 export default router;

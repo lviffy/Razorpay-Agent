@@ -47,6 +47,13 @@ async function processLoop(): Promise<void> {
   }
 }
 
+import {
+  loadConversation,
+  updateConversationContext,
+  appendMessage,
+  type ConversationState,
+} from "../services/conversation-memory.ts";
+
 export async function handleJob(job: WorkerJob): Promise<void> {
   const { payload: msg } = job;
 
@@ -61,17 +68,92 @@ export async function handleJob(job: WorkerJob): Promise<void> {
     return;
   }
 
-  // ── Parse spending limit from message ──────────────────────────────────────
-  const spendingLimit = extractSpendingLimit(msg.text);
-  const isPurchaseIntent = spendingLimit !== null ||
-    /buy|order|purchase|want|need|get me|book|checkout|pay|price|cost|how much|deal|offer|discount/i.test(msg.text);
+  // ── 1. Load multi-turn conversation context ────────────────────────────────
+  const conv = await loadConversation(msg.conversationId, msg.from);
+
+  // ── 2. Fetch catalog products for context & intent resolution ──────────────
+  const { rows: storeRows } = await db.query(
+    "SELECT id, name, city FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+  );
+  const activeStore = storeRows[0];
+  let availableProducts: any[] = [];
+  if (activeStore) {
+    const { rows: prods } = await db.query(
+      "SELECT id, title, sku, listed_price, floor_price, inventory_available, image_url, shopify_variant_id FROM products WHERE store_id = $1 AND is_ai_enabled = true LIMIT 20",
+      [activeStore.id]
+    );
+    availableProducts = prods;
+  }
+
+  const rawLower = msg.text.toLowerCase().trim();
+
+  // ── 3. Detect photo / picture inquiry ──────────────────────────────────────
+  const isPhotoQuery = /picture|photo|image|pic|look like|show me|photos/i.test(rawLower);
+  if (isPhotoQuery) {
+    let targetProduct = availableProducts.find((p) =>
+      rawLower.includes(p.title.toLowerCase()) || (p.sku && rawLower.includes(p.sku.toLowerCase()))
+    );
+    if (!targetProduct && conv.activeProduct) {
+      targetProduct = availableProducts.find((p) => p.title.toLowerCase() === conv.activeProduct?.title.toLowerCase());
+    }
+    if (!targetProduct && availableProducts.length > 0) {
+      targetProduct = availableProducts[0];
+    }
+
+    if (targetProduct) {
+      // Update active product
+      await updateConversationContext(msg.conversationId, msg.from, {
+        activeProduct: {
+          id: targetProduct.id,
+          title: targetProduct.title,
+          listedPrice: parseFloat(targetProduct.listed_price),
+          floorPrice: parseFloat(targetProduct.floor_price),
+          imageUrl: targetProduct.image_url,
+          sku: targetProduct.sku,
+          variantId: targetProduct.shopify_variant_id,
+        },
+      });
+
+      if (targetProduct.image_url && targetProduct.image_url.startsWith("http") && !targetProduct.image_url.startsWith("blob:")) {
+        await sendImage(
+          msg.from,
+          targetProduct.image_url,
+          `Here is ${targetProduct.title} (₹${parseFloat(targetProduct.listed_price).toLocaleString("en-IN")}) 📸`
+        );
+        await sendText(
+          msg.from,
+          `Would you like to buy *${targetProduct.title}*? You can say *"Buy for ₹${parseFloat(targetProduct.listed_price).toLocaleString("en-IN")}*" or make a counter offer!`
+        );
+        return;
+      }
+    }
+  }
+
+  // ── 4. Parse purchase intent & budget ──────────────────────────────────────
+  let spendingLimit = extractSpendingLimit(msg.text);
+  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|i want this|take it|let's do it)$/i.test(rawLower);
+  const hasPurchaseWords = /buy|order|purchase|want|need|get me|book|checkout|pay|deal|discount|offer|price/i.test(rawLower);
+
+  // Check if message mentions a specific product name
+  const matchedProductInText = availableProducts.find((p) => rawLower.includes(p.title.toLowerCase()));
+
+  // Resolve target product from message or previous conversation turns
+  const activeTargetProduct = matchedProductInText || (conv.activeProduct ? availableProducts.find(p => p.title.toLowerCase() === conv.activeProduct?.title.toLowerCase()) : null);
+
+  // If affirmative or purchase request without explicit numeric budget:
+  if ((isAffirmative || hasPurchaseWords) && activeTargetProduct && !spendingLimit) {
+    spendingLimit = parseFloat(activeTargetProduct.listed_price);
+  }
+
+  const isPurchaseIntent = spendingLimit !== null || (hasPurchaseWords && activeTargetProduct);
 
   if (!isPurchaseIntent) {
-    // ── Handle open-ended messages with Groq AI ───────────────────────────
-    await handleOpenEndedMessage(msg.from, msg.text);
+    // ── Handle open-ended messages with multi-turn LLM ─────────────────────
+    await handleOpenEndedMessage(msg.from, msg.text, conv, availableProducts, activeStore);
     return;
   }
 
+  // Fallback if user asked to buy generic items without any product or budget
   if (!spendingLimit) {
     await sendText(
       msg.from,
@@ -80,7 +162,26 @@ export async function handleJob(job: WorkerJob): Promise<void> {
     return;
   }
 
-  await sendText(msg.from, `🔍 Got it! Searching for: "${msg.text}"\nBudget: ₹${spendingLimit.toLocaleString("en-IN")}\n\nQuerying stores...`);
+  // Update active product in conversation memory
+  if (activeTargetProduct) {
+    await updateConversationContext(msg.conversationId, msg.from, {
+      activeProduct: {
+        id: activeTargetProduct.id,
+        title: activeTargetProduct.title,
+        listedPrice: parseFloat(activeTargetProduct.listed_price),
+        floorPrice: parseFloat(activeTargetProduct.floor_price),
+        imageUrl: activeTargetProduct.image_url,
+        sku: activeTargetProduct.sku,
+        variantId: activeTargetProduct.shopify_variant_id,
+      },
+      sessionState: "NEGOTIATING",
+    });
+  }
+
+  await sendText(
+    msg.from,
+    `🔍 Got it! Searching for: "${activeTargetProduct ? activeTargetProduct.title : msg.text}"\nBudget: ₹${spendingLimit.toLocaleString("en-IN")}\n\nNegotiating best offer...`
+  );
 
   // ── Velocity / fraud check ─────────────────────────────────────────────────
   const velocity = await checkBuyerVelocity(msg.from);
@@ -95,8 +196,9 @@ export async function handleJob(job: WorkerJob): Promise<void> {
 
   // ── Run Buyer Agent ────────────────────────────────────────────────────────
   const buyerAgent = new BuyerAgent();
+  const searchMessage = activeTargetProduct ? `Buy ${activeTargetProduct.title}` : msg.text;
   const decision = await buyerAgent.processTask({
-    message: msg.text,
+    message: searchMessage,
     spendingLimit,
     phoneNumber: msg.from,
     conversationId: msg.conversationId,
@@ -111,18 +213,17 @@ export async function handleJob(job: WorkerJob): Promise<void> {
 
   // ── No offers found ────────────────────────────────────────────────────────
   if (!decision.accepted || !decision.offer || !decision.mandate) {
-    await sendText(msg.from, `Sorry, couldn't find matching products. ${decision.reasoning}`);
+    await sendText(msg.from, `Sorry, couldn't find matching products within ₹${spendingLimit}. ${decision.reasoning || ""}`);
     return;
   }
 
   const { offer, mandate } = decision;
 
-  // ── Send product image if available (fires before the text) ──────────────
-  if (offer.product.imageUrl) {
+  // ── Send product image if available (guaranteed before text) ─────────────
+  if (offer.product.imageUrl && offer.product.imageUrl.startsWith("http") && !offer.product.imageUrl.startsWith("blob:")) {
     try {
       await sendImage(msg.from, offer.product.imageUrl, offer.product.title);
     } catch (imgErr) {
-      // Non-fatal — image delivery failure never blocks the deal
       console.warn("[Worker] Image send failed (proceeding with text):", imgErr);
     }
   }
@@ -132,7 +233,7 @@ export async function handleJob(job: WorkerJob): Promise<void> {
     `✅ Found a deal!\n\n*${offer.product.title}*\n` +
     `Listed: ₹${offer.product.listedPrice.toLocaleString("en-IN")}\n` +
     `*Offer: ₹${offer.offeredPrice.toLocaleString("en-IN")}*${offer.shippingFree ? " + Free Shipping 🚚" : ""}\n\n` +
-    `_${offer.reasoningTrace}_\n\nLocking inventory and creating payment...`
+    `_${offer.reasoningTrace}_\n\nLocking inventory and creating payment link...`
   );
 
   // ── Autonomous upsell / cross-sell suggestion ───────────────────────────
@@ -333,62 +434,53 @@ function extractSpendingLimit(message: string): number | null {
   return null;
 }
 
-// ── Handle general/open-ended messages with Groq AI ───────────────────────────
-async function handleOpenEndedMessage(to: string, userMessage: string): Promise<void> {
+// ── Handle general/open-ended messages with multi-turn LLM ───────────────────
+async function handleOpenEndedMessage(
+  to: string,
+  userMessage: string,
+  conv: ConversationState,
+  availableProducts: any[],
+  store: any
+): Promise<void> {
   try {
-    // Fetch a store to get context (use first active store)
-    const { rows: storeRows } = await db.query(
-      "SELECT id, name, city FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
-    );
-    const store = storeRows[0];
-
-    // Fetch products for context & image check
     let productContext = "";
-    let matchingImageProduct: any = null;
-    if (store) {
-      const { rows: products } = await db.query(
-        "SELECT title, sku, listed_price, inventory_available, image_url FROM products WHERE store_id = $1 AND is_ai_enabled = true LIMIT 10",
-        [store.id]
-      );
-      if (products.length > 0) {
-        productContext = `\n\nCATALOG (top items):\n` + products
-          .map((p: any) => `- ${p.title}: ₹${p.listed_price} (${p.inventory_available} in stock)`)
-          .join("\n");
-
-        // Check if user specifically asked for a photo/picture
-        const isPhotoQuery = /picture|photo|image|pic|look like|show me/i.test(userMessage);
-        if (isPhotoQuery) {
-          const uLower = userMessage.toLowerCase();
-          matchingImageProduct = products.find((p: any) =>
-            uLower.includes(p.title.toLowerCase()) ||
-            (p.sku && uLower.includes(p.sku.toLowerCase()))
-          ) || products[0];
-        }
-      }
+    if (availableProducts.length > 0) {
+      productContext = `\n\nCURRENT INVENTORY CATALOG:\n` + availableProducts
+        .map((p: any) => `- ${p.title} (SKU: ${p.sku}): Listed ₹${p.listed_price} (Floor limit ₹${p.floor_price || p.listed_price}, ${p.inventory_available} in stock)`)
+        .join("\n");
     }
 
-    // If user asked for an image and product has a valid public HTTP image URL
-    if (matchingImageProduct && matchingImageProduct.image_url && matchingImageProduct.image_url.startsWith("http") && !matchingImageProduct.image_url.startsWith("blob:")) {
-      try {
-        await sendImage(to, matchingImageProduct.image_url, `Here is ${matchingImageProduct.title} (₹${matchingImageProduct.listed_price}) 📸`);
-        await sendText(to, `What do you think? Tell me your budget if you'd like to place an order!`);
-        return;
-      } catch (imgErr) {
-        console.warn("⚠️ Failed to send image via WhatsApp:", imgErr);
-      }
-    }
+    const activeProdNote = conv.activeProduct
+      ? `\nCURRENT PRODUCT BEING DISCUSSED: "${conv.activeProduct.title}" (Listed: ₹${conv.activeProduct.listedPrice})`
+      : "";
 
-    const systemPrompt = `You are a friendly WhatsApp seller agent for ${store?.name ?? "our store"} in ${store?.city ?? "India"}. Answer customer questions naturally and helpfully.${productContext}
+    const systemPrompt = `You are a friendly, witty WhatsApp seller agent for ${store?.name ?? "our store"} in ${store?.city ?? "India"}.
+${productContext}${activeProdNote}
 
 GUIDELINES:
-- Be warm, brief (1-3 sentences max)
-- Use 1 emoji maximum
-- Mention relevant products from the catalog if applicable
-- If someone asks about buying, encourage them to specify a budget so you can find the best deal
-- Never make up stock or prices not listed above
-- Use Indian English, ₹ for prices`;
+- Be conversational, human, and concise (1-3 sentences max).
+- Remember the ongoing conversation context. If the user previously asked about an item and now says "yes", "sure", or "tell me more", continue on that same item.
+- If the customer wants to buy, tell them the price (e.g. ₹${conv.activeProduct?.listedPrice || availableProducts[0]?.listed_price || 1200}) and ask if they would like you to lock it in and send the payment link.
+- Never make up products or prices not in the catalog above.
+- Use 1 emoji maximum. Use Indian English and ₹ for currency.`;
 
-    // 1. Try Groq with available models on this account
+    // Build multi-turn messages array from previous turns
+    const historyMessages: Array<{ role: "user" | "assistant"; content: string }> = [];
+    const recentTranscript = conv.transcript.slice(-6); // last 6 turns
+    for (const m of recentTranscript) {
+      historyMessages.push({
+        role: m.sender === "customer" ? "user" : "assistant",
+        content: m.content,
+      });
+    }
+
+    // Ensure last message in history isn't identical duplicate of userMessage
+    const lastHist = historyMessages[historyMessages.length - 1];
+    if (!lastHist || lastHist.content !== userMessage) {
+      historyMessages.push({ role: "user", content: userMessage });
+    }
+
+    // 1. Try Groq with active models
     const groq = getGroqClient();
     if (groq) {
       const modelsToTry = [
@@ -404,14 +496,30 @@ GUIDELINES:
             model,
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: userMessage },
+              ...historyMessages,
             ],
             temperature: 0.7,
-            max_tokens: 150,
+            max_tokens: 180,
           });
 
           const reply = chat.choices[0]?.message?.content?.trim();
           if (reply) {
+            // Track if product was mentioned
+            const mentioned = availableProducts.find(p => reply.toLowerCase().includes(p.title.toLowerCase()) || userMessage.toLowerCase().includes(p.title.toLowerCase()));
+            if (mentioned) {
+              await updateConversationContext(conv.conversationId, to, {
+                activeProduct: {
+                  id: mentioned.id,
+                  title: mentioned.title,
+                  listedPrice: parseFloat(mentioned.listed_price),
+                  floorPrice: parseFloat(mentioned.floor_price),
+                  imageUrl: mentioned.image_url,
+                  sku: mentioned.sku,
+                  variantId: mentioned.shopify_variant_id,
+                },
+              });
+            }
+
             await sendText(to, reply);
             return;
           }
@@ -426,7 +534,8 @@ GUIDELINES:
     if (genAI) {
       try {
         const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
-        const result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMessage}\nAssistant:`);
+        const convoSummary = historyMessages.map(h => `${h.role === "user" ? "Customer" : "Agent"}: ${h.content}`).join("\n");
+        const result = await model.generateContent(`${systemPrompt}\n\nChat History:\n${convoSummary}\nAgent:`);
         const reply = result.response.text()?.trim();
         if (reply) {
           await sendText(to, reply);
