@@ -346,7 +346,7 @@ async function handleOpenEndedMessage(to: string, userMessage: string): Promise<
     let productContext = "";
     if (store) {
       const { rows: products } = await db.query(
-        "SELECT title, sku, listed_price, inventory_available FROM products WHERE store_id = $1 AND is_active = true LIMIT 10",
+        "SELECT title, sku, listed_price, inventory_available FROM products WHERE store_id = $1 AND is_ai_enabled = true LIMIT 10",
         [store.id]
       );
       if (products.length > 0) {
