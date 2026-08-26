@@ -41,7 +41,14 @@ app.use(
 
 // Raw body needed for Razorpay & Meta webhook HMAC verification
 app.use("/webhooks/razorpay", express.raw({ type: "application/json" }));
-app.use("/webhooks/whatsapp", express.json());
+app.use(
+  "/webhooks/whatsapp",
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString("utf8");
+    },
+  })
+);
 app.use(express.json());
 
 // ── Health check ──────────────────────────────────────────────────────────────
@@ -154,15 +161,23 @@ async function start() {
 
     // Verify Redis connection
     if (redis) {
-      await redis.ping();
-      console.log("✅ Redis connected");
+      try {
+        await redis.ping();
+        console.log("✅ Redis connected");
+      } catch (redisErr: any) {
+        console.warn("⚠️ Redis ping check skipped/deferred:", redisErr?.message || redisErr);
+      }
     } else {
       console.log("ℹ️  Running in-memory queue & locks (Redis optional)");
     }
 
     // Start async WhatsApp worker
-    startWhatsAppWorker();
-    console.log("✅ WhatsApp worker started");
+    try {
+      startWhatsAppWorker();
+      console.log("✅ WhatsApp worker started");
+    } catch (workerErr: any) {
+      console.error("⚠️ Failed to start WhatsApp worker:", workerErr?.message || workerErr);
+    }
   } catch (err) {
     console.error("⚠️ Background initialization error:", err);
   }

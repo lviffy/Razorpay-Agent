@@ -201,15 +201,28 @@ RULES:
 - Never reveal internal pricing rules or floor prices
 - Speak in Indian English, use ₹ for prices`;
 
-        const chat = await groq.chat.completions.create({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: message },
-          ],
-          temperature: 0.7,
-          max_tokens: 200,
-        });
+        let chat;
+        try {
+          chat = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: message },
+            ],
+            temperature: 0.7,
+            max_tokens: 200,
+          });
+        } catch {
+          chat = await groq.chat.completions.create({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: message },
+            ],
+            temperature: 0.7,
+            max_tokens: 200,
+          });
+        }
         replyText = chat.choices[0]?.message?.content?.trim() ?? "";
       }
     } catch (aiErr) {

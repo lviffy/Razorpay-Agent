@@ -14,7 +14,7 @@ import {
   sendPaymentFailedWithRetry,
 } from "../services/whatsapp.ts";
 import { db } from "../db/migrate.ts";
-import { getGroqClient } from "../services/ai.ts";
+import { getGroqClient, getGeminiClient } from "../services/ai.ts";
 import type { WorkerJob } from "../types/index.ts";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,27 +366,58 @@ GUIDELINES:
 - Never make up stock or prices not listed above
 - Use Indian English, ₹ for prices`;
 
+    // 1. Try Groq with available models on this account
     const groq = getGroqClient();
     if (groq) {
-      const chat = await groq.chat.completions.create({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        temperature: 0.7,
-        max_tokens: 150,
-      });
+      const modelsToTry = [
+        "qwen/qwen3.8-27b",
+        "groq/compound-mini",
+        "openai/gpt-oss-120b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+      ];
+      for (const model of modelsToTry) {
+        try {
+          const chat = await groq.chat.completions.create({
+            model,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+            temperature: 0.7,
+            max_tokens: 150,
+          });
 
-      const reply = chat.choices[0]?.message?.content?.trim();
-      if (reply) {
-        await sendText(to, reply);
-        return;
+          const reply = chat.choices[0]?.message?.content?.trim();
+          if (reply) {
+            await sendText(to, reply);
+            return;
+          }
+        } catch {
+          // Continue to next model
+        }
       }
     }
+
+    // 2. Try Gemini 3.6 Flash fallback
+    const genAI = getGeminiClient();
+    if (genAI) {
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+        const result = await model.generateContent(`${systemPrompt}\n\nUser: ${userMessage}\nAssistant:`);
+        const reply = result.response.text()?.trim();
+        if (reply) {
+          await sendText(to, reply);
+          return;
+        }
+      } catch (geminiErr: any) {
+        console.warn("⚠️ Gemini fallback error:", geminiErr?.message || geminiErr);
+      }
+    }
+
     await sendText(to, "Hi! 👋 How can I help you today? Tell me what you're looking for and I'll find the best deal for you!");
   } catch (err) {
-    console.error("[Worker] Groq open-ended message error:", err);
+    console.error("[Worker] Open-ended message error:", err);
     await sendText(to, "Hi! 👋 What are you looking for today? I can help you find the best products and deals!");
   }
 }

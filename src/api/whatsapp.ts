@@ -35,7 +35,8 @@ router.post("/", async (req, res) => {
   try {
     // Verify X-Hub-Signature-256
     const signature = req.headers["x-hub-signature-256"] as string | undefined;
-    if (!verifyMetaSignature(JSON.stringify(req.body), signature)) {
+    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+    if (!verifyMetaSignature(rawBody, signature)) {
       console.warn("⚠️  Invalid Meta webhook signature — dropping");
       return;
     }

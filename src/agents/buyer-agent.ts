@@ -167,8 +167,8 @@ export class BuyerAgent {
       if (!genAI) {
         throw new Error("GEMINI_API_KEY is not configured");
       }
-      const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+      let model = genAI.getGenerativeModel({
+        model: "gemini-3.6-flash",
         tools: [
           {
             functionDeclarations: [

@@ -14,7 +14,7 @@ if (redisUrl && redisUrl.trim()) {
     redisClient = new Redis(redisUrl.trim(), {
       maxRetriesPerRequest: 1,
       lazyConnect: true,
-      enableOfflineQueue: false,
+      enableOfflineQueue: true,
       retryStrategy(times) {
         if (times > 3) {
           return null; // Stop retrying if Redis is permanently unavailable
