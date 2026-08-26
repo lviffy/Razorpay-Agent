@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS negotiation_rules (
 CREATE TABLE IF NOT EXISTS products (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id                UUID REFERENCES stores(id) ON DELETE CASCADE,
-    shopify_product_id      VARCHAR(100) NOT NULL,   -- kept for schema compat; mock value for buildathon
-    shopify_variant_id      VARCHAR(100) NOT NULL,
+    shopify_product_id      VARCHAR(100) DEFAULT '',
+    shopify_variant_id      VARCHAR(100) DEFAULT '',
     title                   VARCHAR(255) NOT NULL,
     sku                     VARCHAR(100) NOT NULL,
     listed_price            NUMERIC(12,2) NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS products (
     category                VARCHAR(100) DEFAULT 'General',
     description             TEXT DEFAULT '',
     image_url               TEXT,
-    agent_schema            JSONB NOT NULL,
+    agent_schema            JSONB DEFAULT '{}'::jsonb,
     created_at              TIMESTAMPTZ DEFAULT NOW(),
     updated_at              TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(store_id, shopify_variant_id)

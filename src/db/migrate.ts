@@ -52,6 +52,13 @@ async function migrate() {
       ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '';
       ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
       ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+      ALTER TABLE products ALTER COLUMN shopify_product_id DROP NOT NULL;
+      ALTER TABLE products ALTER COLUMN shopify_variant_id DROP NOT NULL;
+      ALTER TABLE products ALTER COLUMN agent_schema DROP NOT NULL;
+      ALTER TABLE products ALTER COLUMN agent_schema SET DEFAULT '{}'::jsonb;
+
+      ALTER TABLE stores ALTER COLUMN razorpay_account_id DROP NOT NULL;
+      ALTER TABLE stores ALTER COLUMN razorpay_account_id SET DEFAULT 'rzp_test_mock';
 
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(50);

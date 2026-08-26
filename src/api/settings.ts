@@ -88,16 +88,32 @@ router.get("/rules", async (req: Request, res: Response) => {
 // PUT /api/v1/settings/rules — Update store negotiation rules
 router.put("/rules", async (req: Request, res: Response) => {
   try {
-    const storeId = await getStoreIdFromReq(req);
+    let storeId = await getStoreIdFromReq(req);
     const {
       maxDiscountPercent,
-      minimumOrderValue,
+      minOrderValue,
+      minimumOrderValue = minOrderValue,
       freeShippingAbove,
       bundleOffersEnabled,
       alternativeProductsEnabled,
       humanApprovalAbove,
       riskProfile,
     } = req.body;
+
+    const parsedMaxDiscount = maxDiscountPercent !== undefined ? Number(maxDiscountPercent) : 12;
+    const parsedMinOrderValue = minimumOrderValue !== undefined ? Number(minimumOrderValue) : 0;
+    const parsedFreeShipping = freeShippingAbove !== undefined ? Number(freeShippingAbove) : 0;
+    const parsedHumanApproval = humanApprovalAbove !== undefined ? Number(humanApprovalAbove) : 5000;
+    const parsedBundleOffers = bundleOffersEnabled !== undefined ? Boolean(bundleOffersEnabled) : true;
+    const parsedAltProducts = alternativeProductsEnabled !== undefined ? Boolean(alternativeProductsEnabled) : true;
+    const parsedRiskProfile = riskProfile || "balanced";
+
+    if (!storeId) {
+      const { rows: storeRows } = await db.query(
+        "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+      );
+      storeId = storeRows[0]?.id || null;
+    }
 
     if (storeId) {
       const { rows: existing } = await db.query(
@@ -114,13 +130,13 @@ router.put("/rules", async (req: Request, res: Response) => {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             storeId,
-            maxDiscountPercent,
-            minimumOrderValue,
-            freeShippingAbove,
-            bundleOffersEnabled,
-            alternativeProductsEnabled,
-            humanApprovalAbove,
-            riskProfile,
+            parsedMaxDiscount,
+            parsedMinOrderValue,
+            parsedFreeShipping,
+            parsedBundleOffers,
+            parsedAltProducts,
+            parsedHumanApproval,
+            parsedRiskProfile,
           ]
         );
       } else {
@@ -136,13 +152,13 @@ router.put("/rules", async (req: Request, res: Response) => {
              risk_profile = $7
            WHERE store_id = $8`,
           [
-            maxDiscountPercent,
-            minimumOrderValue,
-            freeShippingAbove,
-            bundleOffersEnabled,
-            alternativeProductsEnabled,
-            humanApprovalAbove,
-            riskProfile,
+            parsedMaxDiscount,
+            parsedMinOrderValue,
+            parsedFreeShipping,
+            parsedBundleOffers,
+            parsedAltProducts,
+            parsedHumanApproval,
+            parsedRiskProfile,
             storeId,
           ]
         );
@@ -150,17 +166,17 @@ router.put("/rules", async (req: Request, res: Response) => {
     }
 
     return res.json({
-      maxDiscountPercent,
-      minimumOrderValue,
-      freeShippingAbove,
-      bundleOffersEnabled,
-      alternativeProductsEnabled,
-      humanApprovalAbove,
-      riskProfile,
+      maxDiscountPercent: parsedMaxDiscount,
+      minimumOrderValue: parsedMinOrderValue,
+      freeShippingAbove: parsedFreeShipping,
+      bundleOffersEnabled: parsedBundleOffers,
+      alternativeProductsEnabled: parsedAltProducts,
+      humanApprovalAbove: parsedHumanApproval,
+      riskProfile: parsedRiskProfile,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Save rules error:", err);
-    return res.status(500).json({ error: "Failed to save negotiation rules" });
+    return res.status(500).json({ error: err?.message || "Failed to save negotiation rules" });
   }
 });
 
@@ -337,8 +353,8 @@ router.put("/credentials", async (req: Request, res: Response) => {
          WHERE id = $4`,
         [
           JSON.stringify(updatedAgentSettings),
-          razorpayKeyId || existingRows[0]?.razorpay_account_id,
-          whatsappPhoneNumber || existingRows[0]?.phone,
+          razorpayKeyId || existingRows[0]?.razorpay_account_id || null,
+          whatsappPhoneNumber || existingRows[0]?.phone || null,
           storeId,
         ]
       );

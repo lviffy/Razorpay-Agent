@@ -401,28 +401,71 @@ router.post("/complete", async (req: Request, res: Response) => {
 
     // 3. Associate any provided products to storeId
     if (Array.isArray(products) && products.length > 0) {
-      for (const p of products) {
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
         if (!p.title) continue;
         const listedPrice = Number(p.price) || 999;
-        const minPrice = Number(p.minPrice) || Math.round(listedPrice * (1 - (Number(maxDiscountPercent) || 12) / 100));
+        const minPrice =
+          Number(p.minPrice) ||
+          Math.round(listedPrice * (1 - (Number(maxDiscountPercent) || 12) / 100));
         const inventory = Number(p.inventory) || 10;
-        const sku = p.sku || `SKU-${Date.now().toString().slice(-4)}`;
+        const sku = p.sku || `SKU-${Date.now().toString().slice(-4)}${i}`;
+        const shopifyProdId =
+          p.shopify_product_id ||
+          p.shopifyProductId ||
+          `prod_${Date.now()}_${i}`;
+        const variantId =
+          p.shopify_variant_id ||
+          p.shopifyVariantId ||
+          `var_${Date.now()}_${i}`;
+        const itemImageUrl = p.imageUrl || p.image_url || null;
+
+        const agentSchema = {
+          variantId,
+          title: p.title,
+          sku,
+          listedPrice,
+          floorPrice: minPrice,
+          inventoryAvailable: inventory,
+          attributes: {
+            category: p.category || "General",
+            description: p.description || "",
+          },
+        };
 
         await db.query(
           `INSERT INTO products (
-            store_id, title, sku, listed_price, floor_price,
-            inventory_available, is_ai_enabled, description, category
-          ) VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8)
-          ON CONFLICT DO NOTHING`,
+            store_id, shopify_product_id, shopify_variant_id,
+            title, sku, listed_price, floor_price,
+            inventory_available, inventory_reserved, inventory_state,
+            is_ai_enabled, category, description, image_url, agent_schema,
+            created_at, updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, 'AVAILABLE', $9, $10, $11, $12, $13, NOW(), NOW())
+          ON CONFLICT (store_id, shopify_variant_id) DO UPDATE SET
+            title = EXCLUDED.title,
+            listed_price = EXCLUDED.listed_price,
+            floor_price = EXCLUDED.floor_price,
+            inventory_available = EXCLUDED.inventory_available,
+            is_ai_enabled = EXCLUDED.is_ai_enabled,
+            description = EXCLUDED.description,
+            category = EXCLUDED.category,
+            image_url = COALESCE(EXCLUDED.image_url, products.image_url),
+            agent_schema = EXCLUDED.agent_schema,
+            updated_at = NOW()`,
           [
             storeId,
+            shopifyProdId,
+            variantId,
             p.title,
             sku,
             listedPrice,
             minPrice,
             inventory,
-            p.description || "",
+            p.is_ai_enabled ?? p.aiSellingEnabled ?? true,
             p.category || "General",
+            p.description || "",
+            itemImageUrl,
+            JSON.stringify(agentSchema),
           ]
         );
       }

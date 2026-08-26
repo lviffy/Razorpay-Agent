@@ -139,7 +139,7 @@ async function handleBulkCreate(req: Request, res: Response) {
 
     if (!storeId) {
       const { rows: newStore } = await db.query(
-        "INSERT INTO stores (name, is_active) VALUES ('My Store', true) RETURNING id"
+        "INSERT INTO stores (name, razorpay_account_id, is_active) VALUES ('My Store', 'rzp_test_mock', true) RETURNING id"
       );
       storeId = newStore[0].id;
     }
@@ -262,7 +262,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     if (!storeId) {
       const { rows: newStore } = await db.query(
-        "INSERT INTO stores (name, is_active) VALUES ('My Store', true) RETURNING id"
+        "INSERT INTO stores (name, razorpay_account_id, is_active) VALUES ('My Store', 'rzp_test_mock', true) RETURNING id"
       );
       storeId = newStore[0].id;
     }
