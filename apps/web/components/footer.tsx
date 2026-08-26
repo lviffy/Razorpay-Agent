@@ -4,8 +4,11 @@ import React from 'react'
 import Link from 'next/link'
 import { ArrowRight, ShieldCheck, Bot, CheckCircle2 } from 'lucide-react'
 import Logo from '@/components/logo'
+import { useAuth } from '@/lib/context/auth-context'
 
 export default function Footer() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <footer className="relative bg-[#070b14] text-white border-t border-white/10 overflow-hidden py-12 sm:py-16">
       <div className="relative mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 z-10 space-y-8">
@@ -22,10 +25,10 @@ export default function Footer() {
           {/* Actions: GitHub + One CTA */}
           <div className="flex flex-wrap items-center justify-center gap-3.5">
             <Link
-              href="/onboarding"
+              href={isAuthenticated ? "/dashboard" : "/signup"}
               className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition-all shadow-md shadow-brand-600/20"
             >
-              <span>Start ZapAI</span>
+              <span>{isAuthenticated ? "Dashboard" : "Sign Up"}</span>
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>

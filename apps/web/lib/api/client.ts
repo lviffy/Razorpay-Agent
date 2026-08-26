@@ -210,9 +210,15 @@ function advanceFallbackStep(content: string): { reply: string; state: Onboardin
     }
     case "AGENT_SETUP": {
       clientOnboardingSession.agentConfigured = true;
+      nextStep = "AGENT_TONE";
+      clientOnboardingSession.completionPercentage = 70;
+      botReply = "Negotiation rules saved: maximum discount locked, floor price enforced. Next, how should your AI Seller Agent sound when talking to buyers? Choose a voice persona below.";
+      break;
+    }
+    case "AGENT_TONE": {
       nextStep = "WHATSAPP_CONNECT";
       clientOnboardingSession.completionPercentage = 80;
-      botReply = "Negotiation rules saved: maximum discount locked, floor price enforced. Next, connect your WhatsApp Business account so buyers can message your agent.";
+      botReply = "Agent persona and voice style locked! Next, connect your WhatsApp Business account so buyers can message your agent.";
       break;
     }
     case "WHATSAPP_CONNECT": {
@@ -778,12 +784,14 @@ export const api = {
       }
       return fetchJson<OnboardingState>("/onboarding/session", {}, clientOnboardingSession);
     },
-    sendMessage: async (content: string): Promise<{ reply: string; state: OnboardingState }> => {
+    sendMessage: async (content: string, stateOverride?: OnboardingState): Promise<{ reply: string; state: OnboardingState }> => {
+      const activeState = stateOverride || clientOnboardingSession;
+      clientOnboardingSession = activeState;
       try {
         const res = await fetch("/api/onboarding/message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content, state: clientOnboardingSession }),
+          body: JSON.stringify({ content, state: activeState }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -802,6 +810,9 @@ export const api = {
         },
         advanceFallbackStep(content)
       );
+    },
+    syncSession: (state: OnboardingState) => {
+      clientOnboardingSession = { ...state };
     },
     selectProvider: async (provider: StoreProvider): Promise<OnboardingState> => {
       clientOnboardingSession.provider = provider;

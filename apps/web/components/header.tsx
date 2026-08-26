@@ -41,6 +41,47 @@ const navLinks = [
   { label: 'Integrations', href: '#integrations' },
 ]
 
+function UserAvatar({
+  avatarUrl,
+  name,
+  initials,
+  size = 'md',
+}: {
+  avatarUrl?: string | null;
+  name: string;
+  initials: string;
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  const sizeClasses = {
+    sm: 'w-7 h-7 text-[11px] rounded-full',
+    md: 'w-8 h-8 text-xs rounded-xl',
+    lg: 'w-10 h-10 text-sm rounded-xl',
+  }[size];
+
+  if (avatarUrl && !imgError) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+        onError={() => setImgError(true)}
+        className={`${sizeClasses} object-cover border border-black/10 shrink-0`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClasses} bg-gradient-to-tr from-brand-600 to-blue-600 text-white font-bold flex items-center justify-center shadow-xs shrink-0 select-none`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 export function HeroHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -103,24 +144,19 @@ export function HeroHeader() {
             {isLoggedIn ? (
               <>
                 {/* User Dropdown Trigger */}
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
                       className="group flex items-center gap-2 py-1 pl-1 pr-2.5 rounded-full bg-surface-100/80 hover:bg-surface-200/70 border border-black/[0.06] hover:border-black/[0.12] transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
                       aria-label="User profile and account menu"
                     >
-                      {user?.avatarUrl ? (
-                        <img
-                          src={user.avatarUrl}
-                          alt={displayName}
-                          className="w-7 h-7 rounded-full object-cover border border-black/10 shrink-0"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-600 text-white text-[11px] font-bold flex items-center justify-center shadow-xs shrink-0">
-                          {initials}
-                        </div>
-                      )}
+                      <UserAvatar
+                        avatarUrl={user?.avatarUrl}
+                        name={displayName}
+                        initials={initials}
+                        size="sm"
+                      />
                       <span className="text-xs font-semibold text-surface-800 max-w-[110px] truncate hidden sm:inline-block">
                         {displayName.split(' ')[0]}
                       </span>
@@ -136,17 +172,12 @@ export function HeroHeader() {
                     {/* User Profile Summary Header */}
                     <div className="p-3 bg-surface-50/90 rounded-xl border border-surface-100 mb-1 space-y-2">
                       <div className="flex items-center gap-2.5">
-                        {user?.avatarUrl ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt={displayName}
-                            className="w-8 h-8 rounded-lg object-cover border border-black/10 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-8 h-8 rounded-lg bg-brand-600 text-white text-xs font-bold flex items-center justify-center shadow-xs shrink-0">
-                            {initials}
-                          </div>
-                        )}
+                        <UserAvatar
+                          avatarUrl={user?.avatarUrl}
+                          name={displayName}
+                          initials={initials}
+                          size="md"
+                        />
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-surface-900 truncate leading-none">
                             {displayName}
@@ -244,22 +275,13 @@ export function HeroHeader() {
                 </Link>
               </>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="hidden sm:inline-flex items-center text-xs font-bold text-surface-700 hover:text-surface-900 px-3.5 py-2 min-h-[36px] rounded-full hover:bg-black/[0.04] transition-all duration-150"
-                >
-                  Sign In
-                </Link>
-
-                <Link
-                  href="/onboarding"
-                  className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
-                >
-                  <span>Start ZapAI</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </>
+              <Link
+                href="/signup"
+                className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
+              >
+                <span>Sign Up</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
             )}
 
             {/* Mobile Hamburger Button */}
@@ -297,17 +319,12 @@ export function HeroHeader() {
 
             {isLoggedIn && (
               <div className="p-3 bg-surface-50 rounded-2xl border border-surface-100 flex items-center gap-3">
-                {user?.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={displayName}
-                    className="w-10 h-10 rounded-xl object-cover border border-black/10 shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-brand-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
-                    {initials}
-                  </div>
-                )}
+                <UserAvatar
+                  avatarUrl={user?.avatarUrl}
+                  name={displayName}
+                  initials={initials}
+                  size="lg"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-surface-900 truncate">{displayName}</p>
                   <p className="text-[11px] text-surface-500 font-mono truncate">{displayEmail}</p>
@@ -385,22 +402,13 @@ export function HeroHeader() {
                   </Link>
                 </>
               ) : (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-center py-2.5 rounded-full border border-surface-200 text-xs font-bold text-surface-800 hover:bg-surface-50 transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/onboarding"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-center py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors shadow-xs"
-                  >
-                    Start ZapAI
-                  </Link>
-                </>
+                <Link
+                  href="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-center py-2.5 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition-colors shadow-xs"
+                >
+                  Sign Up
+                </Link>
               )}
             </div>
           </motion.div>

@@ -46,13 +46,18 @@ import {
   Smile,
   Briefcase,
   Flame,
+  Bot,
+  MessageSquare,
+  Volume2,
+  Languages,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/context/auth-context";
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { user, isLoading: authLoading, isAuthenticated, refreshUser } = useAuth();
   const [state, setState] = useState<OnboardingState | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,6 +66,13 @@ export default function OnboardingPage() {
   const [showDrawer, setShowDrawer] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Redirect to signup if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace("/signup?redirect=/onboarding");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   // WhatsApp Credentials State (must be filled by user)
   const [waPhone, setWaPhone] = useState("");
@@ -102,6 +114,10 @@ export default function OnboardingPage() {
   const [customEscalation, setCustomEscalation] = useState<number>(5000);
   const [customTone, setCustomTone] = useState<"friendly" | "professional" | "persuasive">("friendly");
   const [customUpsell, setCustomUpsell] = useState<boolean>(true);
+  const [selectedTone, setSelectedTone] = useState<"friendly" | "professional" | "persuasive" | "hinglish">("friendly");
+  const [savingCustomRules, setSavingCustomRules] = useState<boolean>(false);
+  const [savingTone, setSavingTone] = useState<boolean>(false);
+  const [completingOnboarding, setCompletingOnboarding] = useState<boolean>(false);
 
   // Track products added during onboarding
   const [createdProducts, setCreatedProducts] = useState<any[]>([]);
@@ -131,7 +147,7 @@ export default function OnboardingPage() {
     setLoading(true);
     setInputValue("");
     try {
-      const res = await api.onboarding.sendMessage(textToSend);
+      const res = await api.onboarding.sendMessage(textToSend, state || undefined);
       setState(res.state);
     } catch (err) {
       console.error(err);
@@ -307,8 +323,9 @@ export default function OnboardingPage() {
       STORE_SOURCE: 30,
       SHOPIFY_CONNECT: 35,
       CATALOG_SETUP: 40,
-      AGENT_SETUP: 60,
-      WHATSAPP_CONNECT: 75,
+      AGENT_SETUP: 55,
+      AGENT_TONE: 70,
+      WHATSAPP_CONNECT: 80,
       RAZORPAY_CONNECT: 90,
       TEST: 95,
       READY: 100,
@@ -321,6 +338,7 @@ export default function OnboardingPage() {
       SHOPIFY_CONNECT: "Returned to Shopify connection. Enter your domain (e.g. rohanm.in or brand.myshopify.com) and token.",
       CATALOG_SETUP: "Returned to Native Catalog setup. You can add product details, CSV, and floor prices.",
       AGENT_SETUP: "Returned to Agent Mandate step. Adjust your maximum discount caps or risk profile.",
+      AGENT_TONE: "Returned to Agent Voice & Persona step. Choose how your AI Seller sounds to customers on WhatsApp.",
       WHATSAPP_CONNECT: "Returned to WhatsApp Channel step. Update your WhatsApp Business number or Meta credentials.",
       RAZORPAY_CONNECT: "Returned to Razorpay payment setup. Enter your Key ID and Secret for live settlements.",
       TEST: "Returned to verification test.",
@@ -345,14 +363,17 @@ export default function OnboardingPage() {
     };
 
     setState(nextState);
+    api.onboarding.syncSession(nextState);
   };
 
-  if (!state) {
+  if (authLoading || !isAuthenticated || !state) {
     return (
-      <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-zinc-500 font-mono">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-ping" />
-          <span className="font-medium text-zinc-700">Connecting to ZapAI Setup Assistant...</span>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+        <div className="flex flex-col items-center space-y-3">
+          <Loader2 className="w-5 h-5 animate-spin text-zinc-900" />
+          <p className="text-xs text-zinc-500 font-medium tracking-tight">
+            {!isAuthenticated && !authLoading ? "Redirecting to Sign Up..." : "Loading ZapAI Setup Assistant..."}
+          </p>
         </div>
       </div>
     );
@@ -362,6 +383,7 @@ export default function OnboardingPage() {
     { key: "WELCOME", label: "Identity" },
     { key: "STORE_SOURCE", label: "Catalog" },
     { key: "AGENT_SETUP", label: "Mandate" },
+    { key: "AGENT_TONE", label: "Voice" },
     { key: "WHATSAPP_CONNECT", label: "Channel" },
     { key: "RAZORPAY_CONNECT", label: "Razorpay" },
     { key: "READY", label: "Launch" },
@@ -602,10 +624,7 @@ export default function OnboardingPage() {
                               <Button
                                 type="button"
                                 size="sm"
-                                onClick={() => {
-                                  handleGoToStep("AGENT_SETUP");
-                                  handleSendMessage("Done adding products, let's configure negotiation rules.");
-                                }}
+                                onClick={() => handleGoToStep("AGENT_SETUP")}
                                 className="w-full sm:w-auto text-xs h-9 px-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl cursor-pointer shadow-xs gap-1.5"
                               >
                                 <span>Continue to Mandate ({createdProducts.length} added)</span>
@@ -982,41 +1001,257 @@ export default function OnboardingPage() {
                                 <Button
                                   type="button"
                                   size="sm"
+                                  disabled={savingCustomRules || loading}
                                   onClick={async () => {
-                                    const customRulesObj: NegotiationRules = {
-                                      maxDiscountPercent: customDiscount,
-                                      minimumOrderValue: customMinOrder,
-                                      freeShippingAbove: customFreeShipping,
-                                      humanApprovalAbove: customEscalation,
-                                      riskProfile: customDiscount <= 10 ? "conservative" : customDiscount <= 15 ? "balanced" : "aggressive",
-                                      bundleOffersEnabled: customUpsell,
-                                      alternativeProductsEnabled: true,
-                                    };
-                                    setNegotiationRules(customRulesObj);
-                                    await api.settings.saveRules(customRulesObj);
-                                    await api.settings.saveAgent({
-                                      name: "ZapAI Concierge",
-                                      tone: customTone,
-                                      status: "active",
-                                      autoNegotiationEnabled: true,
-                                      humanEscalationEnabled: true,
-                                      escalationThresholdAmount: customEscalation,
-                                      bundleUpsellEnabled: customUpsell,
-                                    });
-                                    handleSendMessage(
-                                      `Configured custom mandates: Max ${customDiscount}% discount, Free shipping above ₹${customFreeShipping}, ${customTone} tone.`
-                                    );
+                                    setSavingCustomRules(true);
+                                    try {
+                                      const customRulesObj: NegotiationRules = {
+                                        maxDiscountPercent: customDiscount,
+                                        minimumOrderValue: customMinOrder,
+                                        freeShippingAbove: customFreeShipping,
+                                        humanApprovalAbove: customEscalation,
+                                        riskProfile: customDiscount <= 10 ? "conservative" : customDiscount <= 15 ? "balanced" : "aggressive",
+                                        bundleOffersEnabled: customUpsell,
+                                        alternativeProductsEnabled: true,
+                                      };
+                                      setNegotiationRules(customRulesObj);
+                                      await api.settings.saveRules(customRulesObj);
+                                      await api.settings.saveAgent({
+                                        name: "ZapAI Concierge",
+                                        tone: customTone,
+                                        status: "active",
+                                        autoNegotiationEnabled: true,
+                                        humanEscalationEnabled: true,
+                                        escalationThresholdAmount: customEscalation,
+                                        bundleUpsellEnabled: customUpsell,
+                                      });
+                                      handleSendMessage(
+                                        `Configured custom mandates: Max ${customDiscount}% discount, Free shipping above ₹${customFreeShipping}, ${customTone} tone.`
+                                      );
+                                    } finally {
+                                      setSavingCustomRules(false);
+                                    }
                                   }}
-                                  className="text-xs h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-xs"
+                                  className="text-xs h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-xs gap-1.5 cursor-pointer disabled:opacity-60"
                                 >
-                                  <span>Save & Activate Custom Requirements</span>
-                                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                                  {savingCustomRules ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span>Saving Requirements...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>Save & Activate Custom Requirements</span>
+                                      <ArrowRight className="w-3.5 h-3.5" />
+                                    </>
+                                  )}
                                 </Button>
                               </div>
                             </div>
                           </div>
                         )}
                       </div>
+                    )}
+
+                    {/* Step: AGENT_TONE (Voice, Persona & Conversational Style) */}
+                    {state.currentStep === "AGENT_TONE" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-zinc-200 shadow-sm space-y-4"
+                      >
+                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-xs">
+                              <Volume2 className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-zinc-900">
+                                AI Seller Voice & Communication Style
+                              </p>
+                              <p className="text-[11px] text-zinc-500">
+                                Select how your agent talks, greets, and negotiates with shoppers on WhatsApp
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200 font-medium">
+                            Persona Engine
+                          </span>
+                        </div>
+
+                        {/* Persona Selector Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          {[
+                            {
+                              id: "friendly",
+                              title: "Friendly & Warm",
+                              tag: "High Retention",
+                              badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
+                              icon: <Smile className="w-4 h-4 text-amber-500" />,
+                              desc: "Welcoming, polite, empathetic. Great for boutique, lifestyle & everyday shopping.",
+                            },
+                            {
+                              id: "professional",
+                              title: "Professional & Direct",
+                              tag: "Luxury / B2B",
+                              badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+                              icon: <Briefcase className="w-4 h-4 text-blue-500" />,
+                              desc: "Concise, precise, and authoritative. Clear numerical terms without unnecessary fluff.",
+                            },
+                            {
+                              id: "persuasive",
+                              title: "Persuasive & Sales-Driven",
+                              tag: "High Velocity",
+                              badgeColor: "bg-red-50 text-red-700 border-red-200",
+                              icon: <Flame className="w-4 h-4 text-red-500" />,
+                              desc: "Enthusiastic deal closer. Creates urgency, recommends bundles, and closes fast.",
+                            },
+                            {
+                              id: "hinglish",
+                              title: "Hinglish & Local Merchant",
+                              tag: "Desi Vibe",
+                              badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+                              icon: <Sparkles className="w-4 h-4 text-emerald-600" />,
+                              desc: "Modern Indian merchant tone blending English and conversational Hindi/Hinglish.",
+                            },
+                          ].map((persona) => {
+                            const isSelected = selectedTone === persona.id;
+                            return (
+                              <div
+                                key={persona.id}
+                                onClick={() => setSelectedTone(persona.id as any)}
+                                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                                  isSelected
+                                    ? "bg-zinc-50 border-zinc-900 ring-2 ring-zinc-900/10 shadow-xs"
+                                    : "bg-white border-zinc-200 hover:border-zinc-300 shadow-2xs"
+                                }`}
+                              >
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      {persona.icon}
+                                      <span className="text-xs font-bold text-zinc-900">{persona.title}</span>
+                                    </div>
+                                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full border ${persona.badgeColor}`}>
+                                      {persona.tag}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-zinc-500 leading-snug">{persona.desc}</p>
+                                </div>
+
+                                <div className="mt-2.5 pt-2 border-t border-zinc-100 flex items-center justify-between">
+                                  <span className="text-[10px] font-medium text-zinc-400">
+                                    {isSelected ? "✓ Active Tone" : "Click to select"}
+                                  </span>
+                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${isSelected ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-300"}`}>
+                                    {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Live Dialogue Simulation Preview */}
+                        <div className="p-3.5 rounded-xl bg-zinc-950 text-white space-y-2.5 shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                              <span className="text-[11px] font-semibold text-zinc-200">
+                                Live WhatsApp Conversation Preview
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-2 py-0.5 rounded">
+                              Voice: {selectedTone.toUpperCase()}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 text-xs">
+                            {/* Mock Customer Bubble */}
+                            <div className="flex justify-start">
+                              <div className="bg-zinc-800 text-zinc-200 px-3 py-2 rounded-xl rounded-tl-xs max-w-[85%]">
+                                <p className="text-[10px] font-bold text-zinc-400 mb-0.5">Shopper on WhatsApp</p>
+                                <p>
+                                  {selectedTone === "hinglish"
+                                    ? "Bhai thoda discount milega kya is product pe?"
+                                    : selectedTone === "professional"
+                                    ? "What is the best offer on this?"
+                                    : selectedTone === "persuasive"
+                                    ? "Is ₹1200 the final price?"
+                                    : "Can I get a discount if I buy today?"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Mock AI Agent Bubble */}
+                            <div className="flex justify-end">
+                              <div className="bg-emerald-700 text-white px-3 py-2 rounded-xl rounded-tr-xs max-w-[88%] shadow-xs">
+                                <p className="text-[10px] font-bold text-emerald-200 mb-0.5 flex items-center gap-1">
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  <span>{state.businessName || "Your Store"} AI Seller</span>
+                                </p>
+                                <p className="leading-relaxed">
+                                  {selectedTone === "friendly" &&
+                                    "Hey there! 😊 Absolutely, I'd love to help! I can apply our special discount for you right away. Shall I generate your 1-Tap UPI link?"}
+                                  {selectedTone === "professional" &&
+                                    "Greetings. We can extend a preferential rate of ₹1,056 with complimentary insured dispatch. Would you like to proceed with payment?"}
+                                  {selectedTone === "persuasive" &&
+                                    "Great pick! That's actually flying off the shelves today. If you grab it now, I'll lock in our exclusive 12% discount at ₹1,056 before stock runs out!"}
+                                  {selectedTone === "hinglish" &&
+                                    "Namaste! Bilkul, aapke liye main best ₹1,056 ka special discount price apply kar raha hoon. 1-Tap UPI link send karun?"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Navigation Footer */}
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-zinc-100">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleGoToStep("AGENT_SETUP")}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl h-10 px-3.5 text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+                          >
+                            ← Back to Discount Mandate
+                          </Button>
+
+                          <Button
+                            type="button"
+                            disabled={savingTone || loading}
+                            onClick={async () => {
+                              setSavingTone(true);
+                              try {
+                                await api.settings.saveAgent({
+                                  name: `${state.businessName || "Store"} AI Concierge`,
+                                  tone: selectedTone === "hinglish" ? "friendly" : selectedTone,
+                                  status: "active",
+                                  autoNegotiationEnabled: true,
+                                  humanEscalationEnabled: true,
+                                  escalationThresholdAmount: customEscalation,
+                                  bundleUpsellEnabled: true,
+                                });
+                                handleGoToStep("WHATSAPP_CONNECT");
+                              } finally {
+                                setSavingTone(false);
+                              }
+                            }}
+                            className="w-full sm:w-auto text-xs font-bold rounded-xl h-10 px-5 bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs gap-1.5 cursor-pointer disabled:opacity-60"
+                          >
+                            {savingTone ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Saving Voice...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Lock Voice & Continue to WhatsApp</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </motion.div>
                     )}
 
                     {/* Step: WHATSAPP_CONNECT */}
@@ -1150,10 +1385,10 @@ export default function OnboardingPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => handleGoToStep("AGENT_SETUP")}
+                            onClick={() => handleGoToStep("AGENT_TONE")}
                             className="w-full sm:w-auto text-xs font-semibold rounded-xl h-10 px-3.5 text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
                           >
-                            ← Back to Agent Mandate
+                            ← Back to Agent Voice
                           </Button>
 
                           <Button
@@ -1164,7 +1399,7 @@ export default function OnboardingPage() {
                           >
                             {waVerifying ? (
                               <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 <span>Verifying Meta Cloud API...</span>
                               </>
                             ) : (
@@ -1311,7 +1546,7 @@ export default function OnboardingPage() {
                           >
                             {rzpVerifying ? (
                               <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                 <span>Validating with Razorpay API...</span>
                               </>
                             ) : (
@@ -1357,7 +1592,9 @@ export default function OnboardingPage() {
                           </Button>
 
                           <Button
+                            disabled={completingOnboarding}
                             onClick={async () => {
+                              setCompletingOnboarding(true);
                               try {
                                 const token = typeof window !== "undefined"
                                   ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
@@ -1418,12 +1655,23 @@ export default function OnboardingPage() {
                                 }
                               } catch (e) {
                                 console.error("Onboarding complete error:", e);
+                              } finally {
+                                setCompletingOnboarding(false);
                               }
                             }}
-                            className="w-full sm:flex-1 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
+                            className="w-full sm:flex-1 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer disabled:opacity-70"
                           >
-                            <span>Open Merchant Dashboard</span>
-                            <ArrowRight className="w-4 h-4" />
+                            {completingOnboarding ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span>Launching Merchant Dashboard...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Open Merchant Dashboard</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
                           </Button>
                         </div>
                       </motion.div>
@@ -1435,10 +1683,19 @@ export default function OnboardingPage() {
           })}
 
           {loading && (
-            <div className="flex items-center gap-2.5 text-xs text-zinc-500 pl-11 py-2">
-              <div className="w-2 h-2 rounded-full bg-brand-500 animate-ping" />
-              <span className="font-mono">ZapAI is configuring parameters...</span>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full flex gap-3 items-center pl-1 py-1"
+            >
+              <div className="w-7 h-7 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold shadow-2xs">
+                Z
+              </div>
+              <div className="flex items-center gap-2 py-1.5 px-3 rounded-full bg-zinc-100 border border-zinc-200/80 text-xs text-zinc-600">
+                <Loader2 className="w-3 h-3 animate-spin text-zinc-700" />
+                <span className="text-[11.5px] font-medium text-zinc-600">ZapAI is configuring...</span>
+              </div>
+            </motion.div>
           )}
         </div>
       </main>
@@ -1487,7 +1744,11 @@ export default function OnboardingPage() {
             disabled={!inputValue.trim() || loading}
             className="w-8 sm:w-9 h-8 sm:h-9 p-0 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs flex-shrink-0 disabled:opacity-40 transition-transform active:scale-95 cursor-pointer"
           >
-            <Send className="w-3.5 h-3.5" />
+            {loading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
           </Button>
         </form>
       </div>

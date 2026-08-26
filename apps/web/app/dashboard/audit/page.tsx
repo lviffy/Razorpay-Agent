@@ -219,7 +219,7 @@ export default function AuditExplorerPage() {
           <span className="text-zinc-500 font-mono">⟷</span>
 
           <div className="flex-1 p-3 bg-zinc-800/80 rounded-xl border border-zinc-700/80 space-y-1">
-            <div className="flex items-center gap-1.5 text-purple-400 font-semibold text-[11px]">
+            <div className="flex items-center gap-1.5 text-blue-400 font-semibold text-[11px]">
               <Layers className="w-3.5 h-3.5" />
               <span>2. Conversation ID</span>
             </div>

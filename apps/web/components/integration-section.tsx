@@ -47,7 +47,7 @@ const CORE_INTEGRATIONS = [
     role: 'Bounded Agent Reasoning',
     desc: 'Sub-45ms natural language comprehension, Hinglish negotiation, and strict margin guardrail tool calling.',
     badge: 'Sub-45ms LLM',
-    accent: 'border-purple-200 bg-purple-50 text-purple-800',
+    accent: 'border-blue-200 bg-blue-50 text-blue-800',
     iconBg: 'bg-slate-900 text-white',
     icon: AIIcon,
   },

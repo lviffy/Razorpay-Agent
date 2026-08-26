@@ -4,8 +4,11 @@ import React from 'react'
 import Link from 'next/link'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/lib/context/auth-context'
 
 export default function CTASection() {
+  const { isAuthenticated } = useAuth()
+
   return (
     <section
       id="cta"
@@ -27,9 +30,9 @@ export default function CTASection() {
 
         {/* Primary CTA Button */}
         <div className="pt-2">
-          <Link href="/onboarding">
+          <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
             <Button className="group bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-full px-9 h-14 text-base gap-2 cursor-pointer shadow-lg shadow-brand-600/20 transition-all hover:scale-[1.02] active:scale-[0.99]">
-              <span>Start ZapAI</span>
+              <span>{isAuthenticated ? "Open Dashboard" : "Start Free"}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>

@@ -6,6 +6,7 @@ export type OnboardingStep =
   | "SHOPIFY_CONNECT"
   | "CATALOG_SETUP"
   | "AGENT_SETUP"
+  | "AGENT_TONE"
   | "WHATSAPP_CONNECT"
   | "RAZORPAY_CONNECT"
   | "TEST"

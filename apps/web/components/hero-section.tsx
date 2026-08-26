@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/lib/context/auth-context'
 
 interface Scenario {
   id: string
@@ -110,6 +111,8 @@ export default function HeroSection() {
     }, 800)
   }
 
+  const { isAuthenticated } = useAuth()
+
   return (
     <section
       id="hero"
@@ -135,9 +138,9 @@ export default function HeroSection() {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-3.5">
-              <Link href="/onboarding">
+              <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
                 <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-8 h-12 text-sm sm:text-base gap-2 cursor-pointer shadow-xs transition-all hover:scale-[1.01] active:scale-[0.99]">
-                  <span>Start ZapAI</span>
+                  <span>{isAuthenticated ? "Open Dashboard" : "Start Free"}</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

@@ -95,20 +95,22 @@ STEP ORDER:
 2. "STORE_SOURCE" (Catalog: Merchant chooses Native Catalog, CSV Upload, or Shopify Sync)
 3. "CATALOG_SETUP" (Add products, prices, floor minimum margins - allow adding multiple items!)
 4. "AGENT_SETUP" (Negotiation rules, discount limits e.g. 8%, 12%, 18%)
-5. "WHATSAPP_CONNECT" (Connect WhatsApp Business number)
-6. "RAZORPAY_CONNECT" (Connect Razorpay API credentials)
-7. "READY" (Store is 100% active, ready for live launch)
+5. "AGENT_TONE" (Agent Persona & Voice: Choose how the AI sounds e.g. Friendly, Professional, Persuasive, Hinglish)
+6. "WHATSAPP_CONNECT" (Connect WhatsApp Business number)
+7. "RAZORPAY_CONNECT" (Connect Razorpay API credentials)
+8. "READY" (Store is 100% active, ready for live launch)
 
 RULES:
 1. Questions About ZapAI / Onboarding: If the user asks ANY question about ZapAI, Razorpay, WhatsApp, negotiation, pricing, security, or how anything works, answer thoroughly, warmly, and accurately (1-3 sentences without ** asterisks), and remind them of their current step. DO NOT advance nextStep if they are asking a question.
-2. Back Navigation & Corrections: If the user says "go back", "previous step", "change name", "change catalog", "change discount", set nextStep to the requested previous step (e.g., "WELCOME", "STORE_SOURCE", "AGENT_SETUP", etc.) and acknowledge the change.
+2. Back Navigation & Corrections: If the user says "go back", "previous step", "change name", "change catalog", "change discount", "change tone", set nextStep to the requested previous step (e.g., "WELCOME", "STORE_SOURCE", "AGENT_SETUP", "AGENT_TONE", etc.) and acknowledge the change.
 3. Adding Multiple Products in CATALOG_SETUP: When the user adds a product (e.g., "Added [title] at ₹[price]"), confirm the item has been indexed and KEEP nextStep at "CATALOG_SETUP" so the merchant can add more products or click Continue when done. Only advance to "AGENT_SETUP" when they say "done", "continue", "next", or configure discounts.
-4. Step Progression: Only advance to the next step when the user provides the relevant step data (e.g. store name for WELCOME, source for STORE_SOURCE, discount for AGENT_SETUP, phone for WHATSAPP_CONNECT, Razorpay keys for RAZORPAY_CONNECT).
+4. Agent Setup to Agent Tone: When discount limits are set in "AGENT_SETUP", move to "AGENT_TONE" so the merchant can choose their agent's communication style & voice persona before WhatsApp setup.
+5. Step Progression: Only advance to the next step when the user provides the relevant step data (e.g. store name for WELCOME, source for STORE_SOURCE, discount for AGENT_SETUP, tone for AGENT_TONE, phone for WHATSAPP_CONNECT, Razorpay keys for RAZORPAY_CONNECT).
 
 Return ONLY valid JSON matching this schema:
 {
   "reply": "string (without ** markdown)",
-  "nextStep": "WELCOME | STORE_SOURCE | CATALOG_SETUP | AGENT_SETUP | WHATSAPP_CONNECT | RAZORPAY_CONNECT | READY",
+  "nextStep": "WELCOME | STORE_SOURCE | CATALOG_SETUP | AGENT_SETUP | AGENT_TONE | WHATSAPP_CONNECT | RAZORPAY_CONNECT | READY",
   "extracted": {
     "businessName": "string or null",
     "provider": "ZAPAI or SHOPIFY or null",
@@ -122,6 +124,9 @@ Return ONLY valid JSON matching this schema:
     "discountRules": {
       "maxDiscountPercent": 12,
       "riskProfile": "conservative or balanced or aggressive"
+    },
+    "agentPersona": {
+      "tone": "friendly or professional or persuasive or hinglish"
     },
     "whatsappConnected": true or false,
     "razorpayConnected": true or false
@@ -166,12 +171,13 @@ function fallbackHeuristicAI(
 
   // 1. Back navigation / undo intent
   const isBackIntent =
-    /^(go\s+back|back|previous|undo|change\s+step|return)\b/i.test(text) ||
+    /^(go\s+back|back|previous|undo|return)\b/i.test(text) ||
     text.includes("go back") ||
-    text.includes("previous step");
+    text.includes("previous step") ||
+    text.includes("back to");
 
   if (isBackIntent) {
-    if (text.includes("name") || text.includes("store name") || text.includes("identity")) {
+    if (text.includes("name") || text.includes("identity")) {
       return {
         reply: "Navigated back to Identity step. What would you like to rename your store?",
         nextStep: "WELCOME",
@@ -187,12 +193,20 @@ function fallbackHeuristicAI(
         completionPercentage: 30,
       };
     }
-    if (text.includes("agent") || text.includes("rule") || text.includes("discount") || text.includes("mandate")) {
+    if (text.includes("discount") || text.includes("mandate") || text.includes("floor") || text.includes("cap")) {
       return {
         reply: "Navigated back to Agent Mandate step. You can pick Conservative (8%), Balanced (12%), or Aggressive (18%) discounts.",
         nextStep: "AGENT_SETUP",
         extracted: {},
-        completionPercentage: 60,
+        completionPercentage: 55,
+      };
+    }
+    if (text.includes("tone") || text.includes("voice") || text.includes("persona") || text.includes("sound")) {
+      return {
+        reply: "Navigated back to Agent Voice & Persona step. Choose how your agent sounds on WhatsApp.",
+        nextStep: "AGENT_TONE",
+        extracted: {},
+        completionPercentage: 70,
       };
     }
     if (text.includes("whatsapp") || text.includes("phone")) {
@@ -200,15 +214,16 @@ function fallbackHeuristicAI(
         reply: "Navigated back to WhatsApp Channel step. You can enter or update your WhatsApp Business number.",
         nextStep: "WHATSAPP_CONNECT",
         extracted: {},
-        completionPercentage: 75,
+        completionPercentage: 80,
       };
     }
 
     // Default sequential go-back
     const previousMap: Record<string, { step: string; pct: number; msg: string }> = {
       READY: { step: "RAZORPAY_CONNECT", pct: 90, msg: "Returned to Razorpay payment connection step." },
-      RAZORPAY_CONNECT: { step: "WHATSAPP_CONNECT", pct: 75, msg: "Returned to WhatsApp Business channel step." },
-      WHATSAPP_CONNECT: { step: "AGENT_SETUP", pct: 60, msg: "Returned to AI Seller negotiation rules step." },
+      RAZORPAY_CONNECT: { step: "WHATSAPP_CONNECT", pct: 80, msg: "Returned to WhatsApp Business channel step." },
+      WHATSAPP_CONNECT: { step: "AGENT_TONE", pct: 70, msg: "Returned to AI Seller voice and persona step." },
+      AGENT_TONE: { step: "AGENT_SETUP", pct: 55, msg: "Returned to AI Seller negotiation discount rules step." },
       AGENT_SETUP: { step: "CATALOG_SETUP", pct: 40, msg: "Returned to Catalog setup step." },
       CATALOG_SETUP: { step: "STORE_SOURCE", pct: 30, msg: "Returned to Catalog selection step." },
       SHOPIFY_CONNECT: { step: "STORE_SOURCE", pct: 30, msg: "Returned to Catalog selection step." },
@@ -236,7 +251,26 @@ function fallbackHeuristicAI(
     };
   }
 
-  // 3. Questions about ZapAI and features
+  // 3. Continue / Done actions from Catalog
+  const isContinueFromCatalog =
+    currentState.currentStep === "CATALOG_SETUP" &&
+    (text.includes("done") ||
+      text.includes("continue") ||
+      text.includes("next") ||
+      text.includes("mandate") ||
+      text.includes("rules") ||
+      text.includes("configure"));
+
+  if (isContinueFromCatalog) {
+    return {
+      reply: "Catalog saved! Now let's establish your AI Seller's negotiation boundaries. Choose a discount profile (Conservative 8%, Balanced 12%, Aggressive 18%) or set custom caps.",
+      nextStep: "AGENT_SETUP",
+      extracted: {},
+      completionPercentage: 55,
+    };
+  }
+
+  // 4. Questions about ZapAI and features
   if (text.includes("what is zapai") || text.includes("about zapai") || text.includes("how does zapai work") || text.includes("tell me about zapai")) {
     return {
       reply: "ZapAI is an autonomous agentic commerce platform for Indian merchants. It connects buyers' AI agents and WhatsApp shoppers directly to your store catalog, negotiates prices autonomously within your profit margins, and collects instant 1-Tap UPI payments through Razorpay in INR.",
@@ -246,8 +280,8 @@ function fallbackHeuristicAI(
     };
   }
 
-  if (text.includes("negotiat") || text.includes("floor price") || text.includes("margin") || text.includes("discount")) {
-    if (currentState.currentStep !== "AGENT_SETUP") {
+  if (text.includes("how does negotiation work") || (text.includes("negotiat") && !text.includes("rule") && !text.includes("profile")) || text.includes("what is floor price") || text.includes("margin guard")) {
+    if (currentState.currentStep !== "AGENT_SETUP" && currentState.currentStep !== "AGENT_TONE") {
       return {
         reply: "ZapAI's Margin Engine allows you to define discount allowances (e.g. 8%, 12%, 18%) and minimum floor prices. During buyer conversations, the AI counters dynamically but strictly never sells below your floor margin.",
         nextStep: currentState.currentStep,
@@ -257,7 +291,7 @@ function fallbackHeuristicAI(
     }
   }
 
-  if (text.includes("razorpay") || text.includes("settlement") || text.includes("upi") || text.includes("payment")) {
+  if (text.includes("what is razorpay") || text.includes("how do settlements work") || text.includes("instant settlement")) {
     if (currentState.currentStep !== "RAZORPAY_CONNECT") {
       return {
         reply: "ZapAI uses Razorpay to issue instant 1-Tap UPI and card payment links directly in chats. Every transaction settles in INR straight into your bank account with automated webhook verification.",
@@ -286,7 +320,7 @@ function fallbackHeuristicAI(
     };
   }
 
-  // 4. Normal step progression
+  // 5. Normal step progression
   if (currentState.currentStep === "WELCOME" || !currentState.businessName) {
     const cleanedName = userMessage
       .replace(/^(my store is|it's called|name is|i am|let's call it)\s+/i, "")
@@ -321,7 +355,7 @@ function fallbackHeuristicAI(
 
     if (isDoneWithCatalog) {
       nextStep = "AGENT_SETUP";
-      progress = 60;
+      progress = 55;
       reply = "Products saved in your catalog! Now, let's establish your negotiation profile. What maximum discount should your agent offer during live WhatsApp negotiations?";
     } else if (text.includes("added") || text.includes("sku") || text.includes("price") || text.includes("₹") || text.includes("rs")) {
       // Product was added! Keep on CATALOG_SETUP so merchant can add more items!
@@ -339,12 +373,29 @@ function fallbackHeuristicAI(
         maxDiscountPercent: discount,
         riskProfile: text.includes("aggressive") ? "aggressive" : text.includes("conservative") ? "conservative" : "balanced",
       };
-      nextStep = "WHATSAPP_CONNECT";
-      progress = 80;
-      reply = `Negotiation guardrails set! Maximum discount is locked at ${discount}%. Next, connect your WhatsApp Business account so buyers can start messaging your store.`;
+      nextStep = "AGENT_TONE";
+      progress = 70;
+      reply = `Discount guardrail locked at ${discount}% maximum! Next, how should your AI Seller Agent sound when talking to buyers? Choose a voice persona below.`;
     } else {
       reply = `Please choose a negotiation profile (Conservative: max 8%, Balanced: max 12%, Aggressive: max 18%) or specify your preferred maximum discount percentage.`;
     }
+  } else if (currentState.currentStep === "AGENT_TONE") {
+    const isFriendly = text.includes("friendly") || text.includes("warm") || text.includes("welcoming");
+    const isProf = text.includes("professional") || text.includes("luxury") || text.includes("formal") || text.includes("direct");
+    const isPersuasive = text.includes("persuasive") || text.includes("sales") || text.includes("conversion") || text.includes("urgent");
+    const isHinglish = text.includes("hinglish") || text.includes("desi") || text.includes("indian") || text.includes("namaste");
+    
+    const tone = isProf ? "professional" : isPersuasive ? "persuasive" : isHinglish ? "hinglish" : "friendly";
+    const toneLabels: Record<string, string> = {
+      friendly: "Friendly & Warm",
+      professional: "Professional & Direct",
+      persuasive: "Persuasive & Sales-Driven",
+      hinglish: "Hinglish & Local Merchant",
+    };
+
+    nextStep = "WHATSAPP_CONNECT";
+    progress = 80;
+    reply = `Agent persona set to ${toneLabels[tone]}! Next, connect your WhatsApp Business account so buyers can start messaging your store.`;
   } else if (currentState.currentStep === "WHATSAPP_CONNECT") {
     if (text.includes("whatsapp") || text.includes("phone") || text.includes("connect") || text.includes("+91") || /\d{10}/.test(text)) {
       extracted.whatsappConnected = true;
