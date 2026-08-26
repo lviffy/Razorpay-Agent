@@ -1,16 +1,11 @@
-import { GoogleGenerativeAI, SchemaType, FunctionCallingMode } from "@google/generative-ai";
+import { SchemaType, FunctionCallingMode } from "@google/generative-ai";
+import { getGeminiClient } from "../services/ai.ts";
 import { getAllStores, getNegotiationRules } from "../services/merchant.ts";
 import { SellerAgent } from "./seller-agent.ts";
 import { db } from "../db/migrate.ts";
 import type { Mandate, SellerOffer } from "../types/index.ts";
 import { v4 as uuidv4 } from "uuid";
 import { createHmac } from "crypto";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Buyer Agent — intent parsing, parallel store comparison, mandate guardrail
-// ─────────────────────────────────────────────────────────────────────────────
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 export interface BuyerTask {
   message: string;           // Raw user message e.g. "Buy running shoes under ₹4,000"
@@ -168,8 +163,12 @@ export class BuyerAgent {
     spendingLimit: number
   ): Promise<{ category?: string; keywords: string[] }> {
     try {
+      const genAI = getGeminiClient();
+      if (!genAI) {
+        throw new Error("GEMINI_API_KEY is not configured");
+      }
       const model = genAI.getGenerativeModel({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.0-flash",
         tools: [
           {
             functionDeclarations: [

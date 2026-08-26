@@ -14,10 +14,8 @@ import {
   sendPaymentFailedWithRetry,
 } from "../services/whatsapp.ts";
 import { db } from "../db/migrate.ts";
-import Groq from "groq-sdk";
+import { getGroqClient } from "../services/ai.ts";
 import type { WorkerJob } from "../types/index.ts";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WhatsApp Worker — processes jobs from Redis queue asynchronously
@@ -368,22 +366,25 @@ GUIDELINES:
 - Never make up stock or prices not listed above
 - Use Indian English, ₹ for prices`;
 
-    const chat = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage },
-      ],
-      temperature: 0.7,
-      max_tokens: 150,
-    });
+    const groq = getGroqClient();
+    if (groq) {
+      const chat = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+      });
 
-    const reply = chat.choices[0]?.message?.content?.trim();
-    if (reply) {
-      await sendText(to, reply);
-    } else {
-      await sendText(to, "Hi! 👋 How can I help you today? Tell me what you're looking for and I'll find the best deal for you!");
+      const reply = chat.choices[0]?.message?.content?.trim();
+      if (reply) {
+        await sendText(to, reply);
+        return;
+      }
     }
+    await sendText(to, "Hi! 👋 How can I help you today? Tell me what you're looking for and I'll find the best deal for you!");
   } catch (err) {
     console.error("[Worker] Groq open-ended message error:", err);
     await sendText(to, "Hi! 👋 What are you looking for today? I can help you find the best products and deals!");

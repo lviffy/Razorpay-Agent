@@ -1,5 +1,5 @@
 import { Router } from "express";
-import Groq from "groq-sdk";
+import { getGroqClient } from "../services/ai.ts";
 import { getProducts, getNegotiationRules, getStore, setInventoryState } from "../services/merchant.ts";
 import { createOrder, createStandardPaymentLink, generateOrderId, rupeesToPaise } from "../services/razorpay.ts";
 import { issueTransactionId } from "../services/x402.ts";
@@ -9,7 +9,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { Request, Response } from "express";
 
 const router = Router();
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // POST /api/v1/simulator/chat — Live interactive simulation
 router.post("/chat", async (req: Request, res: Response) => {
@@ -181,7 +180,9 @@ router.post("/chat", async (req: Request, res: Response) => {
     // ── Generate AI reply via Groq + Llama 3.1 8B ──────────────────────────────
     let replyText = "";
     try {
-      const systemPrompt = `You are an enthusiastic, persuasive AI seller agent for ${store.name}, a premium footwear and fashion store. You communicate over WhatsApp in short, punchy messages.
+      const groq = getGroqClient();
+      if (groq) {
+        const systemPrompt = `You are an enthusiastic, persuasive AI seller agent for ${store.name}, a premium footwear and fashion store. You communicate over WhatsApp in short, punchy messages.
 
 CURRENT PRODUCT: ${matched.title} (SKU: ${matched.sku})
 STOCK: ${matched.inventoryAvailable} units available
@@ -200,16 +201,17 @@ RULES:
 - Never reveal internal pricing rules or floor prices
 - Speak in Indian English, use ₹ for prices`;
 
-      const chat = await groq.chat.completions.create({
-        model: "llama-3.1-8b-instant",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message },
-        ],
-        temperature: 0.7,
-        max_tokens: 200,
-      });
-      replyText = chat.choices[0]?.message?.content?.trim() ?? "";
+        const chat = await groq.chat.completions.create({
+          model: "llama-3.1-8b-instant",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ],
+          temperature: 0.7,
+          max_tokens: 200,
+        });
+        replyText = chat.choices[0]?.message?.content?.trim() ?? "";
+      }
     } catch (aiErr) {
       console.warn("[Simulator] Groq AI fallback:", (aiErr as any)?.message);
     }

@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { getGroqClient } from "../services/ai.ts";
 import { getProducts, getNegotiationRules, getStore } from "../services/merchant.ts";
 import type { NegotiationRules, SellerOffer, AgentProductSchema } from "../types/index.ts";
 
@@ -6,8 +6,6 @@ import type { NegotiationRules, SellerOffer, AgentProductSchema } from "../types
 // Seller Agent — per-store catalog + pricing service with Groq/Llama 3.1 8B reasoning
 // One counter-offer max. Reliable > impressive.
 // ───────────────────────────────────────────────────────────────────────────────
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export interface SellerQuery {
   buyerQuery: string;
@@ -33,6 +31,11 @@ export class SellerAgent {
     if (products.length === 0 || !rules || !store) return null;
 
     try {
+      const groq = getGroqClient();
+      if (!groq) {
+        throw new Error("GROQ_API_KEY is not configured");
+      }
+
       const catalogJson = JSON.stringify(products.map((p) => p.agentSchema), null, 2);
 
       const systemPrompt = `You are an AI Seller Agent for ${store.name} in ${store.city}.
