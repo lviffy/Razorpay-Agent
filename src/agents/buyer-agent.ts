@@ -254,23 +254,13 @@ export class BuyerAgent {
       console.warn("⚠️ Gemini intent parsing fallback active:", (err as any)?.message || err);
     }
 
-    // High-precision deterministic intent fallback
-    const lower = message.toLowerCase();
-    let category = "General";
-    if (lower.includes("shoe") || lower.includes("sneaker") || lower.includes("runner")) {
-      category = "Running Shoes";
-    } else if (lower.includes("sock")) {
-      category = "Accessories";
-    } else if (lower.includes("tee") || lower.includes("shirt")) {
-      category = "Apparel";
-    }
-
+    // Conservative fallback without forcing rigid product categories
     const keywords = message
       .replace(/under|below|for|within|buy|need|want|₹|rs|inr|[0-9,]/gi, " ")
       .split(/\s+/)
       .filter((w) => w.length > 2);
 
-    return { category, keywords: keywords.length > 0 ? keywords : [message] };
+    return { category: undefined, keywords: keywords.length > 0 ? keywords : [message] };
   }
 
   private async createMandate(opts: {

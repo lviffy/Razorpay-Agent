@@ -130,32 +130,31 @@ You MUST call the selectProduct function with your choice.`;
       console.warn("⚠️ Gemini seller reasoning fallback active:", (err as any)?.message || err);
     }
 
-    // High-precision deterministic catalog matching fallback
+    // Data-driven catalog matching fallback
     const qLower = query.buyerQuery.toLowerCase();
+    const qWords = qLower.split(/\s+/).filter((w) => w.length > 2);
     let candidates = products.filter((p) => p.agentSchema.inventoryAvailable > 0);
 
-    const isShoeQuery = qLower.includes("shoe") || qLower.includes("sneaker") || qLower.includes("runner") || qLower.includes("pegasus") || qLower.includes("ultraboost") || qLower.includes("nitro");
-    const isSockQuery = qLower.includes("sock");
-
-    if (isShoeQuery) {
-      candidates = candidates.filter((c) => 
-        !c.agentSchema.title.toLowerCase().includes("sock") &&
-        (c.agentSchema.attributes?.category?.toLowerCase().includes("shoe") || c.agentSchema.title.toLowerCase().includes("shoe") || c.agentSchema.title.toLowerCase().includes("pegasus") || c.agentSchema.title.toLowerCase().includes("ultraboost") || c.agentSchema.title.toLowerCase().includes("nitro"))
+    // Filter by explicit category if provided
+    if (query.category && query.category.toLowerCase() !== "general") {
+      const catLower = query.category.toLowerCase();
+      const catMatches = candidates.filter(
+        (c) =>
+          c.agentSchema.attributes?.category?.toLowerCase().includes(catLower) ||
+          c.agentSchema.title.toLowerCase().includes(catLower)
       );
-    } else if (isSockQuery) {
-      candidates = candidates.filter((c) => c.agentSchema.title.toLowerCase().includes("sock"));
+      if (catMatches.length > 0) candidates = catMatches;
     }
 
-    // Brand filtering
-    if (qLower.includes("nike")) {
-      const p = candidates.filter((c) => c.agentSchema.title.toLowerCase().includes("nike"));
-      if (p.length > 0) candidates = p;
-    } else if (qLower.includes("adidas")) {
-      const p = candidates.filter((c) => c.agentSchema.title.toLowerCase().includes("adidas"));
-      if (p.length > 0) candidates = p;
-    } else if (qLower.includes("puma")) {
-      const p = candidates.filter((c) => c.agentSchema.title.toLowerCase().includes("puma"));
-      if (p.length > 0) candidates = p;
+    // Filter by matching keywords / title / SKU
+    const titleMatches = candidates.filter((c) => {
+      const tLower = c.agentSchema.title.toLowerCase();
+      const sLower = c.agentSchema.sku?.toLowerCase() || "";
+      return qLower.includes(tLower) || tLower.includes(qLower) || qWords.some((w) => tLower.includes(w) || sLower.includes(w));
+    });
+
+    if (titleMatches.length > 0) {
+      candidates = titleMatches;
     }
 
     if (candidates.length === 0) return null;

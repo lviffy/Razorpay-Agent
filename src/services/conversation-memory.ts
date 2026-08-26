@@ -23,6 +23,18 @@ export interface ConversationState {
     sku?: string;
     variantId?: string;
   };
+  currentOffer?: {
+    productTitle: string;
+    variantId: string;
+    offeredPrice: number;
+    listedPrice: number;
+    shippingFree: boolean;
+    status: "PROPOSED" | "ACCEPTED" | "COUNTER" | "REJECTED";
+  };
+  buyerBudget?: number;
+  lastIntent?: string;
+  awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+  activeCategory?: string;
   transcript: ChatMessage[];
   productsDiscussed: string[];
 }
@@ -61,6 +73,11 @@ export async function loadConversation(
     customerName: r.customer_name,
     sessionState: r.session_state || "IDLE",
     activeProduct: ctx.activeProduct,
+    currentOffer: ctx.currentOffer,
+    buyerBudget: ctx.buyerBudget,
+    lastIntent: ctx.lastIntent,
+    awaitingConfirmation: ctx.awaitingConfirmation,
+    activeCategory: ctx.activeCategory,
     transcript,
     productsDiscussed,
   };
@@ -71,7 +88,16 @@ export async function appendMessage(
   phoneNumber: string,
   sender: "customer" | "seller_agent",
   content: string,
-  meta?: { mediaUrl?: string; activeProduct?: any; sessionState?: string }
+  meta?: {
+    mediaUrl?: string;
+    activeProduct?: any;
+    currentOffer?: any;
+    buyerBudget?: number;
+    lastIntent?: string;
+    awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+    activeCategory?: string;
+    sessionState?: string;
+  }
 ): Promise<void> {
   const msgObj: ChatMessage = {
     id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -93,6 +119,11 @@ export async function appendMessage(
     const updatedContext = {
       transcript: updatedTranscript,
       activeProduct: meta?.activeProduct !== undefined ? meta.activeProduct : existing.activeProduct,
+      currentOffer: meta?.currentOffer !== undefined ? meta.currentOffer : existing.currentOffer,
+      buyerBudget: meta?.buyerBudget !== undefined ? meta.buyerBudget : existing.buyerBudget,
+      lastIntent: meta?.lastIntent !== undefined ? meta.lastIntent : existing.lastIntent,
+      awaitingConfirmation: meta?.awaitingConfirmation !== undefined ? meta.awaitingConfirmation : existing.awaitingConfirmation,
+      activeCategory: meta?.activeCategory !== undefined ? meta.activeCategory : existing.activeCategory,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -129,6 +160,11 @@ export async function updateConversationContext(
   phoneNumber: string,
   patch: {
     activeProduct?: any;
+    currentOffer?: any;
+    buyerBudget?: number;
+    lastIntent?: string;
+    awaitingConfirmation?: "PAYMENT_LINK" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
+    activeCategory?: string;
     sessionState?: "IDLE" | "NEGOTIATING" | "AWAITING_PAYMENT" | "COMPLETE";
     dealAmount?: number;
   }
@@ -138,6 +174,11 @@ export async function updateConversationContext(
     const updatedContext = {
       transcript: existing.transcript,
       activeProduct: patch.activeProduct !== undefined ? patch.activeProduct : existing.activeProduct,
+      currentOffer: patch.currentOffer !== undefined ? patch.currentOffer : existing.currentOffer,
+      buyerBudget: patch.buyerBudget !== undefined ? patch.buyerBudget : existing.buyerBudget,
+      lastIntent: patch.lastIntent !== undefined ? patch.lastIntent : existing.lastIntent,
+      awaitingConfirmation: patch.awaitingConfirmation !== undefined ? patch.awaitingConfirmation : existing.awaitingConfirmation,
+      activeCategory: patch.activeCategory !== undefined ? patch.activeCategory : existing.activeCategory,
       lastUpdated: new Date().toISOString(),
     };
 
