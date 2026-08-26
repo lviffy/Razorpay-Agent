@@ -404,6 +404,44 @@ async function runTestSuite() {
     resp9.text
   );
 
+  // ── SCENARIO 10: Multi-Turn Focus Retention on Discount ('i would like some discount')
+  console.log("\n▶️ Scenario 10: Context Retention on Discount Request after discussing Rohan");
+  const ctx10 = createMockContext({
+    activeProduct: {
+      id: "prod_rohan_shirt",
+      title: "Rohan Shirt",
+      listedPrice: 1200,
+      floorPrice: 1080,
+      offeredPrice: 1200,
+      inventoryAvailable: 10,
+      variantId: "var_rohan_001",
+    },
+    sessionState: "IDLE",
+  });
+
+  const intent10 = await resolveIntent("i would like some discount", ctx10);
+  assert(
+    intent10.intent === "PRICE_NEGOTIATION",
+    "'i would like some discount' resolves to PRICE_NEGOTIATION",
+    `Intent: ${intent10.intent}`
+  );
+
+  const comm10 = await executeCommerceAction(intent10, ctx10, "i would like some discount");
+  assert(
+    comm10.type === "COUNTER_OFFER" &&
+    comm10.product?.title.toLowerCase().includes("rohan") &&
+    comm10.product?.offeredPrice === 1080,
+    "Calculates discount on Rohan Shirt (₹1080) and does not jump to Shayanna",
+    `Product: ${comm10.product?.title}, Price: ${comm10.product?.offeredPrice}`
+  );
+
+  const resp10 = await generateCustomerResponse("i would like some discount", intent10, comm10, ctx10);
+  assert(
+    resp10.text.includes("1080") || resp10.text.includes("1,080") || resp10.text.includes("1100"),
+    "Response communicates discounted price for Rohan",
+    resp10.text
+  );
+
   console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);
   if (passed === total) {
     console.log("🎉 ALL REAL-WORLD CONVERSATIONAL SCENARIOS PASSED!");

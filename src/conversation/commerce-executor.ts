@@ -53,24 +53,7 @@ export async function executeCommerceAction(
     return {
       type: "CATALOG_LIST",
       catalogItems,
-      product: featuredProductWithImage
-        ? {
-            id: featuredProductWithImage.id,
-            title: featuredProductWithImage.title,
-            variantId: featuredProductWithImage.shopifyVariantId,
-            listedPrice: featuredProductWithImage.listedPrice,
-            floorPrice: featuredProductWithImage.floorPrice,
-            offeredPrice: featuredProductWithImage.listedPrice,
-            inventoryAvailable: featuredProductWithImage.inventoryAvailable,
-            imageUrl: featuredProductWithImage.imageUrl,
-            sku: featuredProductWithImage.sku,
-          }
-        : undefined,
       mediaList,
-      mediaUrlToSend: featuredProductWithImage?.imageUrl,
-      mediaCaption: featuredProductWithImage
-        ? `Featured: ${featuredProductWithImage.title} (₹${featuredProductWithImage.listedPrice.toLocaleString("en-IN")}) 📸`
-        : undefined,
     };
   }
 

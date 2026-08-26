@@ -73,17 +73,26 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   console.log(`[Orchestrator] Commerce result: ${commerceResult.type}`);
 
   // ── 5. Update Conversation State & Memory ─────────────────────────────────
-  let updatedActiveProduct = commerceResult.product || state.activeProduct;
-  let updatedOffer = commerceResult.offer
-    ? {
-        productTitle: commerceResult.product?.title || state.activeProduct?.title || "Product",
-        variantId: commerceResult.product?.variantId || state.activeProduct?.variantId || "",
-        offeredPrice: commerceResult.offer.offeredPrice,
-        listedPrice: commerceResult.product?.listedPrice || state.activeProduct?.listedPrice || commerceResult.offer.offeredPrice,
-        shippingFree: commerceResult.offer.shippingFree,
-        status: commerceResult.offer.status === "COUNTER" ? ("COUNTER" as const) : ("PROPOSED" as const),
-      }
-    : state.currentOffer;
+  let updatedActiveProduct =
+    commerceResult.type === "CATALOG_LIST"
+      ? undefined
+      : commerceResult.product || state.activeProduct;
+
+  let updatedOffer =
+    commerceResult.type === "CATALOG_LIST"
+      ? undefined
+      : commerceResult.offer
+      ? {
+          productTitle: commerceResult.product?.title || state.activeProduct?.title || "Product",
+          variantId: commerceResult.product?.variantId || state.activeProduct?.variantId || "",
+          offeredPrice: commerceResult.offer.offeredPrice,
+          listedPrice: commerceResult.product?.listedPrice || state.activeProduct?.listedPrice || commerceResult.offer.offeredPrice,
+          shippingFree: commerceResult.offer.shippingFree,
+          status: commerceResult.offer.status === "COUNTER" ? ("COUNTER" as const) : ("PROPOSED" as const),
+        }
+      : updatedActiveProduct && state.currentOffer && state.currentOffer.productTitle.toLowerCase() !== updatedActiveProduct.title.toLowerCase()
+      ? undefined
+      : state.currentOffer;
 
   // On clean greeting, reset active product so old focus is not carried over
   if (intent.intent === "SMALL_TALK") {

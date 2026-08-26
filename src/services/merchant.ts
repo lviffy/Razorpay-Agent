@@ -14,10 +14,15 @@ export async function getAllStores(): Promise<Store[]> {
 }
 
 export async function getStore(storeId: string): Promise<Store | null> {
-  const { rows } = await db.query<Store>(
-    "SELECT id, name, city, razorpay_account_id, currency, is_active FROM stores WHERE id = $1",
-    [storeId]
-  );
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId);
+  const { rows } = isUuid
+    ? await db.query<Store>(
+        "SELECT id, name, city, razorpay_account_id, currency, is_active FROM stores WHERE id = $1",
+        [storeId]
+      )
+    : await db.query<Store>(
+        "SELECT id, name, city, razorpay_account_id, currency, is_active FROM stores LIMIT 1"
+      );
   return rows[0] ?? null;
 }
 
@@ -39,17 +44,29 @@ export async function getProducts(storeId: string): Promise<Product[]> {
   }
 
   // 2. Fetch available catalog for active store(s)
-  const { rows } = await db.query(
-    `SELECT
-      id, store_id, shopify_variant_id, title, sku,
-      listed_price, floor_price, image_url,
-      inventory_available, inventory_reserved, reservation_expires_at,
-      inventory_state, agent_schema, updated_at
-    FROM products
-    WHERE store_id = $1 AND inventory_state = 'AVAILABLE' AND inventory_available > 0
-    ORDER BY created_at DESC`,
-    [storeId]
-  );
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId);
+  const { rows } = isUuid
+    ? await db.query(
+        `SELECT
+          id, store_id, shopify_variant_id, title, sku,
+          listed_price, floor_price, image_url,
+          inventory_available, inventory_reserved, reservation_expires_at,
+          inventory_state, agent_schema, updated_at
+        FROM products
+        WHERE store_id = $1 AND inventory_available > 0
+        ORDER BY created_at DESC`,
+        [storeId]
+      )
+    : await db.query(
+        `SELECT
+          id, store_id, shopify_variant_id, title, sku,
+          listed_price, floor_price, image_url,
+          inventory_available, inventory_reserved, reservation_expires_at,
+          inventory_state, agent_schema, updated_at
+        FROM products
+        WHERE inventory_available > 0
+        ORDER BY created_at DESC`
+      );
 
   return rows.map(mapProductRow);
 }
@@ -114,13 +131,21 @@ export async function getProductById(productId: string): Promise<Product | null>
 }
 
 export async function getNegotiationRules(storeId: string): Promise<NegotiationRules | null> {
-  const { rows } = await db.query(
-    `SELECT
-      store_id, max_discount_percentage, min_order_value_for_discount,
-      free_shipping_threshold, allow_bundle_offers, auto_accept_threshold
-    FROM negotiation_rules WHERE store_id = $1`,
-    [storeId]
-  );
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId);
+  const { rows } = isUuid
+    ? await db.query(
+        `SELECT
+          store_id, max_discount_percentage, min_order_value_for_discount,
+          free_shipping_threshold, allow_bundle_offers, auto_accept_threshold
+        FROM negotiation_rules WHERE store_id = $1`,
+        [storeId]
+      )
+    : await db.query(
+        `SELECT
+          store_id, max_discount_percentage, min_order_value_for_discount,
+          free_shipping_threshold, allow_bundle_offers, auto_accept_threshold
+        FROM negotiation_rules LIMIT 1`
+      );
 
   if (!rows[0]) return null;
 
