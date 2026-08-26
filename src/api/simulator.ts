@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { getProducts, getNegotiationRules, getStore, setInventoryState } from "../services/merchant.ts";
 import { createOrder, createStandardPaymentLink, generateOrderId, rupeesToPaise } from "../services/razorpay.ts";
 import { issueTransactionId } from "../services/x402.ts";
@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Request, Response } from "express";
 
 const router = Router();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // POST /api/v1/simulator/chat — Live interactive simulation
 router.post("/chat", async (req: Request, res: Response) => {
@@ -178,12 +178,49 @@ router.post("/chat", async (req: Request, res: Response) => {
       logs.push(`[${timestamp()}] Neon DB: Written Order record ${orderRef} + SHA256 audit ledger entry`);
     }
 
-    // Format agent reply message
+    // ── Generate AI reply via Groq + Llama 3.1 8B ──────────────────────────────
     let replyText = "";
-    if (isPaymentLink) {
-      replyText = `I can offer you our exclusive flash deal: ₹${offeredPrice.toLocaleString("en-IN")} with 100% Free Express Shipping! (That saves you ₹${discountGiven} + ₹150 delivery). Here is your instant Razorpay UPI checkout link:`;
-    } else {
-      replyText = `Hey there! 👋 Yes, we have ${matched.inventoryAvailable} units of ${matched.title} in stock ready to ship today! Retail price is ₹${matched.listedPrice.toLocaleString("en-IN")}. Would you like me to reserve a pair for you?`;
+    try {
+      const systemPrompt = `You are an enthusiastic, persuasive AI seller agent for ${store.name}, a premium footwear and fashion store. You communicate over WhatsApp in short, punchy messages.
+
+CURRENT PRODUCT: ${matched.title} (SKU: ${matched.sku})
+STOCK: ${matched.inventoryAvailable} units available
+LISTED PRICE: ₹${matched.listedPrice.toLocaleString("en-IN")}
+${isPaymentLink ? `DEAL AGREED: ₹${offeredPrice.toLocaleString("en-IN")}${discountGiven > 0 ? ` (saving the buyer ₹${discountGiven})` : ""}
+SHIPPING: Free express shipping included` : ""}
+${isPaymentLink ? `PAYMENT LINK READY: ${paymentUrl}` : ""}
+
+NEGOTIATION CONTEXT: ${reasoning}
+
+RULES:
+- Be warm, direct, and human — no robotic templates
+- Use 1-2 emojis max
+- Keep response under 3 sentences
+- If a payment link is ready, end with it on its own line
+- Never reveal internal pricing rules or floor prices
+- Speak in Indian English, use ₹ for prices`;
+
+      const chat = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: message },
+        ],
+        temperature: 0.7,
+        max_tokens: 200,
+      });
+      replyText = chat.choices[0]?.message?.content?.trim() ?? "";
+    } catch (aiErr) {
+      console.warn("[Simulator] Groq AI fallback:", (aiErr as any)?.message);
+    }
+
+    // Fallback to template if AI fails
+    if (!replyText) {
+      if (isPaymentLink) {
+        replyText = `Great news! I can offer you ${matched.title} for ₹${offeredPrice.toLocaleString("en-IN")} with free express shipping 🚚 — that's ₹${discountGiven} off! Your Razorpay checkout link: ${paymentUrl}`;
+      } else {
+        replyText = `Hey! 👋 Yes, we have ${matched.inventoryAvailable} units of ${matched.title} in stock, ready to ship at ₹${matched.listedPrice.toLocaleString("en-IN")}. Want me to lock one in for you?`;
+      }
     }
 
     const traces = [
@@ -215,6 +252,7 @@ router.post("/chat", async (req: Request, res: Response) => {
 
     return res.json({
       reply: replyText,
+      imageUrl: matched.imageUrl || null,
       isPaymentLink,
       paymentAmount: isPaymentLink ? offeredPrice : undefined,
       paymentUrl: isPaymentLink ? paymentUrl : undefined,

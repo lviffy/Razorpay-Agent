@@ -25,7 +25,7 @@ export async function getProducts(storeId: string): Promise<Product[]> {
   const { rows } = await db.query(
     `SELECT
       id, store_id, shopify_variant_id, title, sku,
-      listed_price, floor_price,
+      listed_price, floor_price, image_url,
       inventory_available, inventory_reserved, reservation_expires_at,
       inventory_state, agent_schema, updated_at
     FROM products
@@ -40,7 +40,7 @@ export async function getVariant(variantId: string): Promise<Product | null> {
   const { rows } = await db.query(
     `SELECT
       id, store_id, shopify_variant_id, title, sku,
-      listed_price, floor_price,
+      listed_price, floor_price, image_url,
       inventory_available, inventory_reserved, reservation_expires_at,
       inventory_state, agent_schema, updated_at
     FROM products
@@ -54,7 +54,7 @@ export async function getProductById(productId: string): Promise<Product | null>
   const { rows } = await db.query(
     `SELECT
       id, store_id, shopify_variant_id, title, sku,
-      listed_price, floor_price,
+      listed_price, floor_price, image_url,
       inventory_available, inventory_reserved, reservation_expires_at,
       inventory_state, agent_schema, updated_at
     FROM products WHERE id = $1`,
@@ -150,6 +150,12 @@ export async function getCatalogForAgent(): Promise<
 // ── Internal mapper ───────────────────────────────────────────────────────────
 
 function mapProductRow(row: Record<string, unknown>): Product {
+  const imageUrl = (row.image_url as string | null) ?? undefined;
+  const agentSchema = row.agent_schema as AgentProductSchema;
+  // Merge image_url into the agentSchema so agents can pass it downstream
+  if (imageUrl && agentSchema) {
+    agentSchema.imageUrl = imageUrl;
+  }
   return {
     id: row.id as string,
     storeId: row.store_id as string,
@@ -159,11 +165,12 @@ function mapProductRow(row: Record<string, unknown>): Product {
     sku: row.sku as string,
     listedPrice: parseFloat(row.listed_price as string),
     floorPrice: parseFloat(row.floor_price as string),
+    imageUrl,
     inventoryAvailable: row.inventory_available as number,
     inventoryReserved: row.inventory_reserved as number,
     reservationExpiresAt: row.reservation_expires_at as Date | undefined,
     inventoryState: row.inventory_state as InventoryState,
-    agentSchema: row.agent_schema as AgentProductSchema,
+    agentSchema,
     updatedAt: row.updated_at as Date,
   };
 }

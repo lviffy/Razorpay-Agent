@@ -9,11 +9,15 @@ import { logEvent } from "../services/audit.ts";
 import { checkBuyerVelocity } from "../services/rate-limit.ts";
 import {
   sendText,
+  sendImage,
   sendPaymentLink,
   sendPaymentFailedWithRetry,
 } from "../services/whatsapp.ts";
 import { db } from "../db/migrate.ts";
+import Groq from "groq-sdk";
 import type { WorkerJob } from "../types/index.ts";
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WhatsApp Worker — processes jobs from Redis queue asynchronously
@@ -61,6 +65,14 @@ export async function handleJob(job: WorkerJob): Promise<void> {
 
   // ── Parse spending limit from message ──────────────────────────────────────
   const spendingLimit = extractSpendingLimit(msg.text);
+  const isPurchaseIntent = spendingLimit !== null ||
+    /buy|order|purchase|want|need|get me|book|checkout|pay|price|cost|how much|deal|offer|discount/i.test(msg.text);
+
+  if (!isPurchaseIntent) {
+    // ── Handle open-ended messages with Groq AI ───────────────────────────
+    await handleOpenEndedMessage(msg.from, msg.text);
+    return;
+  }
 
   if (!spendingLimit) {
     await sendText(
@@ -106,6 +118,16 @@ export async function handleJob(job: WorkerJob): Promise<void> {
   }
 
   const { offer, mandate } = decision;
+
+  // ── Send product image if available (fires before the text) ──────────────
+  if (offer.product.imageUrl) {
+    try {
+      await sendImage(msg.from, offer.product.imageUrl, offer.product.title);
+    } catch (imgErr) {
+      // Non-fatal — image delivery failure never blocks the deal
+      console.warn("[Worker] Image send failed (proceeding with text):", imgErr);
+    }
+  }
 
   await sendText(
     msg.from,
@@ -311,4 +333,59 @@ function extractSpendingLimit(message: string): number | null {
     }
   }
   return null;
+}
+
+// ── Handle general/open-ended messages with Groq AI ───────────────────────────
+async function handleOpenEndedMessage(to: string, userMessage: string): Promise<void> {
+  try {
+    // Fetch a store to get context (use first active store)
+    const { rows: storeRows } = await db.query(
+      "SELECT id, name, city FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+    );
+    const store = storeRows[0];
+
+    // Fetch products for context
+    let productContext = "";
+    if (store) {
+      const { rows: products } = await db.query(
+        "SELECT title, sku, listed_price, inventory_available FROM products WHERE store_id = $1 AND is_active = true LIMIT 10",
+        [store.id]
+      );
+      if (products.length > 0) {
+        productContext = `\n\nCATALOG (top items):\n` + products
+          .map((p: any) => `- ${p.title}: ₹${p.listed_price} (${p.inventory_available} in stock)`)
+          .join("\n");
+      }
+    }
+
+    const systemPrompt = `You are a friendly WhatsApp seller agent for ${store?.name ?? "our store"} in ${store?.city ?? "India"}. Answer customer questions naturally and helpfully.${productContext}
+
+GUIDELINES:
+- Be warm, brief (1-3 sentences max)
+- Use 1 emoji maximum
+- Mention relevant products from the catalog if applicable
+- If someone asks about buying, encourage them to specify a budget so you can find the best deal
+- Never make up stock or prices not listed above
+- Use Indian English, ₹ for prices`;
+
+    const chat = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.7,
+      max_tokens: 150,
+    });
+
+    const reply = chat.choices[0]?.message?.content?.trim();
+    if (reply) {
+      await sendText(to, reply);
+    } else {
+      await sendText(to, "Hi! 👋 How can I help you today? Tell me what you're looking for and I'll find the best deal for you!");
+    }
+  } catch (err) {
+    console.error("[Worker] Groq open-ended message error:", err);
+    await sendText(to, "Hi! 👋 What are you looking for today? I can help you find the best products and deals!");
+  }
 }

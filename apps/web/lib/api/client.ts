@@ -669,6 +669,7 @@ export const api = {
     sendChatMessage: async (message: string, storeId?: string) => {
       return fetchJson<{
         reply: string;
+        imageUrl?: string | null;
         isPaymentLink?: boolean;
         paymentAmount?: number;
         paymentUrl?: string;

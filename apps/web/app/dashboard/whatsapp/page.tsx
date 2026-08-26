@@ -33,6 +33,7 @@ interface ChatMessage {
   paymentAmount?: number;
   paymentUrl?: string;
   orderId?: string;
+  imageUrl?: string | null;
 }
 
 export default function WhatsAppPage() {
@@ -44,6 +45,17 @@ export default function WhatsAppPage() {
   const [creds, setCreds] = useState<any>(null);
 
   const [storeName, setStoreName] = useState("Store");
+
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const logEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  React.useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [testLog]);
 
   React.useEffect(() => {
     async function loadData() {
@@ -173,6 +185,7 @@ export default function WhatsAppPage() {
         paymentAmount: simResult.paymentAmount,
         paymentUrl: simResult.paymentUrl,
         orderId: simResult.orderId || "ORD-1042",
+        imageUrl: simResult.imageUrl,
       };
 
       setMessages((prev) => [...prev, agentReply]);
@@ -281,10 +294,10 @@ export default function WhatsAppPage() {
       </div>
 
       {/* Main 2-Column Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Interactive WhatsApp Mobile Mockup (7 cols) */}
-        <Card className="lg:col-span-7 border-zinc-200 shadow-xs flex flex-col justify-between overflow-hidden">
-          <CardHeader className="p-4 bg-zinc-900 text-white border-b border-zinc-800 flex flex-row items-center justify-between space-y-0">
+        <Card className="lg:col-span-7 border-zinc-200 shadow-xs flex flex-col h-[580px] overflow-hidden">
+          <CardHeader className="shrink-0 p-3.5 bg-zinc-900 text-white border-b border-zinc-800 flex flex-row items-center justify-between space-y-0">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white uppercase">
                 {storeName ? storeName.slice(0, 2) : "AI"}
@@ -300,7 +313,7 @@ export default function WhatsAppPage() {
           </CardHeader>
 
           {/* Chat Messages Body */}
-          <div className="p-4 space-y-3 bg-[#e5ddd5]/30 min-h-[380px] max-h-[420px] overflow-y-auto">
+          <div className="flex-1 p-4 space-y-3 bg-[#e5ddd5]/30 overflow-y-auto min-h-0">
             <div className="text-center">
               <span className="text-[10px] bg-white/80 border border-zinc-200 text-zinc-500 px-2.5 py-1 rounded-md shadow-2xs">
                 TODAY • ENCRYPTED END-TO-END
@@ -315,12 +328,25 @@ export default function WhatsAppPage() {
                   className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] p-3 rounded-lg text-xs leading-relaxed shadow-2xs ${
+                    className={`max-w-[85%] rounded-lg text-xs leading-relaxed shadow-2xs overflow-hidden ${
                       isUser
                         ? "bg-[#d9fdd3] text-zinc-900 rounded-tr-none"
                         : "bg-white text-zinc-900 rounded-tl-none border border-zinc-200/80"
                     }`}
                   >
+                    {/* Product image — only on agent messages */}
+                    {!isUser && m.imageUrl && (
+                      <div className="relative w-full">
+                        <img
+                          src={m.imageUrl}
+                          alt={m.text.slice(0, 40)}
+                          className="w-full h-36 object-cover block"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-black/40 to-transparent" />
+                      </div>
+                    )}
+                    <div className="p-3">
                     <p>{m.text}</p>
 
                     {m.isPaymentLink && (
@@ -365,6 +391,7 @@ export default function WhatsAppPage() {
                       <span>{m.time}</span>
                       {isUser && <CheckCheck className="w-3 h-3 text-blue-500" />}
                     </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -378,10 +405,11 @@ export default function WhatsAppPage() {
                 <span className="text-[10px] text-zinc-400 ml-1">Typing...</span>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Prompts */}
-          <div className="p-2.5 bg-zinc-50 border-t border-zinc-200 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+          <div className="shrink-0 p-2 bg-zinc-50 border-t border-zinc-200 flex items-center gap-1.5 overflow-x-auto text-[11px]">
             <span className="text-zinc-400 text-[10px] font-medium uppercase tracking-wider shrink-0 pl-1">
               Quick Inquiries:
             </span>
@@ -397,7 +425,7 @@ export default function WhatsAppPage() {
           </div>
 
           {/* Input Footer */}
-          <div className="p-3 bg-white border-t border-zinc-200 flex items-center gap-2">
+          <div className="shrink-0 p-3 bg-white border-t border-zinc-200 flex items-center gap-2">
             <Input
               value={testPrompt}
               onChange={(e) => setTestPrompt(e.target.value)}
@@ -430,7 +458,7 @@ export default function WhatsAppPage() {
 
             <TabsContent value="simulator" className="space-y-4 mt-4">
               <Card className="border-zinc-200 shadow-xs">
-                <CardHeader className="p-4 pb-2 border-b border-zinc-100 flex flex-row items-center justify-between space-y-0">
+                <CardHeader className="p-3.5 pb-2 border-b border-zinc-100 flex flex-row items-center justify-between space-y-0">
                   <div className="flex items-center gap-2">
                     <Terminal className="w-4 h-4 text-zinc-500" />
                     <CardTitle className="text-xs font-bold text-zinc-900">
@@ -441,7 +469,7 @@ export default function WhatsAppPage() {
                     Active (Streaming)
                   </Badge>
                 </CardHeader>
-                <CardContent className="p-3 bg-zinc-950 text-zinc-300 font-mono text-[11px] h-84 overflow-y-auto space-y-1.5 rounded-b-xl">
+                <CardContent className="p-3 bg-zinc-950 text-zinc-300 font-mono text-[11px] h-[220px] overflow-y-auto space-y-1.5 rounded-b-xl">
                   {testLog.map((log, idx) => (
                     <div key={idx} className="leading-relaxed">
                       <span className="text-zinc-500">{log.slice(0, 13)}</span>
@@ -460,16 +488,17 @@ export default function WhatsAppPage() {
                       </span>
                     </div>
                   ))}
+                  <div ref={logEndRef} />
                 </CardContent>
               </Card>
 
               {/* Policy Enforcement Card */}
-              <Card className="border-zinc-200 shadow-xs p-4 space-y-3">
+              <Card className="border-zinc-200 shadow-xs p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-semibold text-zinc-900">
                   <span>Enforced Guardrails</span>
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
                 </div>
-                <div className="space-y-2 text-xs text-zinc-600">
+                <div className="space-y-1.5 text-xs text-zinc-600">
                   <div className="flex items-center justify-between py-1 border-b border-zinc-100">
                     <span>Floor Price Protection</span>
                     <span className="font-mono font-semibold text-zinc-900">₹3,500 Enforced</span>

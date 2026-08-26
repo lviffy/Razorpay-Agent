@@ -1,13 +1,13 @@
-import { GoogleGenerativeAI, SchemaType, FunctionCallingMode } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { getProducts, getNegotiationRules, getStore } from "../services/merchant.ts";
 import type { NegotiationRules, SellerOffer, AgentProductSchema } from "../types/index.ts";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Seller Agent — per-store catalog + pricing service with light LLM reasoning
+// ───────────────────────────────────────────────────────────────────────────────
+// Seller Agent — per-store catalog + pricing service with Groq/Llama 3.1 8B reasoning
 // One counter-offer max. Reliable > impressive.
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export interface SellerQuery {
   buyerQuery: string;
@@ -33,51 +33,12 @@ export class SellerAgent {
     if (products.length === 0 || !rules || !store) return null;
 
     try {
-      const model = genAI.getGenerativeModel({
-        model: "gemini-3.6-flash",
-        tools: [
-          {
-            functionDeclarations: [
-              {
-                name: "selectProduct",
-                description:
-                  "Select the best matching product from the catalog and determine the best offer price",
-                parameters: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    variantId: {
-                      type: SchemaType.STRING,
-                      description: "The shopify_variant_id of the selected product",
-                    },
-                    offeredPrice: {
-                      type: SchemaType.NUMBER,
-                      description:
-                        "The price to offer in rupees. Must be >= floorPrice and <= listedPrice. Apply discount only if eligible per rules.",
-                    },
-                    shippingFree: {
-                      type: SchemaType.BOOLEAN,
-                      description:
-                        "Whether to offer free shipping based on order value and store rules",
-                    },
-                    reasoning: {
-                      type: SchemaType.STRING,
-                      description:
-                        "Brief reasoning for this offer — why this product, why this price",
-                    },
-                  },
-                  required: ["variantId", "offeredPrice", "shippingFree", "reasoning"],
-                },
-              },
-            ],
-          },
-        ],
-        toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY } },
-      });
+      const catalogJson = JSON.stringify(products.map((p) => p.agentSchema), null, 2);
 
       const systemPrompt = `You are an AI Seller Agent for ${store.name} in ${store.city}.
 
 STORE INVENTORY CATALOG:
-${JSON.stringify(products.map((p) => p.agentSchema), null, 2)}
+${catalogJson}
 
 NEGOTIATION RULES & BOUNDS:
 - Max discount allowed: ${rules.maxDiscountPercentage}%
@@ -85,20 +46,46 @@ NEGOTIATION RULES & BOUNDS:
 - Free shipping threshold: ₹${rules.freeShippingThreshold ?? "N/A"}
 
 MATCHING & PRICING MANDATES:
-1. Product Category Match: Match the specific item requested by the buyer (e.g. if buyer asks for "running shoes", match running shoes, NOT socks or accessories).
-2. Pricing & Negotiation: You are empowered to apply discounts up to ${rules.maxDiscountPercentage}% off listed price to win the deal and meet the buyer's target budget.
+1. Product Category Match: Match the specific item requested by the buyer.
+2. Pricing & Negotiation: Apply discounts up to ${rules.maxDiscountPercentage}% off listed price to win the deal.
 3. Hard Floor Limit: NEVER offer below the product's floorPrice. NEVER exceed max discount.
 4. Free Shipping: Set shippingFree = true if the offered price >= ${rules.freeShippingThreshold || 999999}.
 
-Buyer Request: "${query.buyerQuery}"
-${query.targetPrice ? `Buyer Budget Limit: ₹${query.targetPrice}` : ""}`;
+You MUST call the selectProduct function with your choice.`;
 
-      const result = await model.generateContent(systemPrompt);
-      const response = result.response;
-      const calls = response.functionCalls();
+      const response = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Buyer Request: "${query.buyerQuery}"${query.targetPrice ? `\nBuyer Budget Limit: ₹${query.targetPrice}` : ""}` },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "selectProduct",
+              description: "Select the best matching product from the catalog and determine the best offer price",
+              parameters: {
+                type: "object",
+                properties: {
+                  variantId: { type: "string", description: "The shopify_variant_id of the selected product" },
+                  offeredPrice: { type: "number", description: "The price to offer in rupees. Must be >= floorPrice and <= listedPrice." },
+                  shippingFree: { type: "boolean", description: "Whether to offer free shipping" },
+                  reasoning: { type: "string", description: "Brief reasoning for this offer" },
+                },
+                required: ["variantId", "offeredPrice", "shippingFree", "reasoning"],
+              },
+            },
+          },
+        ],
+        tool_choice: "required",
+        temperature: 0.3,
+        max_tokens: 512,
+      });
 
-      if (calls && calls.length > 0 && calls[0].name === "selectProduct") {
-        const args = calls[0].args as {
+      const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+      if (toolCall?.function?.name === "selectProduct") {
+        const args = JSON.parse(toolCall.function.arguments) as {
           variantId: string;
           offeredPrice: number;
           shippingFree: boolean;

@@ -77,15 +77,31 @@ function verifyMetaSignature(
   rawBody: string,
   signature: string | undefined
 ): boolean {
-  if (!signature) return false;
-  const appSecret = process.env.WHATSAPP_ACCESS_TOKEN; // In production use App Secret
-  if (!appSecret) return true; // Skip in dev if not configured
+  // Meta signs webhook payloads with the Facebook App Secret
+  // (NOT the WhatsApp Access Token — these are different credentials)
+  // App Secret is found in: Meta Developer Console → Your App → Settings → Basic → App Secret
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+
+  if (!appSecret) {
+    // Dev/staging without secret configured: warn but allow through
+    console.warn("⚠️  WHATSAPP_APP_SECRET not set — skipping signature verification (set this in production)");
+    return true;
+  }
+
+  if (!signature) {
+    console.warn("⚠️  Missing X-Hub-Signature-256 header from Meta webhook");
+    return false;
+  }
 
   const expected = "sha256=" + createHmac("sha256", appSecret)
     .update(rawBody)
     .digest("hex");
 
-  return expected === signature;
+  const match = expected === signature;
+  if (!match) {
+    console.warn(`❌ Meta HMAC mismatch. Expected: ${expected.slice(0, 20)}... Got: ${signature.slice(0, 20)}...`);
+  }
+  return match;
 }
 
 function parseInboundMessage(

@@ -25,6 +25,7 @@ export interface Product {
   reservationExpiresAt?: Date;
   inventoryState: InventoryState;
   agentSchema: AgentProductSchema;
+  imageUrl?: string;
   updatedAt: Date;
 }
 
@@ -35,6 +36,7 @@ export interface AgentProductSchema {
   listedPrice: number;
   floorPrice: number;
   inventoryAvailable: number;
+  imageUrl?: string;
   attributes: Record<string, string>;
 }
 

@@ -64,6 +64,22 @@ export async function sendText(to: string, text: string): Promise<void> {
   });
 }
 
+export async function sendImage(
+  to: string,
+  imageUrl: string,
+  caption?: string
+): Promise<void> {
+  await sendRequest({
+    messaging_product: "whatsapp",
+    to,
+    type: "image",
+    image: {
+      link: imageUrl,
+      ...(caption ? { caption } : {}),
+    },
+  });
+}
+
 export async function sendInteractive(
   to: string,
   bodyText: string,
