@@ -118,6 +118,67 @@ app.get("/auth/callback", (req, res) => {
 </html>`);
 });
 
+import { processOrderPaymentSuccess } from "./services/payment-settlement.ts";
+
+// ── Payment Complete Redirect Handler (for Razorpay Standard Payment Links) ───
+app.get("/payment-complete", async (req, res) => {
+  const paymentId = (req.query.razorpay_payment_id as string) || "";
+  const paymentLinkId = (req.query.razorpay_payment_link_id as string) || "";
+  const orderRefId = (req.query.razorpay_payment_link_reference_id as string) || "";
+  const status = (req.query.razorpay_payment_link_status as string) || "paid";
+
+  let orderData: any = null;
+  if (paymentId) {
+    orderData = await processOrderPaymentSuccess({
+      orderReferenceId: orderRefId,
+      razorpayPaymentId: paymentId,
+    });
+  }
+
+  const orderId = orderRefId || orderData?.order_id || "ORD-COMPLETED";
+  const amountStr = orderData?.amount ? `₹${parseFloat(orderData.amount).toLocaleString("en-IN")}` : "Paid";
+
+  return res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Payment Successful — ZapAI</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #09090b; color: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
+    .card { background: #18181b; border: 1px solid #27272a; border-radius: 1.5rem; max-width: 420px; width: 100%; padding: 2.5rem 2rem; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    .icon { width: 64px; height: 64px; border-radius: 50%; background: #052e16; color: #22c55e; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 2rem; border: 1px solid #166534; }
+    h2 { margin: 0 0 0.5rem; font-size: 1.4rem; font-weight: 700; }
+    p { color: #a1a1aa; font-size: 0.9rem; margin: 0 0 1.5rem; line-height: 1.5; }
+    .badge { display: inline-flex; align-items: center; gap: 0.4rem; background: #27272a; padding: 0.5rem 1rem; border-radius: 0.75rem; font-family: monospace; font-size: 0.85rem; color: #e4e4e7; margin-bottom: 1.5rem; }
+    .details { background: #121215; border: 1px solid #27272a; border-radius: 1rem; padding: 1rem; margin-bottom: 1.5rem; text-align: left; font-size: 0.85rem; }
+    .row { display: flex; justify-content: space-between; padding: 0.35rem 0; color: #a1a1aa; }
+    .row strong { color: #f4f4f5; }
+    .btn { display: block; width: 100%; padding: 0.85rem; background: #22c55e; color: #052e16; text-decoration: none; border-radius: 0.85rem; font-weight: 700; font-size: 0.95rem; box-sizing: border-box; transition: opacity 0.2s; }
+    .btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✓</div>
+    <h2>Payment Successful!</h2>
+    <p>Your order has been confirmed by our AI agent and settled via Razorpay.</p>
+    
+    <div class="badge">Order Ref: ${orderId}</div>
+
+    <div class="details">
+      <div class="row"><span>Amount:</span><strong>${amountStr}</strong></div>
+      <div class="row"><span>Payment ID:</span><strong style="font-family:monospace;font-size:0.75rem;">${paymentId || "N/A"}</strong></div>
+      <div class="row"><span>Status:</span><strong style="color:#22c55e;">CAPTURED (Settled)</strong></div>
+      <div class="row"><span>WhatsApp Confirmation:</span><strong>Sent 📱</strong></div>
+    </div>
+
+    <a href="javascript:window.close()" class="btn">Return to WhatsApp</a>
+  </div>
+</body>
+</html>`);
+});
+
 // ── Core Protocol Routes ──────────────────────────────────────────────────────
 app.use("/webhooks/whatsapp", whatsappRouter);
 app.use("/webhooks/razorpay", razorpayWebhookRouter);
