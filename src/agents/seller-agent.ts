@@ -57,69 +57,51 @@ MATCHING & PRICING MANDATES:
 You MUST call the selectProduct function with your choice.`;
 
       let response;
-      try {
-        response = await groq.chat.completions.create({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Buyer Request: "${query.buyerQuery}"${query.targetPrice ? `\nBuyer Budget Limit: ₹${query.targetPrice}` : ""}` },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "selectProduct",
-                description: "Select the best matching product from the catalog and determine the best offer price",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    variantId: { type: "string", description: "The shopify_variant_id of the selected product" },
-                    offeredPrice: { type: "number", description: "The price to offer in rupees. Must be >= floorPrice and <= listedPrice." },
-                    shippingFree: { type: "boolean", description: "Whether to offer free shipping" },
-                    reasoning: { type: "string", description: "Brief reasoning for this offer" },
+      const models = [
+        "qwen/qwen3.8-27b",
+        "groq/compound-mini",
+        "openai/gpt-oss-120b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+      ];
+      for (const m of models) {
+        try {
+          response = await groq.chat.completions.create({
+            model: m,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: `Buyer Request: "${query.buyerQuery}"${query.targetPrice ? `\nBuyer Budget Limit: ₹${query.targetPrice}` : ""}` },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "selectProduct",
+                  description: "Select the best matching product from the catalog and determine the best offer price",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      variantId: { type: "string", description: "The shopify_variant_id of the selected product" },
+                      offeredPrice: { type: "number", description: "The price to offer in rupees. Must be >= floorPrice and <= listedPrice." },
+                      shippingFree: { type: "boolean", description: "Whether to offer free shipping" },
+                      reasoning: { type: "string", description: "Brief reasoning for this offer" },
+                    },
+                    required: ["variantId", "offeredPrice", "shippingFree", "reasoning"],
                   },
-                  required: ["variantId", "offeredPrice", "shippingFree", "reasoning"],
                 },
               },
-            },
-          ],
-          tool_choice: "required",
-          temperature: 0.3,
-          max_tokens: 512,
-        });
-      } catch {
-        response = await groq.chat.completions.create({
-          model: "llama-3.1-8b-instant",
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: `Buyer Request: "${query.buyerQuery}"${query.targetPrice ? `\nBuyer Budget Limit: ₹${query.targetPrice}` : ""}` },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "selectProduct",
-                description: "Select the best matching product from the catalog and determine the best offer price",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    variantId: { type: "string", description: "The shopify_variant_id of the selected product" },
-                    offeredPrice: { type: "number", description: "The price to offer in rupees. Must be >= floorPrice and <= listedPrice." },
-                    shippingFree: { type: "boolean", description: "Whether to offer free shipping" },
-                    reasoning: { type: "string", description: "Brief reasoning for this offer" },
-                  },
-                  required: ["variantId", "offeredPrice", "shippingFree", "reasoning"],
-                },
-              },
-            },
-          ],
-          tool_choice: "required",
-          temperature: 0.3,
-          max_tokens: 512,
-        });
+            ],
+            tool_choice: "required",
+            temperature: 0.3,
+            max_tokens: 512,
+          });
+          if (response?.choices[0]?.message?.tool_calls?.length) break;
+        } catch {
+          // continue to next model
+        }
       }
 
-      const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+      const toolCall = response?.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall?.function?.name === "selectProduct") {
         const args = JSON.parse(toolCall.function.arguments) as {
           variantId: string;

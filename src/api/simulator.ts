@@ -202,28 +202,30 @@ RULES:
 - Speak in Indian English, use ₹ for prices`;
 
         let chat;
-        try {
-          chat = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: message },
-            ],
-            temperature: 0.7,
-            max_tokens: 200,
-          });
-        } catch {
-          chat = await groq.chat.completions.create({
-            model: "llama-3.1-8b-instant",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: message },
-            ],
-            temperature: 0.7,
-            max_tokens: 200,
-          });
+        const models = [
+          "qwen/qwen3.8-27b",
+          "groq/compound-mini",
+          "openai/gpt-oss-120b",
+          "llama-3.3-70b-versatile",
+          "llama-3.1-8b-instant",
+        ];
+        for (const m of models) {
+          try {
+            chat = await groq.chat.completions.create({
+              model: m,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: message },
+              ],
+              temperature: 0.7,
+              max_tokens: 200,
+            });
+            if (chat.choices[0]?.message?.content) break;
+          } catch {
+            // try next model
+          }
         }
-        replyText = chat.choices[0]?.message?.content?.trim() ?? "";
+        replyText = chat?.choices[0]?.message?.content?.trim() ?? "";
       }
     } catch (aiErr) {
       console.warn("[Simulator] Groq AI fallback:", (aiErr as any)?.message);
