@@ -1,0 +1,13 @@
+{
+  "name": "@zapai/config-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "main": "base.json",
+  "files": ["base.json"],
+  "exports": {
+    "./base.json": "./base.json",
+    "./*": "./*",
+    ".": "./base.json"
+  }
+}

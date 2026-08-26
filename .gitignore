@@ -1,30 +1,38 @@
 # Dependencies
 node_modules/
-.bun/
-bun.lockb
+.pnp
+.pnp.js
 
-# Environment & Secrets
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Build & Dist outputs
+# Turborepo & Build Cache
+.turbo/
 dist/
 build/
 out/
 .next/
 *.tsbuildinfo
+.cache/
 
-# Logs & Runtime
-*.log
+# Testing & Coverage
+coverage/
+.nyc_output/
+
+# Environment variables & secrets
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-bun.lock
+pnpm-debug.log*
+lerna-debug.log*
+*.log
 
-# OS / Editor junk
+# OS & IDE
 .DS_Store
 Thumbs.db
 .idea/
@@ -32,7 +40,9 @@ Thumbs.db
 *.swp
 *.swo
 
-# Docker / Temporary
+# Temporary & Runtime
 *.pid
 *.seed
 *.pid.lock
+tmp/
+temp/

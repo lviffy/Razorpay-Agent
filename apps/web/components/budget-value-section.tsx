@@ -186,7 +186,7 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                 <div className="p-4 bg-[#0c2340] rounded-2xl text-xs font-mono text-blue-200 overflow-x-auto shadow-xs space-y-1">
                   <div className="text-gray-400 flex items-center gap-1 text-[11px]">
                     <Terminal className="w-3 h-3 text-brand-400" />
-                    <span>// Execution Trace</span>
+                    <span>{"// Execution Trace"}</span>
                   </div>
                   <pre className="text-white pt-1 overflow-x-auto leading-relaxed">
                     <code>{current.code}</code>

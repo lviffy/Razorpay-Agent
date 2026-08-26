@@ -958,7 +958,7 @@ export default function OnboardingPage() {
                                         <span>{t.title}</span>
                                       </div>
                                       <p className="text-[11px] text-zinc-500 mt-1 italic leading-snug">
-                                        "{t.preview}"
+                                        &ldquo;{t.preview}&rdquo;
                                       </p>
                                     </button>
                                   );

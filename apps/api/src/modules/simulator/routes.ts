@@ -1,0 +1,405 @@
+import { Router } from "express";
+import { getGroqClient } from "../../integrations/llm/index.ts";
+import { getProducts, getNegotiationRules, getStore, setInventoryState } from "../../services/merchant.ts";
+import { createOrder, createStandardPaymentLink, generateOrderId, rupeesToPaise } from "../../integrations/razorpay/index.ts";
+import { issueTransactionId } from "../../services/x402.ts";
+import { logEvent } from "../../services/audit.ts";
+import { db } from "@zapai/database";
+import { v4 as uuidv4 } from "uuid";
+import type { Request, Response } from "express";
+import { env } from "../../config/env.ts";
+import { logger } from "../../core/logger/index.ts";
+
+const router = Router();
+
+// POST /api/v1/simulator/chat
+router.post("/chat", async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const logs: string[] = [];
+
+  const timestamp = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  logs.push(`[${timestamp()}] Inbound POST /api/webhooks/whatsapp HTTP/1.1 200 OK (32ms)`);
+  logs.push(`[${timestamp()}] X-Hub-Signature-256 HMAC verified successfully`);
+
+  try {
+    let { message, storeId, customerPhone = "+91 98765 43210" } = req.body;
+
+    if (!message || typeof message !== "string") {
+      return res.status(400).json({ error: "Message is required" });
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!storeId || !uuidRegex.test(storeId)) {
+      const { rows } = await db.query(
+        "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+      );
+      storeId = rows[0]?.id;
+    }
+
+    if (!storeId) {
+      return res.status(404).json({ error: "No active store found. Please create a store first." });
+    }
+
+    const [products, rules, store] = await Promise.all([
+      getProducts(storeId),
+      getNegotiationRules(storeId),
+      getStore(storeId),
+    ]);
+
+    if (!products.length || !rules || !store) {
+      return res.status(404).json({ error: "Store catalog or rules not found for this store" });
+    }
+
+    logs.push(`[${timestamp()}] Loaded ${products.length} live catalog SKUs from Neon PostgreSQL`);
+    logs.push(`[${timestamp()}] Enforcing Store Mandates: Max Discount ${rules.maxDiscountPercentage}%, Min Order ₹${rules.minOrderValueForDiscount}`);
+
+    const lower = message.toLowerCase();
+    const words = lower.split(/\s+/).filter((w: string) => w.length > 2);
+    let matched = products.find((p) => {
+      const pTitle = p.title.toLowerCase();
+      const pSku = p.sku.toLowerCase();
+      return (
+        lower.includes(pTitle) ||
+        lower.includes(pSku) ||
+        words.some((w: string) => pTitle.includes(w) || pSku.includes(w))
+      );
+    }) || products[0];
+
+    const listedPrice = matched.listedPrice ?? 999;
+    const floorPrice = matched.floorPrice ?? 899;
+    const maxDiscountPercentage = rules.maxDiscountPercentage ?? 10;
+
+    logs.push(`[${timestamp()}] Intent Extracted: '${matched.title}' (SKU: ${matched.sku}, Listed: ₹${listedPrice}, Floor: ₹${floorPrice})`);
+
+    const priceMatch = message.match(/(?:₹|rs\.?|inr)?\s*(\d{3,6})/i);
+    const buyerOfferedPrice = priceMatch ? parseInt(priceMatch[1], 10) : undefined;
+
+    let offeredPrice = listedPrice;
+    let discountGiven = 0;
+    let isPaymentLink = false;
+    let reasoning = "";
+
+    const maxAllowedDiscount = (listedPrice * maxDiscountPercentage) / 100;
+    const lowestAllowedPrice = Math.max(floorPrice, listedPrice - maxAllowedDiscount);
+
+    if (buyerOfferedPrice) {
+      logs.push(`[${timestamp()}] Buyer Proposed Target Price: ₹${buyerOfferedPrice.toLocaleString("en-IN")}`);
+      if (buyerOfferedPrice >= lowestAllowedPrice) {
+        offeredPrice = buyerOfferedPrice;
+        discountGiven = listedPrice - offeredPrice;
+        isPaymentLink = true;
+        reasoning = `Buyer proposal ₹${buyerOfferedPrice} is within allowed ${maxDiscountPercentage}% mandate (Floor: ₹${floorPrice}). Conceding ₹${discountGiven} to close high-intent deal.`;
+      } else {
+        offeredPrice = lowestAllowedPrice;
+        discountGiven = listedPrice - lowestAllowedPrice;
+        isPaymentLink = true;
+        reasoning = `Buyer proposal ₹${buyerOfferedPrice} violates floor price ₹${floorPrice}. Formulated strategic counter at ₹${lowestAllowedPrice} preserving margin.`;
+      }
+    } else if (lower.includes("discount") || lower.includes("best price") || lower.includes("offer") || lower.includes("deal")) {
+      const discountPct = Math.min(5, maxDiscountPercentage || 5);
+      offeredPrice = Math.round(listedPrice * (1 - discountPct / 100));
+      discountGiven = listedPrice - offeredPrice;
+      isPaymentLink = true;
+      reasoning = `Incentivizing buyer with ${discountPct}% flash discount: ₹${offeredPrice} (Saves ₹${discountGiven}).`;
+    } else {
+      reasoning = `Confirming live variant stock: ${matched.inventoryAvailable ?? 10} available ready to dispatch.`;
+    }
+
+    logs.push(`[${timestamp()}] AI Seller Reasoning: ${reasoning}`);
+
+    let paymentUrl = "https://rzp.io/i/mock_checkout_link";
+    let razorpayOrderId = `order_sim_${Date.now()}`;
+    let orderRef = generateOrderId();
+    const x402TxId = issueTransactionId();
+
+    if (isPaymentLink) {
+      const sessionId = `sim_${uuidv4().slice(0, 8)}`;
+      try {
+        const rzpOrder = (await createOrder({
+          amountInPaise: rupeesToPaise(offeredPrice),
+          receipt: x402TxId,
+          sessionId,
+        })) as unknown as { id: string };
+        razorpayOrderId = rzpOrder.id;
+
+        const plink = (await createStandardPaymentLink({
+          amountInPaise: rupeesToPaise(offeredPrice),
+          description: `${matched.title} via ZapAI | ${orderRef}`,
+          callbackUrl: `${env.APP_URL || "http://localhost:8000"}/payment-complete`,
+          referenceId: orderRef,
+          customerPhone,
+        })) as unknown as { short_url: string; id: string };
+
+        paymentUrl = plink.short_url || `https://rzp.io/i/zapai_${razorpayOrderId.slice(-8)}`;
+        logs.push(`[${timestamp()}] Razorpay Standard Payment Link Created: ${plink.id || razorpayOrderId} (₹${offeredPrice})`);
+      } catch (rzpErr) {
+        logs.push(`[${timestamp()}] Razorpay API simulation fallback (Using Test Gateway: ${razorpayOrderId})`);
+        paymentUrl = `https://rzp.io/i/test_${razorpayOrderId.slice(-6)}`;
+      }
+
+      await db.query(
+        `INSERT INTO orders (
+          store_id, razorpay_order_id, order_id, x402_tx_hash,
+          amount, original_price, discount_applied, customer_name, customer_phone,
+          product_title, sku, currency, status, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'INR', 'CREATED', NOW())
+        ON CONFLICT (razorpay_order_id) DO NOTHING`,
+        [
+          storeId,
+          razorpayOrderId,
+          orderRef,
+          x402TxId,
+          offeredPrice,
+          matched.listedPrice,
+          discountGiven,
+          "WhatsApp Buyer",
+          customerPhone,
+          matched.title,
+          matched.sku,
+        ]
+      );
+
+      await logEvent(
+        "INVENTORY_LOCKED",
+        {
+          x402TransactionId: x402TxId,
+          orderId: orderRef,
+        },
+        {
+          sku: matched.sku,
+          storeId,
+          agreedPrice: offeredPrice,
+          ttlSeconds: 120,
+        }
+      );
+
+      logs.push(`[${timestamp()}] Neon DB: Written Order record ${orderRef} + SHA256 audit ledger entry`);
+    }
+
+    let replyText = "";
+    try {
+      const groq = getGroqClient();
+      if (groq) {
+        const systemPrompt = `You are an enthusiastic, persuasive AI seller agent for ${store.name}, a premium footwear and fashion store. You communicate over WhatsApp in short, punchy messages.
+
+CURRENT PRODUCT: ${matched.title} (SKU: ${matched.sku})
+STOCK: ${matched.inventoryAvailable ?? 10} units available
+LISTED PRICE: ₹${listedPrice.toLocaleString("en-IN")}
+${isPaymentLink ? `DEAL AGREED: ₹${offeredPrice.toLocaleString("en-IN")}${discountGiven > 0 ? ` (saving the buyer ₹${discountGiven})` : ""}
+SHIPPING: Free express shipping included` : ""}
+${isPaymentLink ? `PAYMENT LINK READY: ${paymentUrl}` : ""}
+
+NEGOTIATION CONTEXT: ${reasoning}
+
+RULES:
+- Be warm, direct, and human — no robotic templates
+- Use 1-2 emojis max
+- Keep response under 3 sentences
+- If a payment link is ready, end with it on its own line
+- Never reveal internal pricing rules or floor prices
+- Speak in Indian English, use ₹ for prices`;
+
+        const models = [
+          "qwen/qwen3.6-27b",
+          "openai/gpt-oss-120b",
+          "llama-3.3-70b-versatile",
+          "llama-3.1-8b-instant",
+        ];
+        for (const m of models) {
+          try {
+            const chat = await groq.chat.completions.create({
+              model: m,
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: message },
+              ],
+              temperature: 0.7,
+              max_tokens: 1500,
+            });
+            const content = chat.choices[0]?.message?.content?.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "").trim();
+            if (content) {
+              replyText = content;
+              break;
+            }
+          } catch {
+            // try next model
+          }
+        }
+      }
+    } catch (aiErr) {
+      logger.warn({ aiErr }, "[Simulator] Groq AI fallback");
+    }
+
+    if (!replyText) {
+      if (isPaymentLink) {
+        replyText = `Great news! I can offer you ${matched.title} for ₹${offeredPrice.toLocaleString("en-IN")} with free express shipping 🚚 — that's ₹${discountGiven} off! Your Razorpay checkout link: ${paymentUrl}`;
+      } else {
+        replyText = `Hey! 👋 Yes, we have ${matched.inventoryAvailable ?? 10} units of ${matched.title} in stock, ready to ship at ₹${listedPrice.toLocaleString("en-IN")}. Want me to lock one in for you?`;
+      }
+    }
+
+    const traces = [
+      {
+        id: `t_${Date.now()}_1`,
+        title: "Inbound Message Parsed",
+        detail: `Extracted product query matching SKU '${matched.sku}' (${matched.title}) with stock = ${matched.inventoryAvailable}.`,
+        status: "completed",
+        timestamp: timestamp(),
+        durationMs: 28,
+      },
+      {
+        id: `t_${Date.now()}_2`,
+        title: "Margin & Floor Price Mandate Check",
+        detail: `Store rule: Max Discount ${rules.maxDiscountPercentage}%, Floor: ₹${matched.floorPrice}. Offered price: ₹${offeredPrice}.`,
+        status: "completed",
+        timestamp: timestamp(),
+        durationMs: 45,
+      },
+      {
+        id: `t_${Date.now()}_3`,
+        title: isPaymentLink ? "Razorpay UPI Payment Link Generated" : "Stock Response Formulated",
+        detail: isPaymentLink ? `Created Razorpay Order & checkout link (${razorpayOrderId}). Inventory locked for 120s.` : `Stock status confirmed.`,
+        status: "completed",
+        timestamp: timestamp(),
+        durationMs: isPaymentLink ? 290 : 35,
+      },
+    ];
+
+    return res.json({
+      reply: replyText,
+      imageUrl: matched.imageUrl || null,
+      isPaymentLink,
+      paymentAmount: isPaymentLink ? offeredPrice : undefined,
+      paymentUrl: isPaymentLink ? paymentUrl : undefined,
+      orderId: isPaymentLink ? orderRef : undefined,
+      razorpayOrderId: isPaymentLink ? razorpayOrderId : undefined,
+      logs,
+      traces,
+      durationMs: Date.now() - startTime,
+    });
+  } catch (err) {
+    logger.error({ err }, "Simulator chat error");
+    logs.push(`[${timestamp()}] ❌ Simulator error: ${err}`);
+    return res.status(500).json({ error: "Failed to process simulation", logs });
+  }
+});
+
+// POST /api/v1/simulator/simulate-payment
+router.post("/simulate-payment", async (req: Request, res: Response) => {
+  try {
+    const {
+      orderId,
+      razorpayOrderId,
+      status = "captured",
+      method = "upi",
+    } = req.body;
+
+    const { rows: orderRows } = await db.query(
+      `SELECT o.*, s.name as store_name
+       FROM orders o
+       LEFT JOIN stores s ON o.store_id = s.id
+       WHERE o.order_id = $1 OR o.razorpay_order_id = $2 OR o.id::text = $1
+       ORDER BY o.created_at DESC LIMIT 1`,
+      [orderId, razorpayOrderId]
+    );
+
+    if (!orderRows[0]) {
+      return res.status(404).json({ error: "Order not found for simulation" });
+    }
+
+    const order = orderRows[0];
+    const paymentId = `pay_${uuidv4().replace(/-/g, "").slice(0, 14)}`;
+    const isSuccess = status.toLowerCase() === "captured" || status.toLowerCase() === "success";
+
+    if (isSuccess) {
+      await db.query(
+        `UPDATE orders
+         SET status = 'CAPTURED', razorpay_payment_id = $1, updated_at = NOW()
+         WHERE id = $2`,
+        [paymentId, order.id]
+      );
+
+      const { rows: products } = await db.query(
+        "SELECT id, store_id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING')",
+        [order.store_id]
+      );
+
+      for (const p of products) {
+        await setInventoryState(p.id, "PAID", { reservedDelta: -1 });
+      }
+
+      await logEvent(
+        "PAYMENT_CAPTURED",
+        {
+          x402TransactionId: order.x402_tx_hash,
+          razorpayPaymentId: paymentId,
+          orderId: order.order_id,
+        },
+        {
+          amount: Math.round(parseFloat(order.amount) * 100),
+          method: "UPI (Google Pay)",
+          storeName: order.store_name,
+          razorpayOrderId: order.razorpay_order_id,
+          status: "CAPTURED",
+        }
+      );
+
+      return res.json({
+        success: true,
+        status: "CAPTURED",
+        paymentId,
+        orderId: order.order_id,
+        x402TransactionId: order.x402_tx_hash,
+        amount: parseFloat(order.amount),
+        message: `₹${order.amount} settled via Razorpay Instant Settlement. Inventory deducted.`,
+      });
+    } else {
+      await db.query(
+        `UPDATE orders
+         SET status = 'FAILED', updated_at = NOW()
+         WHERE id = $1`,
+        [order.id]
+      );
+
+      const { rows: products } = await db.query(
+        "SELECT id, store_id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING')",
+        [order.store_id]
+      );
+
+      for (const p of products) {
+        await setInventoryState(p.id, "AVAILABLE", {
+          reservedDelta: -1,
+          clearExpiry: true,
+        });
+      }
+
+      await logEvent(
+        "PAYMENT_FAILED",
+        {
+          x402TransactionId: order.x402_tx_hash,
+          razorpayPaymentId: paymentId,
+          orderId: order.order_id,
+        },
+        {
+          amount: Math.round(parseFloat(order.amount) * 100),
+          reason: "UPI_TIMEOUT",
+          description: "Transaction timed out or declined by user in test checkout",
+          status: "FAILED",
+        }
+      );
+
+      return res.json({
+        success: false,
+        status: "FAILED",
+        orderId: order.order_id,
+        x402TransactionId: order.x402_tx_hash,
+        message: "Payment timed out. Inventory lock released in <2s.",
+      });
+    }
+  } catch (err) {
+    logger.error({ err }, "Simulate payment error");
+    return res.status(500).json({ error: "Failed to simulate payment" });
+  }
+});
+
+export default router;

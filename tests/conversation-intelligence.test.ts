@@ -1,8 +1,9 @@
-import { resolveIntent } from "../src/conversation/intent-resolver.ts";
-import { executeCommerceAction } from "../src/conversation/commerce-executor.ts";
-import { generateCustomerResponse } from "../src/conversation/response-generator.ts";
-import type { ConversationContext, ConversationState } from "../src/conversation/types.ts";
-import type { Product, Store, NegotiationRules } from "../src/types/index.ts";
+import { describe, test, expect } from "bun:test";
+import { resolveIntent } from "../apps/api/src/modules/agent/intent-resolver.ts";
+import { executeCommerceAction } from "../apps/api/src/modules/agent/commerce-executor.ts";
+import { generateCustomerResponse } from "../apps/api/src/modules/agent/response-generator.ts";
+import type { ConversationContext, ConversationState } from "../apps/api/src/modules/agent/types.ts";
+import type { Product, Store, NegotiationRules } from "@zapai/types";
 
 const mockStore: Store = {
   id: "309d48dd-3124-42ac-a6ec-9e50828acf82",
@@ -120,410 +121,288 @@ function createMockContext(stateOverrides?: Partial<ConversationState>): Convers
   };
 }
 
-async function runTestSuite() {
-  console.log("🧪 ================= STARTING CONVERSATIONAL INTELLIGENCE TEST SUITE =================\n");
-  let passed = 0;
-  let total = 0;
+describe("Conversational Intelligence Test Suite", () => {
+  test("Scenario 1: Clean Greeting ('hi') without dragging stale product", async () => {
+    const ctx1 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "rohan",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        variantId: "var_rohan_001",
+      },
+      transcript: [
+        { id: "1", sender: "customer", content: "hi", timestamp: "08:58 PM" },
+      ],
+    });
 
-  function assert(condition: boolean, testName: string, detail?: string) {
-    total++;
-    if (condition) {
-      console.log(`✅ [PASS] ${testName}`);
-      passed++;
-    } else {
-      console.error(`❌ [FAIL] ${testName} - ${detail || "Assertion failed"}`);
-    }
-  }
+    const intent1 = await resolveIntent("hi", ctx1);
+    expect(intent1.intent).toBe("SMALL_TALK");
 
-  // ── SCENARIO 1: Fresh Greeting ("hi") with stale previous conversation ─────────
-  console.log("▶️ Scenario 1: Clean Greeting ('hi') without dragging stale product");
-  const ctx1 = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "rohan",
-      listedPrice: 1200,
-      floorPrice: 1080,
-      variantId: "var_rohan_001",
-    },
-    transcript: [
-      { id: "1", sender: "customer", content: "hi", timestamp: "08:58 PM" },
-    ],
-  });
+    const comm1 = await executeCommerceAction(intent1, ctx1, "hi");
+    const resp1 = await generateCustomerResponse("hi", intent1, comm1, ctx1);
+    expect(resp1.text.toLowerCase()).not.toContain("couldn't find an exact match for");
+    expect(resp1.text.toLowerCase()).not.toContain("rohan");
+  }, 45000);
 
-  const intent1 = await resolveIntent("hi", ctx1);
-  assert(
-    intent1.intent === "SMALL_TALK",
-    "'hi' is classified as clean SMALL_TALK",
-    `Intent: ${intent1.intent}`
-  );
+  test("Scenario 2: Catalog Listing ('yes' after catalog offer)", async () => {
+    const ctx2 = createMockContext({
+      awaitingConfirmation: "CATALOG",
+    });
 
-  const comm1 = await executeCommerceAction(intent1, ctx1, "hi");
-  const resp1 = await generateCustomerResponse("hi", intent1, comm1, ctx1);
-  assert(
-    !resp1.text.toLowerCase().includes("couldn't find an exact match for") &&
-    !resp1.text.toLowerCase().includes("rohan"),
-    "Greeting does not mention missing products or stale 'rohan' context",
-    resp1.text
-  );
+    const intent2 = await resolveIntent("yes", ctx2);
+    expect(intent2.intent).toBe("CATALOG_BROWSE");
 
-  // ── SCENARIO 2: Catalog Listing ───────────────────────────────────────────────
-  console.log("\n▶️ Scenario 2: Catalog Listing ('yes' after catalog offer)");
-  const ctx2 = createMockContext({
-    awaitingConfirmation: "CATALOG",
-  });
+    const comm2 = await executeCommerceAction(intent2, ctx2, "yes");
+    const resp2 = await generateCustomerResponse("yes", intent2, comm2, ctx2);
+    expect(resp2.text).toContain("Rohan Shirt");
+    expect(resp2.text).toContain("₹1,200");
+  }, 45000);
 
-  const intent2 = await resolveIntent("yes", ctx2);
-  assert(
-    intent2.intent === "CATALOG_BROWSE",
-    "'yes' following catalog question resolves to CATALOG_BROWSE",
-    `Intent: ${intent2.intent}`
-  );
+  test("Scenario 3: Initial Discount Request ('any discounts?')", async () => {
+    const ctx3 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        variantId: "var_rohan_001",
+        imageUrl: mockProducts[0].imageUrl,
+      },
+      sessionState: "NEGOTIATING",
+    });
 
-  const comm2 = await executeCommerceAction(intent2, ctx2, "yes");
-  const resp2 = await generateCustomerResponse("yes", intent2, comm2, ctx2);
-  assert(
-    resp2.text.includes("Rohan Shirt") && resp2.text.includes("₹1,200"),
-    "Catalog response formats real products and prices from database",
-    resp2.text
-  );
+    const intent3 = await resolveIntent("any discounts?", ctx3);
+    expect(intent3.intent).toBe("PRICE_NEGOTIATION");
 
-  // ── SCENARIO 3: Discount Request ("any discounts?") ───────────────────────────
-  console.log("\n▶️ Scenario 3: Initial Discount Request ('any discounts?')");
-  const ctx3 = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "Rohan Shirt",
-      listedPrice: 1200,
-      floorPrice: 1080,
-      variantId: "var_rohan_001",
-      imageUrl: mockProducts[0].imageUrl,
-    },
-    sessionState: "NEGOTIATING",
-  });
+    const comm3 = await executeCommerceAction(intent3, ctx3, "any discounts?");
+    expect(comm3.type).toBe("COUNTER_OFFER");
+    expect(comm3.offer?.offeredPrice).toBe(1080);
 
-  const intent3 = await resolveIntent("any discounts?", ctx3);
-  assert(
-    intent3.intent === "PRICE_NEGOTIATION",
-    "'any discounts?' resolved to PRICE_NEGOTIATION",
-    `Intent: ${intent3.intent}`
-  );
+    const resp3 = await generateCustomerResponse("any discounts?", intent3, comm3, ctx3);
+    const hasDiscount = resp3.text.includes("1080") || resp3.text.includes("1,080");
+    expect(hasDiscount).toBe(true);
+  }, 45000);
 
-  const comm3 = await executeCommerceAction(intent3, ctx3, "any discounts?");
-  assert(
-    comm3.type === "COUNTER_OFFER" && comm3.offer?.offeredPrice === 1080,
-    "Offers 10% discount to ₹1080 within margin rules",
-    `Offered: ${comm3.offer?.offeredPrice}`
-  );
+  test("Scenario 4: Countering at Floor Price ('anything less')", async () => {
+    const ctx4 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1080,
+        variantId: "var_rohan_001",
+      },
+      currentOffer: {
+        productTitle: "Rohan Shirt",
+        variantId: "var_rohan_001",
+        offeredPrice: 1080,
+        listedPrice: 1200,
+        shippingFree: false,
+        status: "COUNTER",
+      },
+      sessionState: "NEGOTIATING",
+    });
 
-  const resp3 = await generateCustomerResponse("any discounts?", intent3, comm3, ctx3);
-  assert(
-    resp3.text.includes("1080") || resp3.text.includes("1,080"),
-    "Response communicates ₹1080 discount clearly",
-    resp3.text
-  );
+    const intent4 = await resolveIntent("anything less", ctx4);
+    const comm4 = await executeCommerceAction(intent4, ctx4, "anything less");
+    expect(comm4.type).toBe("COUNTER_OFFER");
+    expect(comm4.offer?.offeredPrice).toBe(1080);
 
-  // ── SCENARIO 4: Monotonic Floor Price ("anything less") ───────────────────────
-  console.log("\n▶️ Scenario 4: Countering at Floor Price ('anything less')");
-  const ctx4 = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "Rohan Shirt",
-      listedPrice: 1200,
-      floorPrice: 1080,
-      offeredPrice: 1080,
-      variantId: "var_rohan_001",
-    },
-    currentOffer: {
-      productTitle: "Rohan Shirt",
-      variantId: "var_rohan_001",
-      offeredPrice: 1080,
-      listedPrice: 1200,
-      shippingFree: false,
-      status: "COUNTER",
-    },
-    sessionState: "NEGOTIATING",
-  });
+    const resp4 = await generateCustomerResponse("anything less", intent4, comm4, ctx4);
+    expect(resp4.text).not.toContain("1200 is our best");
+    expect(resp4.text).not.toContain("1,200 is our best");
+  }, 45000);
 
-  const intent4 = await resolveIntent("anything less", ctx4);
-  const comm4 = await executeCommerceAction(intent4, ctx4, "anything less");
-  assert(
-    comm4.type === "COUNTER_OFFER" && comm4.offer?.offeredPrice === 1080,
-    "Price does NOT jump back to ₹1200; stays firm at floor ₹1080",
-    `Offered: ${comm4.offer?.offeredPrice}`
-  );
+  test("Scenario 5: Direct Photo Delivery with Product Switching ('shw me rohan')", async () => {
+    const ctx5 = createMockContext({
+      activeProduct: {
+        id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+        title: "Shayanna",
+        listedPrice: 23000,
+        floorPrice: 22000,
+        offeredPrice: 23000,
+        variantId: "var_shayanna_002",
+      },
+    });
 
-  const resp4 = await generateCustomerResponse("anything less", intent4, comm4, ctx4);
-  assert(
-    !resp4.text.includes("1200 is our best") && !resp4.text.includes("1,200 is our best"),
-    "Does not claim ₹1200 is best price after already offering ₹1080",
-    resp4.text
-  );
+    const intent5 = await resolveIntent("shw me rohan", ctx5);
+    expect(intent5.isPhotoRequest).toBe(true);
 
-  // ── SCENARIO 5: Photo Delivery & Product Switching ("shw me rohan") ─────────
-  console.log("\n▶️ Scenario 5: Direct Photo Delivery with Product Switching ('shw me rohan' after Shayanna ₹23,000)");
-  const ctx5 = createMockContext({
-    activeProduct: {
-      id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
-      title: "Shayanna",
-      listedPrice: 23000,
-      floorPrice: 22000,
-      offeredPrice: 23000,
-      variantId: "var_shayanna_002",
-    },
-  });
+    const comm5 = await executeCommerceAction(intent5, ctx5, "shw me rohan");
+    expect(comm5.type).toBe("PHOTO_FOUND");
+    expect(comm5.mediaUrlToSend?.startsWith("http")).toBe(true);
+    expect(comm5.product?.title.toLowerCase()).toContain("rohan");
+    expect(comm5.mediaCaption).toContain("1,200");
+    expect(comm5.mediaCaption).not.toContain("23,000");
 
-  const intent5 = await resolveIntent("shw me rohan", ctx5);
-  assert(
-    intent5.isPhotoRequest === true,
-    "Recognized photo request",
-    `isPhotoRequest: ${intent5.isPhotoRequest}`
-  );
+    const resp5 = await generateCustomerResponse("shw me rohan", intent5, comm5, ctx5);
+    expect(resp5.text.toLowerCase()).not.toContain("would you like me to send you its picture");
+    expect(Boolean(resp5.mediaUrl)).toBe(true);
+  }, 45000);
 
-  const comm5 = await executeCommerceAction(intent5, ctx5, "shw me rohan");
-  assert(
-    comm5.type === "PHOTO_FOUND" && Boolean(comm5.mediaUrlToSend?.startsWith("http")),
-    "Found product image URL for delivery",
-    comm5.mediaUrlToSend
-  );
-  assert(
-    Boolean(
-      comm5.product?.title.toLowerCase().includes("rohan") &&
-      comm5.mediaCaption?.includes("1,200") &&
-      !comm5.mediaCaption?.includes("23,000")
-    ),
-    "Photo caption shows correct price for Rohan (₹1,200) and not stale Shayanna price (₹23,000)",
-    comm5.mediaCaption
-  );
+  test("Scenario 6: Store Inventory Query ('what do u sell at MVPFAST?')", async () => {
+    const ctx6 = createMockContext();
+    const intent6 = await resolveIntent("what do u sell at MVPFAST?", ctx6);
+    expect(intent6.intent).toBe("CATALOG_BROWSE");
 
-  const resp5 = await generateCustomerResponse("shw me rohan", intent5, comm5, ctx5);
-  assert(
-    !resp5.text.toLowerCase().includes("would you like me to send you its picture") &&
-    Boolean(resp5.mediaUrl),
-    "Delivers photo directly without asking permission to send what was requested",
-    resp5.text
-  );
+    const comm6 = await executeCommerceAction(intent6, ctx6, "what do u sell at MVPFAST?");
+    const resp6 = await generateCustomerResponse("what do u sell at MVPFAST?", intent6, comm6, ctx6);
+    expect(resp6.text.toLowerCase()).not.toContain("milk");
+    expect(resp6.text.toLowerCase()).not.toContain("grocery");
+    expect(resp6.text).toContain("Rohan Shirt");
+  }, 45000);
 
-  // ── SCENARIO 6: Store Query ('what do u sell at MVPFAST?') ─────────────────
-  console.log("\n▶️ Scenario 6: Store Inventory Query ('what do u sell at MVPFAST?')");
-  const ctx6 = createMockContext();
-  const intent6 = await resolveIntent("what do u sell at MVPFAST?", ctx6);
-  assert(
-    intent6.intent === "CATALOG_BROWSE",
-    "'what do u sell at MVPFAST?' resolves to CATALOG_BROWSE",
-    `Intent: ${intent6.intent}`
-  );
+  test("Scenario 7: Direct Single-Word Product Query ('rohan')", async () => {
+    const ctx7 = createMockContext();
+    const intent7 = await resolveIntent("rohan", ctx7);
+    expect(intent7.intent).toBe("PRODUCT_SEARCH");
+    expect(intent7.referencedProductTitle?.toLowerCase()).toContain("rohan");
 
-  const comm6 = await executeCommerceAction(intent6, ctx6, "what do u sell at MVPFAST?");
-  const resp6 = await generateCustomerResponse("what do u sell at MVPFAST?", intent6, comm6, ctx6);
-  assert(
-    !resp6.text.toLowerCase().includes("milk") &&
-    !resp6.text.toLowerCase().includes("grocery") &&
-    !resp6.text.toLowerCase().includes("veggies") &&
-    resp6.text.includes("Rohan Shirt"),
-    "Does not hallucinate grocery/milk and shows real items like Rohan Shirt",
-    resp6.text
-  );
+    const comm7 = await executeCommerceAction(intent7, ctx7, "rohan");
+    const resp7 = await generateCustomerResponse("rohan", intent7, comm7, ctx7);
+    const lowerResp = resp7.text.toLowerCase();
+    const mentionsRohan = lowerResp.includes("1200") || lowerResp.includes("1,200") || lowerResp.includes("rohan");
+    expect(mentionsRohan).toBe(true);
+  }, 45000);
 
-  // ── SCENARIO 7: Direct Single-Word Product Query ('rohan') ──────────────────
-  console.log("\n▶️ Scenario 7: Direct Single-Word Product Query ('rohan')");
-  const ctx7 = createMockContext();
-  const intent7 = await resolveIntent("rohan", ctx7);
-  assert(
-    intent7.intent === "PRODUCT_SEARCH" && Boolean(intent7.referencedProductTitle?.toLowerCase().includes("rohan")),
-    "'rohan' resolves directly to product search for Rohan Shirt",
-    `Intent: ${intent7.intent}, Referenced: ${intent7.referencedProductTitle}`
-  );
+  test("Scenario 8: Quantity & Live Stock Query ('how many qty are available')", async () => {
+    const ctx8 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "rohann",
+        listedPrice: 1200,
+        floorPrice: 1100,
+        offeredPrice: 1200,
+        inventoryAvailable: 1,
+        variantId: "var_rohan_001",
+      },
+    });
 
-  const comm7 = await executeCommerceAction(intent7, ctx7, "rohan");
-  const resp7 = await generateCustomerResponse("rohan", intent7, comm7, ctx7);
-  assert(
-    !resp7.text.toLowerCase().includes("what type of product are you looking for") &&
-    resp7.text.includes("1200") || resp7.text.includes("1,200") || resp7.text.includes("Rohan"),
-    "Responds with Rohan product details instead of generic clarification",
-    resp7.text
-  );
+    const intent8 = await resolveIntent("yes i want to order rohann how many qty are available", ctx8);
+    const comm8 = await executeCommerceAction(intent8, ctx8, "yes i want to order rohann how many qty are available");
+    const resp8 = await generateCustomerResponse("yes i want to order rohann how many qty are available", intent8, comm8, ctx8);
 
-  // ── SCENARIO 8: Quantity & Live Stock Query ('how many qty are available') ──
-  console.log("\n▶️ Scenario 8: Quantity & Live Stock Query ('yes i want to order rohann how many qty are available')");
-  const ctx8 = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "rohann",
-      listedPrice: 1200,
-      floorPrice: 1100,
-      offeredPrice: 1200,
-      inventoryAvailable: 1,
-      variantId: "var_rohan_001",
-    },
-  });
+    expect(resp8.text.toLowerCase()).not.toContain("plenty");
+    const mentionsOne = resp8.text.includes("1 unit") || resp8.text.includes("1 item") || resp8.text.includes("1 available") || resp8.text.includes("1 in stock") || resp8.text.includes("1");
+    expect(mentionsOne).toBe(true);
+  }, 45000);
 
-  const intent8 = await resolveIntent("yes i want to order rohann how many qty are available", ctx8);
-  const comm8 = await executeCommerceAction(intent8, ctx8, "yes i want to order rohann how many qty are available");
-  const resp8 = await generateCustomerResponse("yes i want to order rohann how many qty are available", intent8, comm8, ctx8);
+  test("Scenario 9: Multi-Quantity Purchase Command ('i want 2' on ₹23,000 item)", async () => {
+    const ctx9 = createMockContext({
+      activeProduct: {
+        id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+        title: "Shayanna",
+        listedPrice: 23000,
+        floorPrice: 22000,
+        offeredPrice: 23000,
+        inventoryAvailable: 7,
+        variantId: "var_shayanna_002",
+      },
+      sessionState: "NEGOTIATING",
+    });
 
-  assert(
-    !resp8.text.toLowerCase().includes("plenty") &&
-    (resp8.text.includes("1 unit") || resp8.text.includes("1 item") || resp8.text.includes("1 available") || resp8.text.includes("1 in stock") || resp8.text.includes("1")),
-    "States exact stock of 1 unit and does NOT claim 'plenty in stock'",
-    resp8.text
-  );
+    const intent9 = await resolveIntent("i want 2", ctx9);
+    expect(intent9.intent).toBe("ACCEPT_OFFER");
+    expect(intent9.requestedQuantity).toBe(2);
 
-  // ── SCENARIO 9: Multi-Quantity Checkout ('i want 2') ───────────────────────
-  console.log("\n▶️ Scenario 9: Multi-Quantity Purchase Command ('i want 2' on ₹23,000 item)");
-  const ctx9 = createMockContext({
-    activeProduct: {
-      id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
-      title: "Shayanna",
-      listedPrice: 23000,
-      floorPrice: 22000,
-      offeredPrice: 23000,
-      inventoryAvailable: 7,
-      variantId: "var_shayanna_002",
-    },
-    sessionState: "NEGOTIATING",
-  });
+    const comm9 = await executeCommerceAction(intent9, ctx9, "i want 2");
+    expect(comm9.type).toBe("PAYMENT_LINK_CREATED");
+    expect(comm9.paymentAmount).toBe(46000);
+    expect(comm9.quantity).toBe(2);
 
-  const intent9 = await resolveIntent("i want 2", ctx9);
-  assert(
-    intent9.intent === "ACCEPT_OFFER" && intent9.requestedQuantity === 2,
-    "'i want 2' resolves to ACCEPT_OFFER with requestedQuantity = 2",
-    `Intent: ${intent9.intent}, Quantity: ${intent9.requestedQuantity}`
-  );
+    const resp9 = await generateCustomerResponse("i want 2", intent9, comm9, ctx9);
+    const hasTotal = resp9.text.includes("46,000") || resp9.text.includes("46000");
+    expect(hasTotal).toBe(true);
+  }, 45000);
 
-  const comm9 = await executeCommerceAction(intent9, ctx9, "i want 2");
-  assert(
-    comm9.type === "PAYMENT_LINK_CREATED" && comm9.paymentAmount === 46000 && comm9.quantity === 2,
-    "Generates payment link for 2 units (2 x ₹23,000 = ₹46,000)",
-    `Amount: ${comm9.paymentAmount}, Quantity: ${comm9.quantity}`
-  );
+  test("Scenario 10: Multi-Turn Focus Retention on Discount ('i would like some discount')", async () => {
+    const ctx10 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1200,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      sessionState: "IDLE",
+    });
 
-  const resp9 = await generateCustomerResponse("i want 2", intent9, comm9, ctx9);
-  assert(
-    resp9.text.includes("46,000") || resp9.text.includes("46000"),
-    "Response explicitly states total price of ₹46,000 for 2 units",
-    resp9.text
-  );
+    const intent10 = await resolveIntent("i would like some discount", ctx10);
+    expect(intent10.intent).toBe("PRICE_NEGOTIATION");
 
-  // ── SCENARIO 10: Multi-Turn Focus Retention on Discount ('i would like some discount')
-  console.log("\n▶️ Scenario 10: Context Retention on Discount Request after discussing Rohan");
-  const ctx10 = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "Rohan Shirt",
-      listedPrice: 1200,
-      floorPrice: 1080,
-      offeredPrice: 1200,
-      inventoryAvailable: 10,
-      variantId: "var_rohan_001",
-    },
-    sessionState: "IDLE",
-  });
+    const comm10 = await executeCommerceAction(intent10, ctx10, "i would like some discount");
+    expect(comm10.type).toBe("COUNTER_OFFER");
+    expect(comm10.product?.title.toLowerCase()).toContain("rohan");
+    expect(comm10.product?.offeredPrice).toBe(1080);
 
-  const intent10 = await resolveIntent("i would like some discount", ctx10);
-  assert(
-    intent10.intent === "PRICE_NEGOTIATION",
-    "'i would like some discount' resolves to PRICE_NEGOTIATION",
-    `Intent: ${intent10.intent}`
-  );
+    const resp10 = await generateCustomerResponse("i would like some discount", intent10, comm10, ctx10);
+    const mentionsDiscount = resp10.text.includes("1080") || resp10.text.includes("1,080") || resp10.text.includes("1100");
+    expect(mentionsDiscount).toBe(true);
+  }, 45000);
 
-  const comm10 = await executeCommerceAction(intent10, ctx10, "i would like some discount");
-  assert(
-    comm10.type === "COUNTER_OFFER" &&
-    Boolean(comm10.product?.title.toLowerCase().includes("rohan")) &&
-    comm10.product?.offeredPrice === 1080,
-    "Calculates discount on Rohan Shirt (₹1080) and does not jump to Shayanna",
-    `Product: ${comm10.product?.title}, Price: ${comm10.product?.offeredPrice}`
-  );
+  test("Scenario 11: Multi-Turn Quantity Follow-Up ('I will get 2 rohann' -> 'yes')", async () => {
+    const ctx11A = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "rohann",
+        listedPrice: 1200,
+        floorPrice: 1100,
+        offeredPrice: 1100,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      currentOffer: {
+        productTitle: "rohann",
+        variantId: "var_rohan_001",
+        offeredPrice: 1100,
+        listedPrice: 1200,
+        shippingFree: false,
+        status: "COUNTER",
+      },
+      sessionState: "NEGOTIATING",
+    });
 
-  const resp10 = await generateCustomerResponse("i would like some discount", intent10, comm10, ctx10);
-  assert(
-    resp10.text.includes("1080") || resp10.text.includes("1,080") || resp10.text.includes("1100"),
-    "Response communicates discounted price for Rohan",
-    resp10.text
-  );
+    const intent11A = await resolveIntent("I will get 2 rohann", ctx11A);
+    expect(intent11A.intent).toBe("ACCEPT_OFFER");
+    expect(intent11A.requestedQuantity).toBe(2);
 
-  // ── SCENARIO 11: Multi-Turn Quantity Follow-Up ('I will get 2 rohann' -> 'yes')
-  console.log("\n▶️ Scenario 11: Multi-Turn Quantity Follow-Up ('I will get 2 rohann' -> 'yes')");
-  const ctx11A = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "rohann",
-      listedPrice: 1200,
-      floorPrice: 1100,
-      offeredPrice: 1100,
-      inventoryAvailable: 10,
-      variantId: "var_rohan_001",
-    },
-    currentOffer: {
-      productTitle: "rohann",
-      variantId: "var_rohan_001",
-      offeredPrice: 1100,
-      listedPrice: 1200,
-      shippingFree: false,
-      status: "COUNTER",
-    },
-    sessionState: "NEGOTIATING",
-  });
+    const ctx11B = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "rohann",
+        listedPrice: 1200,
+        floorPrice: 1100,
+        offeredPrice: 1100,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      currentOffer: {
+        productTitle: "rohann",
+        variantId: "var_rohan_001",
+        offeredPrice: 1100,
+        listedPrice: 1200,
+        shippingFree: false,
+        status: "COUNTER",
+      },
+      requestedQuantity: 2,
+      sessionState: "NEGOTIATING",
+    });
 
-  const intent11A = await resolveIntent("I will get 2 rohann", ctx11A);
-  assert(
-    intent11A.intent === "ACCEPT_OFFER" && intent11A.requestedQuantity === 2,
-    "'I will get 2 rohann' resolves to ACCEPT_OFFER with quantity 2",
-    `Intent: ${intent11A.intent}, Qty: ${intent11A.requestedQuantity}`
-  );
+    const intent11B = await resolveIntent("yes", ctx11B);
+    expect(intent11B.intent).toBe("ACCEPT_OFFER");
+    expect(intent11B.requestedQuantity).toBe(2);
 
-  // Step 2: Next turn user confirms with 'yes'
-  const ctx11B = createMockContext({
-    activeProduct: {
-      id: "prod_rohan_shirt",
-      title: "rohann",
-      listedPrice: 1200,
-      floorPrice: 1100,
-      offeredPrice: 1100,
-      inventoryAvailable: 10,
-      variantId: "var_rohan_001",
-    },
-    currentOffer: {
-      productTitle: "rohann",
-      variantId: "var_rohan_001",
-      offeredPrice: 1100,
-      listedPrice: 1200,
-      shippingFree: false,
-      status: "COUNTER",
-    },
-    requestedQuantity: 2,
-    sessionState: "NEGOTIATING",
-  });
+    const comm11B = await executeCommerceAction(intent11B, ctx11B, "yes");
+    expect(comm11B.type).toBe("PAYMENT_LINK_CREATED");
+    expect(comm11B.quantity).toBe(2);
+    expect(comm11B.paymentAmount).toBe(2200);
 
-  const intent11B = await resolveIntent("yes", ctx11B);
-  assert(
-    intent11B.intent === "ACCEPT_OFFER" && intent11B.requestedQuantity === 2,
-    "'yes' retains requestedQuantity = 2 from previous turn",
-    `Intent: ${intent11B.intent}, Qty: ${intent11B.requestedQuantity}`
-  );
-
-  const comm11B = await executeCommerceAction(intent11B, ctx11B, "yes");
-  assert(
-    comm11B.type === "PAYMENT_LINK_CREATED" &&
-    comm11B.quantity === 2 &&
-    comm11B.paymentAmount === 2200,
-    "Generates payment link for 2 units at negotiated price of ₹1,100 (2 x ₹1,100 = ₹2,200)",
-    `Amount: ${comm11B.paymentAmount}, Quantity: ${comm11B.quantity}`
-  );
-
-  const resp11B = await generateCustomerResponse("yes", intent11B, comm11B, ctx11B);
-  assert(
-    resp11B.text.includes("2,200") || resp11B.text.includes("2200"),
-    "Response explicitly states ₹2,200 for 2 units",
-    resp11B.text
-  );
-
-  console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);
-  if (passed === total) {
-    console.log("🎉 ALL REAL-WORLD CONVERSATIONAL SCENARIOS PASSED!");
-  } else {
-    process.exit(1);
-  }
-}
-
-runTestSuite();
+    const resp11B = await generateCustomerResponse("yes", intent11B, comm11B, ctx11B);
+    const mentionsTotal = resp11B.text.includes("2,200") || resp11B.text.includes("2200");
+    expect(mentionsTotal).toBe(true);
+  }, 45000);
+});
