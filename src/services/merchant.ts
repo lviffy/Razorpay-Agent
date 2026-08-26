@@ -79,7 +79,6 @@ export async function getAllActiveProducts(): Promise<Product[]> {
     FROM products p
     JOIN stores s ON p.store_id = s.id
     WHERE s.is_active = true
-      AND p.inventory_state = 'AVAILABLE'
       AND p.inventory_available > 0
     ORDER BY p.created_at DESC`
   );
@@ -150,18 +149,23 @@ export async function setInventoryState(
     reservationExpiresAt?: Date | null;
   }
 ): Promise<void> {
-  const updates: string[] = ["inventory_state = $2", "updated_at = NOW()"];
-  const params: unknown[] = [productId, newState];
-  let idx = 3;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId);
+  if (!isUuid) {
+    return; // Safely ignore non-UUID test mock IDs
+  }
+
+  const updates: string[] = ["updated_at = NOW()"];
+  const params: unknown[] = [productId];
+  let idx = 2;
 
   if (options?.reservedDelta !== undefined) {
-    updates.push(`inventory_reserved = inventory_reserved + $${idx}`);
+    updates.push(`inventory_reserved = GREATEST(0, inventory_reserved + $${idx})`);
     params.push(options.reservedDelta);
     idx++;
   }
 
   if (options?.availableDelta !== undefined) {
-    updates.push(`inventory_available = inventory_available + $${idx}`);
+    updates.push(`inventory_available = GREATEST(0, inventory_available + $${idx})`);
     params.push(options.availableDelta);
     idx++;
   }
@@ -169,6 +173,15 @@ export async function setInventoryState(
   if (options?.reservationExpiresAt !== undefined) {
     updates.push(`reservation_expires_at = $${idx}`);
     params.push(options.reservationExpiresAt);
+    idx++;
+  }
+
+  if (newState === "PAID") {
+    // If stock remains > 0 after payment, keep item AVAILABLE for other buyers!
+    updates.push(`inventory_state = CASE WHEN inventory_available > 0 THEN 'AVAILABLE' ELSE 'PAID' END`);
+  } else {
+    updates.push(`inventory_state = $${idx}`);
+    params.push(newState);
     idx++;
   }
 

@@ -240,7 +240,29 @@ export async function executeCommerceAction(
       };
     }
 
-    const offeredPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+    const quantity = intent.requestedQuantity || state.requestedQuantity || 1;
+
+    // Check stock availability
+    if (quantity > targetProduct.inventoryAvailable) {
+      return {
+        type: "INFO_ONLY",
+        product: {
+          id: targetProduct.id,
+          title: targetProduct.title,
+          variantId: targetProduct.shopifyVariantId,
+          listedPrice: targetProduct.listedPrice,
+          floorPrice: targetProduct.floorPrice,
+          offeredPrice: targetProduct.listedPrice,
+          inventoryAvailable: targetProduct.inventoryAvailable,
+          imageUrl: targetProduct.imageUrl,
+          sku: targetProduct.sku,
+        },
+        infoDetails: `We only have ${targetProduct.inventoryAvailable} unit(s) of ${targetProduct.title} available in stock right now. Would you like to proceed with ${targetProduct.inventoryAvailable} unit(s)?`,
+      };
+    }
+
+    const unitPrice = state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
+    const totalAmount = unitPrice * quantity;
 
     // Velocity / Fraud check
     const velocity = await checkBuyerVelocity(phoneNumber);
@@ -261,10 +283,10 @@ export async function executeCommerceAction(
       };
     }
 
-    // Reserve inventory
+    // Reserve inventory for the requested quantity
     await setInventoryState(targetProduct.id, "RESERVED", {
-      reservedDelta: 1,
-      availableDelta: -1,
+      reservedDelta: quantity,
+      availableDelta: -quantity,
       reservationExpiresAt: new Date(Date.now() + 120_000),
     });
 
@@ -275,20 +297,21 @@ export async function executeCommerceAction(
     let rzpOrder: { id: string };
     try {
       rzpOrder = (await createOrder({
-        amountInPaise: rupeesToPaise(offeredPrice),
+        amountInPaise: rupeesToPaise(totalAmount),
         receipt: x402TxId,
         sessionId: conversationId,
         notes: {
           conversation_id: conversationId,
           phone_number: phoneNumber,
           product_id: targetProduct.id,
+          quantity: String(quantity),
         },
       })) as unknown as { id: string };
     } catch (err) {
       await releaseLock(store.id, targetProduct.shopifyVariantId);
       await setInventoryState(targetProduct.id, "AVAILABLE", {
-        reservedDelta: -1,
-        availableDelta: 1,
+        reservedDelta: -quantity,
+        availableDelta: quantity,
         reservationExpiresAt: null,
       });
       return {
@@ -301,6 +324,7 @@ export async function executeCommerceAction(
     await setInventoryState(targetProduct.id, "PAYMENT_PENDING");
 
     // Save order in PostgreSQL
+    const itemTitleWithQty = quantity > 1 ? `${quantity}x ${targetProduct.title}` : targetProduct.title;
     await db.query(
       `INSERT INTO orders (
         store_id, razorpay_order_id, order_id, x402_tx_hash,
@@ -313,12 +337,12 @@ export async function executeCommerceAction(
         orderRef,
         x402TxId,
         `mnd_${conversationId.slice(-8)}`,
-        offeredPrice,
+        totalAmount,
         "INR",
         "CREATED",
         phoneNumber,
         state.customerName || "Customer",
-        targetProduct.title,
+        itemTitleWithQty,
         targetProduct.sku || "",
       ]
     );
@@ -332,13 +356,14 @@ export async function executeCommerceAction(
       productId: targetProduct.id,
       storeId: store.id,
       variantId: targetProduct.shopifyVariantId,
-      price: offeredPrice,
+      price: totalAmount,
+      quantity,
     });
 
     // Create Razorpay Payment Link
     const plink = (await createStandardPaymentLink({
-      amountInPaise: rupeesToPaise(offeredPrice),
-      description: `ZapAI: ${targetProduct.title} | ${orderRef}`,
+      amountInPaise: rupeesToPaise(totalAmount),
+      description: `ZapAI: ${itemTitleWithQty} | ${orderRef}`,
       callbackUrl: `${process.env.APP_URL || "http://localhost:3000"}/payment-complete`,
       referenceId: orderRef,
       customerPhone: phoneNumber,
@@ -352,14 +377,14 @@ export async function executeCommerceAction(
         variantId: targetProduct.shopifyVariantId,
         listedPrice: targetProduct.listedPrice,
         floorPrice: targetProduct.floorPrice,
-        offeredPrice,
+        offeredPrice: unitPrice,
+        inventoryAvailable: targetProduct.inventoryAvailable,
         imageUrl: targetProduct.imageUrl,
         sku: targetProduct.sku,
       },
+      quantity,
       paymentUrl: plink.short_url,
-      paymentAmount: offeredPrice,
-      orderRef,
-      razorpayOrderId: rzpOrder.id,
+      paymentAmount: totalAmount,
       mediaUrlToSend: targetProduct.imageUrl,
     };
   }

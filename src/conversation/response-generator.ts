@@ -48,13 +48,16 @@ export async function generateCustomerResponse(
 
   // Payment Link Created
   if (commerceResult.type === "PAYMENT_LINK_CREATED" && commerceResult.paymentUrl) {
+    const qty = commerceResult.quantity || 1;
     const title = commerceResult.product?.title || "your item";
-    const amount = commerceResult.paymentAmount || commerceResult.product?.offeredPrice || 0;
+    const itemLabel = qty > 1 ? `${qty}x *${title}*` : `*${title}*`;
+    const amount = commerceResult.paymentAmount || (commerceResult.product?.offeredPrice ? commerceResult.product.offeredPrice * qty : 0);
     return {
-      text: `Deal locked for *${title}* at ₹${amount.toLocaleString("en-IN")}! 🚚\n\nTap below to complete payment via Razorpay:\n${commerceResult.paymentUrl}`,
+      text: `Deal locked for ${itemLabel} at ₹${amount.toLocaleString("en-IN")}! 🚚\n\nTap below to complete payment via Razorpay:\n${commerceResult.paymentUrl}`,
       isPaymentLink: true,
       paymentAmount: amount,
       paymentUrl: commerceResult.paymentUrl,
+      quantity: qty,
       mediaUrl: commerceResult.mediaUrlToSend,
     };
   }

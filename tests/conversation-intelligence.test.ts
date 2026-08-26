@@ -335,6 +335,42 @@ async function runTestSuite() {
     resp8.text
   );
 
+  // ── SCENARIO 9: Multi-Quantity Checkout ('i want 2') ───────────────────────
+  console.log("\n▶️ Scenario 9: Multi-Quantity Purchase Command ('i want 2' on ₹23,000 item)");
+  const ctx9 = createMockContext({
+    activeProduct: {
+      id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+      title: "Shayanna",
+      listedPrice: 23000,
+      floorPrice: 22000,
+      offeredPrice: 23000,
+      inventoryAvailable: 7,
+      variantId: "var_shayanna_002",
+    },
+    sessionState: "NEGOTIATING",
+  });
+
+  const intent9 = await resolveIntent("i want 2", ctx9);
+  assert(
+    intent9.intent === "ACCEPT_OFFER" && intent9.requestedQuantity === 2,
+    "'i want 2' resolves to ACCEPT_OFFER with requestedQuantity = 2",
+    `Intent: ${intent9.intent}, Quantity: ${intent9.requestedQuantity}`
+  );
+
+  const comm9 = await executeCommerceAction(intent9, ctx9, "i want 2");
+  assert(
+    comm9.type === "PAYMENT_LINK_CREATED" && comm9.paymentAmount === 46000 && comm9.quantity === 2,
+    "Generates payment link for 2 units (2 x ₹23,000 = ₹46,000)",
+    `Amount: ${comm9.paymentAmount}, Quantity: ${comm9.quantity}`
+  );
+
+  const resp9 = await generateCustomerResponse("i want 2", intent9, comm9, ctx9);
+  assert(
+    resp9.text.includes("46,000") || resp9.text.includes("46000"),
+    "Response explicitly states total price of ₹46,000 for 2 units",
+    resp9.text
+  );
+
   console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);
   if (passed === total) {
     console.log("🎉 ALL REAL-WORLD CONVERSATIONAL SCENARIOS PASSED!");

@@ -111,6 +111,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     activeProduct: updatedActiveProduct,
     currentOffer: updatedOffer,
     buyerBudget: intent.extractedBudget || intent.requestedPrice || (intent.intent === "SMALL_TALK" ? undefined : state.buyerBudget),
+    requestedQuantity: intent.requestedQuantity || commerceResult.quantity || state.requestedQuantity,
     lastIntent: intent.intent,
     awaitingConfirmation: awaitingConf,
     sessionState: nextSessionState,

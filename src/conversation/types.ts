@@ -23,6 +23,7 @@ export interface ConversationIntent {
   referencedProductTitle?: string;
   referencedVariantId?: string;
   requestedPrice?: number;
+  requestedQuantity?: number;
   extractedBudget?: number;
   category?: string;
   brand?: string;
@@ -72,6 +73,7 @@ export interface CommerceResult {
     imageUrl?: string;
     sku?: string;
   };
+  quantity?: number;
   offer?: SellerOffer;
   mandate?: Mandate;
   paymentUrl?: string;
@@ -93,4 +95,5 @@ export interface GeneratedCustomerResponse {
   isPaymentLink?: boolean;
   paymentAmount?: number;
   paymentUrl?: string;
+  quantity?: number;
 }

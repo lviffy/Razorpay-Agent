@@ -33,6 +33,7 @@ export interface ConversationState {
     status: "PROPOSED" | "ACCEPTED" | "COUNTER" | "REJECTED";
   };
   buyerBudget?: number;
+  requestedQuantity?: number;
   lastIntent?: string;
   awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
   activeCategory?: string;
@@ -163,6 +164,7 @@ export async function updateConversationContext(
     activeProduct?: any;
     currentOffer?: any;
     buyerBudget?: number;
+    requestedQuantity?: number;
     lastIntent?: string;
     awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
     activeCategory?: string;
@@ -177,6 +179,7 @@ export async function updateConversationContext(
       activeProduct: patch.activeProduct !== undefined ? patch.activeProduct : existing.activeProduct,
       currentOffer: patch.currentOffer !== undefined ? patch.currentOffer : existing.currentOffer,
       buyerBudget: patch.buyerBudget !== undefined ? patch.buyerBudget : existing.buyerBudget,
+      requestedQuantity: patch.requestedQuantity !== undefined ? patch.requestedQuantity : existing.requestedQuantity,
       lastIntent: patch.lastIntent !== undefined ? patch.lastIntent : existing.lastIntent,
       awaitingConfirmation: patch.awaitingConfirmation !== undefined ? patch.awaitingConfirmation : existing.awaitingConfirmation,
       activeCategory: patch.activeCategory !== undefined ? patch.activeCategory : existing.activeCategory,

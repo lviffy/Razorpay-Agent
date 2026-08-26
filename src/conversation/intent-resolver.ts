@@ -66,6 +66,28 @@ export async function resolveIntent(
     };
   }
 
+  // ── 4.2 Check for quantity expression ("i want 2", "2 units", "qty 2", "2") ──
+  const qtyMatch = rawLower.match(/(?:i want|buy|need|order|take|give me|send|get)\s+(\d+)|(\d+)\s*(?:units|qty|quantity|pieces|items|pairs|nos)|^\s*(\d+)\s*$/i);
+  let extractedQuantity: number | undefined;
+  if (qtyMatch) {
+    const val = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
+    if (!isNaN(val) && val > 0 && val < 1000) {
+      extractedQuantity = val;
+    }
+  }
+
+  // If user specifies quantity when an active product is in context ("i want 2", "2")
+  if (extractedQuantity && state.activeProduct) {
+    return {
+      intent: "ACCEPT_OFFER",
+      referencedProductTitle: state.activeProduct.title,
+      referencedVariantId: state.activeProduct.variantId,
+      requestedQuantity: extractedQuantity,
+      confidence: 0.96,
+      isAffirmative: true,
+    };
+  }
+
   // ── 5. Context-driven Short Confirmations ("yes", "ok", "deal", "sure") ──
   const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|send payment link|i want this|take it|let's do it|go ahead|send it|please send)$/i.test(rawLower);
   const isNegative = /^(no|nah|nope|not interested|too expensive|too much|cancel|don't want|n)$/i.test(rawLower);
