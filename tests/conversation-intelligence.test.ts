@@ -429,7 +429,7 @@ async function runTestSuite() {
   const comm10 = await executeCommerceAction(intent10, ctx10, "i would like some discount");
   assert(
     comm10.type === "COUNTER_OFFER" &&
-    comm10.product?.title.toLowerCase().includes("rohan") &&
+    Boolean(comm10.product?.title.toLowerCase().includes("rohan")) &&
     comm10.product?.offeredPrice === 1080,
     "Calculates discount on Rohan Shirt (₹1080) and does not jump to Shayanna",
     `Product: ${comm10.product?.title}, Price: ${comm10.product?.offeredPrice}`
@@ -440,6 +440,82 @@ async function runTestSuite() {
     resp10.text.includes("1080") || resp10.text.includes("1,080") || resp10.text.includes("1100"),
     "Response communicates discounted price for Rohan",
     resp10.text
+  );
+
+  // ── SCENARIO 11: Multi-Turn Quantity Follow-Up ('I will get 2 rohann' -> 'yes')
+  console.log("\n▶️ Scenario 11: Multi-Turn Quantity Follow-Up ('I will get 2 rohann' -> 'yes')");
+  const ctx11A = createMockContext({
+    activeProduct: {
+      id: "prod_rohan_shirt",
+      title: "rohann",
+      listedPrice: 1200,
+      floorPrice: 1100,
+      offeredPrice: 1100,
+      inventoryAvailable: 10,
+      variantId: "var_rohan_001",
+    },
+    currentOffer: {
+      productTitle: "rohann",
+      variantId: "var_rohan_001",
+      offeredPrice: 1100,
+      listedPrice: 1200,
+      shippingFree: false,
+      status: "COUNTER",
+    },
+    sessionState: "NEGOTIATING",
+  });
+
+  const intent11A = await resolveIntent("I will get 2 rohann", ctx11A);
+  assert(
+    intent11A.intent === "ACCEPT_OFFER" && intent11A.requestedQuantity === 2,
+    "'I will get 2 rohann' resolves to ACCEPT_OFFER with quantity 2",
+    `Intent: ${intent11A.intent}, Qty: ${intent11A.requestedQuantity}`
+  );
+
+  // Step 2: Next turn user confirms with 'yes'
+  const ctx11B = createMockContext({
+    activeProduct: {
+      id: "prod_rohan_shirt",
+      title: "rohann",
+      listedPrice: 1200,
+      floorPrice: 1100,
+      offeredPrice: 1100,
+      inventoryAvailable: 10,
+      variantId: "var_rohan_001",
+    },
+    currentOffer: {
+      productTitle: "rohann",
+      variantId: "var_rohan_001",
+      offeredPrice: 1100,
+      listedPrice: 1200,
+      shippingFree: false,
+      status: "COUNTER",
+    },
+    requestedQuantity: 2,
+    sessionState: "NEGOTIATING",
+  });
+
+  const intent11B = await resolveIntent("yes", ctx11B);
+  assert(
+    intent11B.intent === "ACCEPT_OFFER" && intent11B.requestedQuantity === 2,
+    "'yes' retains requestedQuantity = 2 from previous turn",
+    `Intent: ${intent11B.intent}, Qty: ${intent11B.requestedQuantity}`
+  );
+
+  const comm11B = await executeCommerceAction(intent11B, ctx11B, "yes");
+  assert(
+    comm11B.type === "PAYMENT_LINK_CREATED" &&
+    comm11B.quantity === 2 &&
+    comm11B.paymentAmount === 2200,
+    "Generates payment link for 2 units at negotiated price of ₹1,100 (2 x ₹1,100 = ₹2,200)",
+    `Amount: ${comm11B.paymentAmount}, Quantity: ${comm11B.quantity}`
+  );
+
+  const resp11B = await generateCustomerResponse("yes", intent11B, comm11B, ctx11B);
+  assert(
+    resp11B.text.includes("2,200") || resp11B.text.includes("2200"),
+    "Response explicitly states ₹2,200 for 2 units",
+    resp11B.text
   );
 
   console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);

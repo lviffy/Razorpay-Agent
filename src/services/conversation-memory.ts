@@ -77,6 +77,7 @@ export async function loadConversation(
     activeProduct: ctx.activeProduct,
     currentOffer: ctx.currentOffer,
     buyerBudget: ctx.buyerBudget,
+    requestedQuantity: typeof ctx.requestedQuantity === "number" ? ctx.requestedQuantity : undefined,
     lastIntent: ctx.lastIntent,
     awaitingConfirmation: ctx.awaitingConfirmation,
     activeCategory: ctx.activeCategory,
@@ -95,6 +96,7 @@ export async function appendMessage(
     activeProduct?: any;
     currentOffer?: any;
     buyerBudget?: number;
+    requestedQuantity?: number;
     lastIntent?: string;
     awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
     activeCategory?: string;
@@ -123,6 +125,7 @@ export async function appendMessage(
       activeProduct: meta?.activeProduct !== undefined ? meta.activeProduct : existing.activeProduct,
       currentOffer: meta?.currentOffer !== undefined ? meta.currentOffer : existing.currentOffer,
       buyerBudget: meta?.buyerBudget !== undefined ? meta.buyerBudget : existing.buyerBudget,
+      requestedQuantity: meta?.requestedQuantity !== undefined ? meta.requestedQuantity : existing.requestedQuantity,
       lastIntent: meta?.lastIntent !== undefined ? meta.lastIntent : existing.lastIntent,
       awaitingConfirmation: meta?.awaitingConfirmation !== undefined ? meta.awaitingConfirmation : existing.awaitingConfirmation,
       activeCategory: meta?.activeCategory !== undefined ? meta.activeCategory : existing.activeCategory,

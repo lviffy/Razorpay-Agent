@@ -51,23 +51,8 @@ export async function resolveIntent(
     };
   }
 
-  // ── 4.1 Check direct product name match in catalog ────────────────────────
-  const exactProductMatch = availableProducts.find((p) => {
-    const tLower = p.title.toLowerCase().trim();
-    return tLower === rawLower || rawLower.includes(tLower) || (rawLower.length >= 3 && tLower.includes(rawLower));
-  });
-
-  if (exactProductMatch && !isPhotoRequest) {
-    return {
-      intent: "PRODUCT_SEARCH",
-      referencedProductTitle: exactProductMatch.title,
-      referencedVariantId: exactProductMatch.shopifyVariantId,
-      confidence: 0.95,
-    };
-  }
-
-  // ── 4.2 Check for quantity expression ("i want 2", "2 units", "qty 2", "2") ──
-  const qtyMatch = rawLower.match(/(?:i want|buy|need|order|take|give me|send|get)\s+(\d+)|(\d+)\s*(?:units|qty|quantity|pieces|items|pairs|nos)|^\s*(\d+)\s*$/i);
+  // ── 4.1 Check for quantity expression ("i will get 2 rohann", "i want 2", "2 units", "buy 2", "qty 2", "2") ──
+  const qtyMatch = rawLower.match(/(?:i (?:will )?(?:get|take|want|buy|need|order)|buy|need|order|take|give me|send|get)\s+(\d+)|(\d+)\s*(?:units|qty|quantity|pieces|items|pairs|nos)|^\s*(\d+)\s*$/i);
   let extractedQuantity: number | undefined;
   if (qtyMatch) {
     const val = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
@@ -76,15 +61,44 @@ export async function resolveIntent(
     }
   }
 
-  // If user specifies quantity when an active product is in context ("i want 2", "2")
-  if (extractedQuantity && state.activeProduct) {
+  // Check direct product name match in catalog
+  const exactProductMatch = availableProducts.find((p) => {
+    const tLower = p.title.toLowerCase().trim();
+    return tLower === rawLower || rawLower.includes(tLower) || (rawLower.length >= 3 && tLower.includes(rawLower));
+  });
+
+  // If user specifies quantity with product name or on active product ("i will get 2 rohann", "i want 2")
+  if (extractedQuantity) {
+    const targetProd =
+      exactProductMatch ||
+      (state.activeProduct
+        ? availableProducts.find(
+            (p) =>
+              p.shopifyVariantId === state.activeProduct?.variantId ||
+              p.title.toLowerCase().trim() === state.activeProduct?.title.toLowerCase().trim()
+          )
+        : undefined) ||
+      availableProducts[0];
+
+    if (targetProd) {
+      return {
+        intent: "ACCEPT_OFFER",
+        referencedProductTitle: targetProd.title,
+        referencedVariantId: targetProd.shopifyVariantId,
+        requestedQuantity: extractedQuantity,
+        confidence: 0.96,
+        isAffirmative: true,
+      };
+    }
+  }
+
+  // Pure product query without purchase quantity
+  if (exactProductMatch && !isPhotoRequest) {
     return {
-      intent: "ACCEPT_OFFER",
-      referencedProductTitle: state.activeProduct.title,
-      referencedVariantId: state.activeProduct.variantId,
-      requestedQuantity: extractedQuantity,
-      confidence: 0.96,
-      isAffirmative: true,
+      intent: "PRODUCT_SEARCH",
+      referencedProductTitle: exactProductMatch.title,
+      referencedVariantId: exactProductMatch.shopifyVariantId,
+      confidence: 0.95,
     };
   }
 
@@ -98,6 +112,18 @@ export async function resolveIntent(
     return {
       intent: "CATALOG_BROWSE",
       confidence: 0.95,
+    };
+  }
+
+  // If affirmative and an active product exists in context ("yes", "proceed")
+  if (isAffirmative && state.activeProduct) {
+    return {
+      intent: "ACCEPT_OFFER",
+      referencedProductTitle: state.activeProduct.title,
+      referencedVariantId: state.activeProduct.variantId,
+      requestedQuantity: state.requestedQuantity || 1,
+      confidence: 0.95,
+      isAffirmative: true,
     };
   }
 
@@ -247,6 +273,7 @@ function fallbackIntentResolution(
       intent: "ACCEPT_OFFER",
       referencedProductTitle: state.activeProduct.title,
       referencedVariantId: state.activeProduct.variantId,
+      requestedQuantity: state.requestedQuantity || 1,
       confidence: 0.95,
       isAffirmative: true,
     };

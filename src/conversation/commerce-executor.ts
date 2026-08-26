@@ -509,12 +509,17 @@ function resolveTargetProduct(
 
 function getProductKnownPrice(targetProduct: Product, state: ConversationState): number {
   const isSameProduct =
-    state.activeProduct &&
-    (state.activeProduct.id === targetProduct.id ||
-     state.activeProduct.variantId === targetProduct.shopifyVariantId ||
-     state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim() ||
-     targetProduct.title.toLowerCase().trim().includes(state.activeProduct.title.toLowerCase().trim()) ||
-     state.activeProduct.title.toLowerCase().trim().includes(targetProduct.title.toLowerCase().trim()));
+    (state.activeProduct &&
+      (state.activeProduct.id === targetProduct.id ||
+       state.activeProduct.variantId === targetProduct.shopifyVariantId ||
+       state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim() ||
+       targetProduct.title.toLowerCase().trim().includes(state.activeProduct.title.toLowerCase().trim()) ||
+       state.activeProduct.title.toLowerCase().trim().includes(targetProduct.title.toLowerCase().trim()))) ||
+    (state.currentOffer &&
+      (state.currentOffer.variantId === targetProduct.shopifyVariantId ||
+       state.currentOffer.productTitle.toLowerCase().trim() === targetProduct.title.toLowerCase().trim() ||
+       targetProduct.title.toLowerCase().trim().includes(state.currentOffer.productTitle.toLowerCase().trim()) ||
+       state.currentOffer.productTitle.toLowerCase().trim().includes(targetProduct.title.toLowerCase().trim())));
 
   if (isSameProduct) {
     return state.currentOffer?.offeredPrice || state.activeProduct?.offeredPrice || targetProduct.listedPrice;
