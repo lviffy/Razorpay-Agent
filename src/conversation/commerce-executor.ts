@@ -259,11 +259,11 @@ export async function executeCommerceAction(
       const resetMin = Math.ceil((velocity.resetInSeconds ?? 300) / 60);
       return {
         type: "INFO_ONLY",
-        infoDetails: `⚠️ Transaction limit reached (max 3 per 5 minutes). Please try again in ~${resetMin} minutes.`,
+        infoDetails: `⚠️ Transaction rate limit reached. Please try again in ~${resetMin} minutes.`,
       };
     }
 
-    // Acquire Redis Lock
+    // Acquire concurrency lock for critical section
     const lockAcquired = await acquireLock(store.id, targetProduct.shopifyVariantId);
     if (!lockAcquired) {
       return {
@@ -272,19 +272,19 @@ export async function executeCommerceAction(
       };
     }
 
-    // Reserve inventory for the requested quantity
-    await setInventoryState(targetProduct.id, "RESERVED", {
-      reservedDelta: quantity,
-      availableDelta: -quantity,
-      reservationExpiresAt: new Date(Date.now() + 120_000),
-    });
-
+    let rzpOrder: { id: string };
     const x402TxId = issueTransactionId();
     const orderRef = generateOrderId();
 
-    // Create Razorpay Order
-    let rzpOrder: { id: string };
     try {
+      // Reserve inventory for the requested quantity
+      await setInventoryState(targetProduct.id, "RESERVED", {
+        reservedDelta: quantity,
+        availableDelta: -quantity,
+        reservationExpiresAt: new Date(Date.now() + 120_000),
+      });
+
+      // Create Razorpay Order
       rzpOrder = (await createOrder({
         amountInPaise: rupeesToPaise(totalAmount),
         receipt: x402TxId,
@@ -296,8 +296,10 @@ export async function executeCommerceAction(
           quantity: String(quantity),
         },
       })) as unknown as { id: string };
+
+      // Transition inventory to PAYMENT_PENDING
+      await setInventoryState(targetProduct.id, "PAYMENT_PENDING");
     } catch (err) {
-      await releaseLock(store.id, targetProduct.shopifyVariantId);
       await setInventoryState(targetProduct.id, "AVAILABLE", {
         reservedDelta: -quantity,
         availableDelta: quantity,
@@ -307,10 +309,10 @@ export async function executeCommerceAction(
         type: "INFO_ONLY",
         errorMessage: "Failed to create payment order. Please try again in a moment.",
       };
+    } finally {
+      // Always release concurrency mutex so subsequent turns by the buyer succeed immediately
+      await releaseLock(store.id, targetProduct.shopifyVariantId);
     }
-
-    // Transition inventory to PAYMENT_PENDING
-    await setInventoryState(targetProduct.id, "PAYMENT_PENDING");
 
     // Save order in PostgreSQL
     const itemTitleWithQty = quantity > 1 ? `${quantity}x ${targetProduct.title}` : targetProduct.title;

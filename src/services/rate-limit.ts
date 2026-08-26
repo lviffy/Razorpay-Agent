@@ -8,7 +8,7 @@ import { redis } from "./redis.ts";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const WINDOW_SECONDS = 300; // 5-minute rolling window
-const MAX_ATTEMPTS = 3;     // max transactions per window
+const MAX_ATTEMPTS = 50;    // max transactions per window for testing/demo robustness
 
 // In-memory fallback when Redis is down
 const memStore = new Map<string, { count: number; resetAt: number }>();

@@ -76,38 +76,39 @@ router.post("/reserve", async (req: Request, res: Response) => {
       });
     }
 
-    // 3. Update inventory state: AVAILABLE -> RESERVED
-    await setInventoryState(productRow.id, "RESERVED", {
-      reservedDelta: 1,
-      availableDelta: -1,
-      reservationExpiresAt: new Date(Date.now() + 120_000),
-    });
-
-    // 4. Generate x402 transaction reference & Razorpay order
+    // Generate x402 transaction reference & Razorpay order
     const x402TxId = issueTransactionId();
     const orderId = generateOrderId();
     const amountInPaise = rupeesToPaise(numericAgreedPrice);
 
     let rzpOrder: { id: string };
     try {
+      // 3. Update inventory state: AVAILABLE -> RESERVED
+      await setInventoryState(productRow.id, "RESERVED", {
+        reservedDelta: 1,
+        availableDelta: -1,
+        reservationExpiresAt: new Date(Date.now() + 120_000),
+      });
+
       rzpOrder = (await createOrder({
         amountInPaise,
         receipt: x402TxId,
         sessionId,
       })) as unknown as { id: string };
+
+      // 5. Update inventory: RESERVED -> PAYMENT_PENDING
+      await setInventoryState(productRow.id, "PAYMENT_PENDING");
     } catch (rzpErr) {
       // Rollback lock and inventory on Razorpay failure
-      await releaseLock(effectiveStoreId, effectiveVariantId);
       await setInventoryState(productRow.id, "AVAILABLE", {
         reservedDelta: -1,
         availableDelta: 1,
         reservationExpiresAt: null,
       });
       return res.status(502).json({ error: "Razorpay order creation failed", detail: String(rzpErr) });
+    } finally {
+      await releaseLock(effectiveStoreId, effectiveVariantId);
     }
-
-    // 5. Update inventory: RESERVED -> PAYMENT_PENDING
-    await setInventoryState(productRow.id, "PAYMENT_PENDING");
 
     // 6. Record order in Neon DB
     await db.query(
