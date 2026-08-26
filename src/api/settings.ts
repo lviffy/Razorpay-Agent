@@ -198,6 +198,7 @@ router.get("/agent", async (req: Request, res: Response) => {
       autoNegotiationEnabled: s.autoNegotiationEnabled ?? true,
       humanEscalationEnabled: s.humanEscalationEnabled ?? true,
       escalationThresholdAmount: s.escalationThresholdAmount || 5000,
+      bundleUpsellEnabled: s.bundleUpsellEnabled ?? true,
     });
   } catch (err) {
     console.error("Get agent settings error:", err);
@@ -216,6 +217,7 @@ router.put("/agent", async (req: Request, res: Response) => {
       autoNegotiationEnabled,
       humanEscalationEnabled,
       escalationThresholdAmount,
+      bundleUpsellEnabled,
     } = req.body;
 
     const agentSettings = {
@@ -225,6 +227,7 @@ router.put("/agent", async (req: Request, res: Response) => {
       autoNegotiationEnabled: autoNegotiationEnabled ?? true,
       humanEscalationEnabled: humanEscalationEnabled ?? true,
       escalationThresholdAmount: escalationThresholdAmount || 5000,
+      bundleUpsellEnabled: bundleUpsellEnabled ?? true,
     };
 
     if (storeId) {

@@ -120,8 +120,7 @@ export default function AuditExplorerPage() {
       (r.razorpayPaymentId && r.razorpayPaymentId.toLowerCase().includes(q)) ||
       (r.orderId && r.orderId.toLowerCase().includes(q)) ||
       (r.whatsappMessageId && r.whatsappMessageId.toLowerCase().includes(q)) ||
-      (r.conversationId && r.conversationId.toLowerCase().includes(q)) ||
-      r.eventType.toLowerCase().includes(q)
+      (r.eventType || (r as any).type || "").toLowerCase().includes(q)
     );
   });
 

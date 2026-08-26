@@ -52,14 +52,29 @@ router.get("/", async (req: Request, res: Response) => {
     const limit = parseInt((req.query.limit as string) || "20", 10);
     const storeId = await getStoreIdFromReq(req);
 
-    const { rows } = await db.query(
-      `SELECT id, event_type, whatsapp_message_id, conversation_id, x402_transaction_id, razorpay_payment_id, order_id, payload, event_checksum, timestamp
-       FROM audit_ledger
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
-       ORDER BY id DESC
-       LIMIT $2`,
-      [storeId, limit]
-    );
+    const search = req.query.search as string | undefined;
+    let query = `
+      SELECT id, event_type, whatsapp_message_id, conversation_id, x402_transaction_id, razorpay_payment_id, order_id, payload, event_checksum, timestamp
+      FROM audit_ledger
+      WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+    `;
+    const params: any[] = [storeId];
+
+    if (search && search.trim()) {
+      params.push(`%${search.trim().toLowerCase()}%`);
+      query += ` AND (
+        LOWER(event_type) LIKE $${params.length} OR
+        LOWER(COALESCE(x402_transaction_id, '')) LIKE $${params.length} OR
+        LOWER(COALESCE(razorpay_payment_id, '')) LIKE $${params.length} OR
+        LOWER(COALESCE(order_id, '')) LIKE $${params.length} OR
+        LOWER(COALESCE(whatsapp_message_id, '')) LIKE $${params.length}
+      )`;
+    }
+
+    params.push(limit);
+    query += ` ORDER BY id DESC LIMIT $${params.length}`;
+
+    const { rows } = await db.query(query, params);
 
     const activity = rows.map((a) => {
       const p = typeof a.payload === "string" ? JSON.parse(a.payload) : a.payload || {};
@@ -88,8 +103,16 @@ router.get("/", async (req: Request, res: Response) => {
       return {
         id: `act_${a.id}`,
         type: a.event_type,
+        eventType: a.event_type,
         title,
         description: desc,
+        whatsappMessageId: a.whatsapp_message_id || undefined,
+        conversationId: a.conversation_id || undefined,
+        x402TransactionId: a.x402_transaction_id || `x402_${a.id}`,
+        razorpayPaymentId: a.razorpay_payment_id || undefined,
+        orderId: a.order_id || undefined,
+        payload: p,
+        checksum: a.event_checksum || `chk_${a.id}`,
         timestamp: a.timestamp ? new Date(a.timestamp).toISOString() : new Date().toISOString(),
         metadata: {
           ...p,

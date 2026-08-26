@@ -358,7 +358,7 @@ export const api = {
         `/products/${productId}/toggle-ai`,
         {
           method: "PATCH",
-          body: JSON.stringify({ enabled }),
+          body: JSON.stringify({ isAiEnabled: enabled, enabled, aiSellingEnabled: enabled }),
         },
         null
       );
@@ -682,6 +682,7 @@ export const api = {
 
   audit: {
     search: async (term: string) => {
+      const qs = term && term.trim() ? `&search=${encodeURIComponent(term.trim())}` : "";
       return fetchJson<Array<{
         id: string;
         eventType: string;
@@ -694,7 +695,7 @@ export const api = {
         checksum: string;
         timestamp: string;
       }>>(
-        `/activity?limit=50`,
+        `/activity?limit=50${qs}`,
         {},
         []
       );

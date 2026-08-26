@@ -338,18 +338,214 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/v1/products/:id — Get single product by ID
+router.get("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query(
+      `SELECT p.*, s.name as store_name
+       FROM products p
+       LEFT JOIN stores s ON p.store_id = s.id
+       WHERE p.id = $1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const r = rows[0];
+    const listedPrice = parseFloat(r.listed_price);
+    const floorPrice = parseFloat(r.floor_price);
+
+    return res.json({
+      id: r.id,
+      storeId: r.store_id,
+      storeName: r.store_name,
+      title: r.title,
+      sku: r.sku,
+      price: listedPrice,
+      minPrice: floorPrice,
+      inventory: parseInt(r.inventory_available, 10),
+      inventoryReserved: parseInt(r.inventory_reserved, 10),
+      inventoryState: r.inventory_state,
+      provider: r.shopify_product_id && !r.shopify_product_id.startsWith("mock-prod") && !r.shopify_product_id.startsWith("prod_") ? "SHOPIFY" : "ZAPAI",
+      aiSellingEnabled: r.is_ai_enabled ?? true,
+      maxDiscountPercent: listedPrice > 0 ? Math.round(((listedPrice - floorPrice) / listedPrice) * 100) : 12,
+      description: r.description || "",
+      category: r.category || "General",
+      imageUrl: r.image_url,
+      createdAt: r.created_at ? new Date(r.created_at).toISOString() : new Date().toISOString(),
+      updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : new Date().toISOString(),
+    });
+  } catch (err: any) {
+    console.error("Get product error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to fetch product" });
+  }
+});
+
 // PATCH /api/v1/products/:id/toggle-ai — Toggle AI agent selling for this SKU
 router.patch("/:id/toggle-ai", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { isAiEnabled } = req.body;
+    const targetState =
+      req.body.isAiEnabled ??
+      req.body.enabled ??
+      req.body.aiSellingEnabled ??
+      req.body.is_ai_enabled;
+
+    let query: string;
+    let params: any[];
+
+    if (targetState !== undefined) {
+      query = `UPDATE products
+               SET is_ai_enabled = $1, updated_at = NOW()
+               WHERE id = $2
+               RETURNING id, is_ai_enabled, title, listed_price, floor_price, sku, inventory_available`;
+      params = [Boolean(targetState), id];
+    } else {
+      query = `UPDATE products
+               SET is_ai_enabled = NOT COALESCE(is_ai_enabled, true), updated_at = NOW()
+               WHERE id = $1
+               RETURNING id, is_ai_enabled, title, listed_price, floor_price, sku, inventory_available`;
+      params = [id];
+    }
+
+    const { rows } = await db.query(query, params);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const r = rows[0];
+    const listedPrice = parseFloat(r.listed_price);
+    const floorPrice = parseFloat(r.floor_price);
+
+    return res.json({
+      success: true,
+      id: r.id,
+      isAiEnabled: r.is_ai_enabled,
+      aiSellingEnabled: r.is_ai_enabled,
+      title: r.title,
+      sku: r.sku,
+      price: listedPrice,
+      minPrice: floorPrice,
+      inventory: parseInt(r.inventory_available, 10),
+    });
+  } catch (err: any) {
+    console.error("Toggle AI error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to toggle AI status" });
+  }
+});
+
+// PATCH /api/v1/products/:id — Update product details
+router.patch("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      price,
+      minPrice,
+      inventory,
+      category,
+      description,
+      imageUrl,
+      isAiEnabled,
+      aiSellingEnabled,
+    } = req.body;
+
+    const { rows: existingRows } = await db.query(
+      "SELECT * FROM products WHERE id = $1 LIMIT 1",
+      [id]
+    );
+
+    if (existingRows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const prev = existingRows[0];
+    const newTitle = title !== undefined ? title : prev.title;
+    const newPrice = price !== undefined ? Number(price) : parseFloat(prev.listed_price);
+    const newFloor = minPrice !== undefined ? Number(minPrice) : (price !== undefined ? Math.round(newPrice * 0.88) : parseFloat(prev.floor_price));
+    const newStock = inventory !== undefined ? Number(inventory) : parseInt(prev.inventory_available, 10);
+    const newCategory = category !== undefined ? category : (prev.category || "General");
+    const newDesc = description !== undefined ? description : (prev.description || "");
+    const newImage = imageUrl !== undefined ? imageUrl : prev.image_url;
+    const newAi = (isAiEnabled ?? aiSellingEnabled) !== undefined ? Boolean(isAiEnabled ?? aiSellingEnabled) : prev.is_ai_enabled;
+
+    const agentSchema = {
+      variantId: prev.shopify_variant_id || `var_${prev.id}`,
+      title: newTitle,
+      sku: prev.sku,
+      listedPrice: newPrice,
+      floorPrice: newFloor,
+      inventoryAvailable: newStock,
+      attributes: {
+        category: newCategory,
+        description: newDesc,
+      },
+    };
 
     const { rows } = await db.query(
       `UPDATE products
-       SET is_ai_enabled = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING id, is_ai_enabled, title`,
-      [Boolean(isAiEnabled), id]
+       SET
+         title = $1,
+         listed_price = $2,
+         floor_price = $3,
+         inventory_available = $4,
+         category = $5,
+         description = $6,
+         image_url = $7,
+         is_ai_enabled = $8,
+         agent_schema = $9,
+         updated_at = NOW()
+       WHERE id = $10
+       RETURNING *`,
+      [
+        newTitle,
+        newPrice,
+        newFloor,
+        newStock,
+        newCategory,
+        newDesc,
+        newImage,
+        newAi,
+        JSON.stringify(agentSchema),
+        id,
+      ]
+    );
+
+    const r = rows[0];
+    return res.json({
+      id: r.id,
+      storeId: r.store_id,
+      title: r.title,
+      sku: r.sku,
+      price: parseFloat(r.listed_price),
+      minPrice: parseFloat(r.floor_price),
+      inventory: parseInt(r.inventory_available, 10),
+      provider: r.shopify_product_id && !r.shopify_product_id.startsWith("mock-prod") && !r.shopify_product_id.startsWith("prod_") ? "SHOPIFY" : "ZAPAI",
+      aiSellingEnabled: r.is_ai_enabled,
+      isAiEnabled: r.is_ai_enabled,
+      maxDiscountPercent: Math.round(((newPrice - newFloor) / newPrice) * 100),
+      description: r.description,
+      category: r.category,
+      imageUrl: r.image_url,
+      updatedAt: new Date(r.updated_at).toISOString(),
+    });
+  } catch (err: any) {
+    console.error("Update product error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to update product" });
+  }
+});
+
+// DELETE /api/v1/products/:id — Delete a product
+router.delete("/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await db.query(
+      "DELETE FROM products WHERE id = $1 RETURNING id, title",
+      [id]
     );
 
     if (rows.length === 0) {
@@ -358,13 +554,12 @@ router.patch("/:id/toggle-ai", async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
+      message: `Product "${rows[0].title}" deleted successfully`,
       id: rows[0].id,
-      isAiEnabled: rows[0].is_ai_enabled,
-      title: rows[0].title,
     });
-  } catch (err) {
-    console.error("Toggle AI error:", err);
-    return res.status(500).json({ error: "Failed to toggle AI status" });
+  } catch (err: any) {
+    console.error("Delete product error:", err);
+    return res.status(500).json({ error: err?.message || "Failed to delete product" });
   }
 });
 

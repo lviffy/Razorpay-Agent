@@ -35,8 +35,17 @@ export default function ProductsPage() {
   };
 
   const handleToggleAI = async (id: string, current: boolean) => {
-    await api.products.toggleAI(id, !current);
-    loadProducts();
+    // Optimistic UI state update
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, aiSellingEnabled: !current } : p))
+    );
+    try {
+      await api.products.toggleAI(id, !current);
+    } catch (err) {
+      console.error("Toggle AI failed:", err);
+    } finally {
+      loadProducts();
+    }
   };
 
   const handleSaveProduct = async (productData: any) => {
