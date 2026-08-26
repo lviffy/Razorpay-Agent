@@ -342,17 +342,39 @@ async function handleOpenEndedMessage(to: string, userMessage: string): Promise<
     );
     const store = storeRows[0];
 
-    // Fetch products for context
+    // Fetch products for context & image check
     let productContext = "";
+    let matchingImageProduct: any = null;
     if (store) {
       const { rows: products } = await db.query(
-        "SELECT title, sku, listed_price, inventory_available FROM products WHERE store_id = $1 AND is_ai_enabled = true LIMIT 10",
+        "SELECT title, sku, listed_price, inventory_available, image_url FROM products WHERE store_id = $1 AND is_ai_enabled = true LIMIT 10",
         [store.id]
       );
       if (products.length > 0) {
         productContext = `\n\nCATALOG (top items):\n` + products
           .map((p: any) => `- ${p.title}: ₹${p.listed_price} (${p.inventory_available} in stock)`)
           .join("\n");
+
+        // Check if user specifically asked for a photo/picture
+        const isPhotoQuery = /picture|photo|image|pic|look like|show me/i.test(userMessage);
+        if (isPhotoQuery) {
+          const uLower = userMessage.toLowerCase();
+          matchingImageProduct = products.find((p: any) =>
+            uLower.includes(p.title.toLowerCase()) ||
+            (p.sku && uLower.includes(p.sku.toLowerCase()))
+          ) || products[0];
+        }
+      }
+    }
+
+    // If user asked for an image and product has a valid public HTTP image URL
+    if (matchingImageProduct && matchingImageProduct.image_url && matchingImageProduct.image_url.startsWith("http") && !matchingImageProduct.image_url.startsWith("blob:")) {
+      try {
+        await sendImage(to, matchingImageProduct.image_url, `Here is ${matchingImageProduct.title} (₹${matchingImageProduct.listed_price}) 📸`);
+        await sendText(to, `What do you think? Tell me your budget if you'd like to place an order!`);
+        return;
+      } catch (imgErr) {
+        console.warn("⚠️ Failed to send image via WhatsApp:", imgErr);
       }
     }
 
