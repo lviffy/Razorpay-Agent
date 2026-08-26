@@ -42,12 +42,27 @@ export async function resolveIntent(
   // ── 3. Check for Photo / Picture Request ───────────────────────────────────
   const isPhotoRequest = /picture|photo|image|pic|look like|show me.*pic|photos|send.*pic/i.test(rawLower);
 
-  // ── 4. Check for Catalog Browsing ─────────────────────────────────────────
-  const isCatalogAsk = /catalog|what do you have|what products|show products|all products|list products|menu|collection|browse|what do you sell/i.test(rawLower);
+  // ── 4. Check for Catalog Browsing & Store Description ───────────────────────
+  const isCatalogAsk = /catalog|what do (you|u) sell|what (do|does) (this|the|your|u|you|mvpfast) sell|what products|show products|all products|list products|menu|collection|browse|what (items|goods) do (you|u) have|what do (you|u) have/i.test(rawLower);
   if (isCatalogAsk) {
     return {
       intent: "CATALOG_BROWSE",
       confidence: 0.98,
+    };
+  }
+
+  // ── 4.1 Check direct product name match in catalog ────────────────────────
+  const exactProductMatch = availableProducts.find((p) => {
+    const tLower = p.title.toLowerCase().trim();
+    return tLower === rawLower || rawLower.includes(tLower) || (rawLower.length >= 3 && tLower.includes(rawLower));
+  });
+
+  if (exactProductMatch && !isPhotoRequest) {
+    return {
+      intent: "PRODUCT_SEARCH",
+      referencedProductTitle: exactProductMatch.title,
+      referencedVariantId: exactProductMatch.shopifyVariantId,
+      confidence: 0.95,
     };
   }
 

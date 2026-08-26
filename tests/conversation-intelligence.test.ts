@@ -270,6 +270,46 @@ async function runTestSuite() {
     resp5.text
   );
 
+  // ── SCENARIO 6: Store Query ('what do u sell at MVPFAST?') ─────────────────
+  console.log("\n▶️ Scenario 6: Store Inventory Query ('what do u sell at MVPFAST?')");
+  const ctx6 = createMockContext();
+  const intent6 = await resolveIntent("what do u sell at MVPFAST?", ctx6);
+  assert(
+    intent6.intent === "CATALOG_BROWSE",
+    "'what do u sell at MVPFAST?' resolves to CATALOG_BROWSE",
+    `Intent: ${intent6.intent}`
+  );
+
+  const comm6 = await executeCommerceAction(intent6, ctx6, "what do u sell at MVPFAST?");
+  const resp6 = await generateCustomerResponse("what do u sell at MVPFAST?", intent6, comm6, ctx6);
+  assert(
+    !resp6.text.toLowerCase().includes("milk") &&
+    !resp6.text.toLowerCase().includes("grocery") &&
+    !resp6.text.toLowerCase().includes("veggies") &&
+    resp6.text.includes("Rohan Shirt"),
+    "Does not hallucinate grocery/milk and shows real items like Rohan Shirt",
+    resp6.text
+  );
+
+  // ── SCENARIO 7: Direct Single-Word Product Query ('rohan') ──────────────────
+  console.log("\n▶️ Scenario 7: Direct Single-Word Product Query ('rohan')");
+  const ctx7 = createMockContext();
+  const intent7 = await resolveIntent("rohan", ctx7);
+  assert(
+    intent7.intent === "PRODUCT_SEARCH" && Boolean(intent7.referencedProductTitle?.toLowerCase().includes("rohan")),
+    "'rohan' resolves directly to product search for Rohan Shirt",
+    `Intent: ${intent7.intent}, Referenced: ${intent7.referencedProductTitle}`
+  );
+
+  const comm7 = await executeCommerceAction(intent7, ctx7, "rohan");
+  const resp7 = await generateCustomerResponse("rohan", intent7, comm7, ctx7);
+  assert(
+    !resp7.text.toLowerCase().includes("what type of product are you looking for") &&
+    resp7.text.includes("1200") || resp7.text.includes("1,200") || resp7.text.includes("Rohan"),
+    "Responds with Rohan product details instead of generic clarification",
+    resp7.text
+  );
+
   console.log(`\n🏁 ================= TEST RESULTS: ${passed}/${total} PASSED =================\n`);
   if (passed === total) {
     console.log("🎉 ALL REAL-WORLD CONVERSATIONAL SCENARIOS PASSED!");

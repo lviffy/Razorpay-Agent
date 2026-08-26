@@ -29,7 +29,9 @@ export async function generateCustomerResponse(
       .join("\n");
 
     return {
-      text: `Here are some of our featured items right now:\n\n${listText}\n\nLet me know which one you'd like to check out!`,
+      text: `Here are our featured items at ${store.name}:\n\n${listText}\n\nLet me know which one you'd like to check out!`,
+      mediaUrl: commerceResult.mediaUrlToSend,
+      mediaCaption: commerceResult.mediaCaption,
     };
   }
 
@@ -83,6 +85,7 @@ export async function generateCustomerResponse(
 
   // ── 2. Natural Multi-Turn Negotiation / Inquiry Response via LLM ──────────
   const prompt = buildResponsePrompt(userMessage, intent, commerceResult, context);
+  const catalogList = context.availableProducts.slice(0, 10).map((p) => `- ${p.title} (Listed ₹${p.listedPrice})`).join("\n");
 
   const groq = getGroqClient();
   if (groq) {
@@ -95,17 +98,23 @@ export async function generateCustomerResponse(
             {
               role: "system",
               content: `You are ZapAI, a helpful, natural shopping assistant on WhatsApp for ${store.name} in ${store.city}.
-GUIDELINES:
+
+CURRENT STORE CATALOG:
+${catalogList || "(No items listed)"}
+
+CRITICAL RULES:
+- ONLY talk about items and categories actually in the catalog above.
+- NEVER hallucinate or invent groceries, dairy, vegetables, milk, or fake items.
 - Reply in 1 to 2 short sentences.
 - Speak naturally and warmly in Indian English.
 - Use strictly Indian Rupee symbol (₹). Never use dollars ($) or USD.
 - Use 1 emoji maximum.
-- NEVER narrate backend execution (do not say "searching database", "locking inventory", "calculating margin", "mandate verified").
+- NEVER narrate backend execution (do not say "searching database", "locking inventory", "calculating margin").
 - Avoid repetitive template endings. Speak like a real human shop assistant.`,
             },
             { role: "user", content: prompt },
           ],
-          temperature: 0.6,
+          temperature: 0.5,
           max_tokens: 512,
         });
 

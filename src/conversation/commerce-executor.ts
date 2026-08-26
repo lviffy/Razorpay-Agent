@@ -38,9 +38,30 @@ export async function executeCommerceAction(
       inStock: p.inventoryAvailable > 0,
     }));
 
+    // Find top featured product with a valid public image URL
+    const featuredProductWithImage = availableProducts.find(
+      (p) => p.imageUrl && p.imageUrl.startsWith("http") && !p.imageUrl.startsWith("blob:")
+    ) || availableProducts[0];
+
     return {
       type: "CATALOG_LIST",
       catalogItems,
+      product: featuredProductWithImage
+        ? {
+            id: featuredProductWithImage.id,
+            title: featuredProductWithImage.title,
+            variantId: featuredProductWithImage.shopifyVariantId,
+            listedPrice: featuredProductWithImage.listedPrice,
+            floorPrice: featuredProductWithImage.floorPrice,
+            offeredPrice: featuredProductWithImage.listedPrice,
+            imageUrl: featuredProductWithImage.imageUrl,
+            sku: featuredProductWithImage.sku,
+          }
+        : undefined,
+      mediaUrlToSend: featuredProductWithImage?.imageUrl,
+      mediaCaption: featuredProductWithImage
+        ? `Featured: ${featuredProductWithImage.title} (₹${featuredProductWithImage.listedPrice.toLocaleString("en-IN")}) 📸`
+        : undefined,
     };
   }
 

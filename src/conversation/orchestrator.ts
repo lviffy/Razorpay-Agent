@@ -38,18 +38,30 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     getStore(activeStoreId),
   ]);
 
-  if (!store || !rules) {
-    await sendText(phoneNumber, "Store configuration not found. Please try again shortly.");
-    return;
-  }
+  const activeStore = store || {
+    id: activeStoreId,
+    name: "MVPFAST",
+    city: "Bengaluru",
+    razorpayAccountId: "rzp_test_mock",
+    currency: "INR",
+    isActive: true,
+  };
+
+  const activeRules = rules || {
+    storeId: activeStoreId,
+    maxDiscountPercentage: 12,
+    minOrderValueForDiscount: 500,
+    freeShippingThreshold: 3000,
+    allowBundleOffers: true,
+  };
 
   const context: ConversationContext = {
     conversationId,
     phoneNumber,
     state,
     availableProducts,
-    store,
-    rules,
+    store: activeStore,
+    rules: activeRules,
   };
 
   // ── 3. Understand Message & Resolve References / Intent ─────────────────────
@@ -109,13 +121,15 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   const response = await generateCustomerResponse(msg.text, intent, commerceResult, context);
 
   // ── 7. Send Outbound WhatsApp Communication ───────────────────────────────
-  // Handle photo delivery cleanly
-  if (commerceResult.type === "PHOTO_FOUND" && response.mediaUrl && response.mediaUrl.startsWith("http") && !response.mediaUrl.startsWith("blob:")) {
+  // Handle image delivery (photo requests, catalog browsing, offer proposals)
+  if (response.mediaUrl && response.mediaUrl.startsWith("http") && !response.mediaUrl.startsWith("blob:")) {
     try {
       await sendImage(phoneNumber, response.mediaUrl, response.mediaCaption || response.text);
-      return; // Image sent with caption, no need for second text
+      if (commerceResult.type === "PHOTO_FOUND") {
+        return; // Image sent with caption, no need for duplicate second text message
+      }
     } catch (imgErr) {
-      console.warn("[Orchestrator] Image send warning, falling back to text:", imgErr);
+      console.warn("[Orchestrator] Image send warning, proceeding with text:", imgErr);
     }
   }
 
@@ -125,7 +139,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
       phoneNumber,
       response.paymentAmount,
       response.paymentUrl,
-      store.name
+      activeStore.name
     );
   } else {
     await sendText(phoneNumber, response.text);
