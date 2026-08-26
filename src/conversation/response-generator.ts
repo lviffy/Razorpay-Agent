@@ -151,12 +151,29 @@ function buildResponsePrompt(
   commerce: CommerceResult,
   context: ConversationContext
 ): string {
-  const { state, store } = context;
+  const { state, store, availableProducts } = context;
 
-  const exactStock = commerce.product?.inventoryAvailable ?? state.activeProduct?.inventoryAvailable ?? 1;
+  // Resolve target product from commerceResult or intent or state
+  const targetTitle = commerce.product?.title || intent.referencedProductTitle || state.activeProduct?.title;
+  const matchedProd = targetTitle
+    ? availableProducts.find(
+        (p) =>
+          p.title.toLowerCase().trim() === targetTitle.toLowerCase().trim() ||
+          p.title.toLowerCase().includes(targetTitle.toLowerCase()) ||
+          targetTitle.toLowerCase().includes(p.title.toLowerCase())
+      )
+    : undefined;
+
+  const exactStock =
+    commerce.product?.inventoryAvailable ??
+    matchedProd?.inventoryAvailable ??
+    state.activeProduct?.inventoryAvailable ??
+    1;
 
   const productInfo = commerce.product
     ? `Product: ${commerce.product.title}, Listed: ₹${commerce.product.listedPrice}, Offered Price: ₹${commerce.product.offeredPrice}, Exact Stock in Inventory: ${exactStock} unit(s)`
+    : matchedProd
+    ? `Product: ${matchedProd.title}, Listed: ₹${matchedProd.listedPrice}, Offered Price: ₹${matchedProd.listedPrice}, Exact Stock in Inventory: ${matchedProd.inventoryAvailable} unit(s)`
     : state.activeProduct
     ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}, Current Offered: ₹${state.currentOffer?.offeredPrice || state.activeProduct.listedPrice}, Exact Stock in Inventory: ${exactStock} unit(s)`
     : "None";
