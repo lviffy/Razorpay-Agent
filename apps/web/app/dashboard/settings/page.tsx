@@ -126,7 +126,7 @@ export default function GeneralSettingsPage() {
 
   const handleTestShopify = async () => {
     if (!creds.shopifyShopDomain) {
-      setShopifyTestResult({ error: "Please enter your Shopify store domain (e.g., your-store.myshopify.com)" });
+      setShopifyTestResult({ error: "Please enter your Shopify store domain (e.g., rohanm.in or your-store.myshopify.com)" });
       return;
     }
     if (!creds.shopifyAccessToken) {
@@ -695,14 +695,17 @@ export default function GeneralSettingsPage() {
           <CardContent className="p-4 sm:p-5 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700">Shopify Store Subdomain</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-700">Shopify Store Domain</label>
+                  <span className="text-[10px] text-zinc-400">Custom domain or myshopify.com</span>
+                </div>
                 <Input
                   value={creds.shopifyShopDomain || ""}
                   onChange={(e) => setCreds({ ...creds, shopifyShopDomain: e.target.value })}
-                  placeholder="your-brand.myshopify.com"
+                  placeholder="rohanm.in or your-brand.myshopify.com"
                   className="bg-white border-zinc-200 text-xs font-mono"
                 />
-                <p className="text-[11px] text-zinc-400">Your primary Shopify admin myshopify.com subdomain</p>
+                <p className="text-[11px] text-zinc-400">Your custom domain (e.g. rohanm.in) or myshopify.com subdomain</p>
               </div>
 
               <div className="space-y-1.5">

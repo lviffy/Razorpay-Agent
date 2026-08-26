@@ -191,9 +191,21 @@ function advanceFallbackStep(content: string): { reply: string; state: Onboardin
       break;
     }
     case "CATALOG_SETUP": {
-      nextStep = "AGENT_SETUP";
-      clientOnboardingSession.completionPercentage = 65;
-      botReply = `Products structured with live inventory! Now let's set your AI Seller Agent's negotiation boundaries. What maximum discount should your agent offer?`;
+      if (
+        content.toLowerCase().includes("done") ||
+        content.toLowerCase().includes("continue") ||
+        content.toLowerCase().includes("next") ||
+        content.toLowerCase().includes("proceed")
+      ) {
+        nextStep = "AGENT_SETUP";
+        clientOnboardingSession.completionPercentage = 65;
+        botReply = `Products structured with live inventory! Now let's set your AI Seller Agent's negotiation boundaries. What maximum discount should your agent offer?`;
+      } else {
+        nextStep = "CATALOG_SETUP";
+        clientOnboardingSession.completionPercentage = 45;
+        clientOnboardingSession.productCount = (clientOnboardingSession.productCount || 0) + 1;
+        botReply = `Product added and indexed in your live catalog! You can add more products or click Continue when done.`;
+      }
       break;
     }
     case "AGENT_SETUP": {

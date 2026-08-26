@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
-import { OnboardingState, StoreProvider, NegotiationRules } from "@/lib/types";
+import { OnboardingState, OnboardingStep, StoreProvider, NegotiationRules } from "@/lib/types";
 import { ChatMessage } from "@/components/onboarding/chat-message";
 import { ActionCard } from "@/components/onboarding/action-card";
 import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
@@ -22,6 +22,7 @@ import {
   RotateCcw,
   Store,
   Layers,
+  Plus,
   ShieldCheck,
   Check,
   ArrowRight,
@@ -149,20 +150,32 @@ export default function OnboardingPage() {
 
   const handleSaveNativeProduct = async (productData: any) => {
     setLoading(true);
-    setCreatedProducts((prev) => Array.isArray(productData) ? [...prev, ...productData] : [...prev, productData]);
+    const addedList = Array.isArray(productData) ? productData : [productData];
+    setCreatedProducts((prev) => [...prev, ...addedList]);
+
     if (Array.isArray(productData)) {
       await api.products.createBulk(productData);
       const summaryTitles = productData.map((p: any) => p.title).join(", ");
       const updated = await api.onboarding.sendMessage(
         `Added ${productData.length} products to catalog: ${summaryTitles}`
       );
-      setState(updated.state);
+      setState({
+        ...updated.state,
+        currentStep: "CATALOG_SETUP",
+        productCount: (state?.productCount || 0) + productData.length,
+        completionPercentage: 45,
+      });
     } else {
       await api.products.create(productData);
       const updated = await api.onboarding.sendMessage(
         `Added ${productData.title} at ₹${productData.price} (Floor: ₹${productData.minPrice || Math.round(productData.price * 0.88)}, ${productData.inventory || 10} units)`
       );
-      setState(updated.state);
+      setState({
+        ...updated.state,
+        currentStep: "CATALOG_SETUP",
+        productCount: (state?.productCount || 0) + 1,
+        completionPercentage: 45,
+      });
     }
     setLoading(false);
   };
@@ -286,6 +299,54 @@ export default function OnboardingPage() {
     }
   };
 
+  const handleGoToStep = (targetStep: OnboardingStep) => {
+    if (!state) return;
+
+    const stepProgress: Record<OnboardingStep, number> = {
+      WELCOME: 15,
+      STORE_SOURCE: 30,
+      SHOPIFY_CONNECT: 35,
+      CATALOG_SETUP: 40,
+      AGENT_SETUP: 60,
+      WHATSAPP_CONNECT: 75,
+      RAZORPAY_CONNECT: 90,
+      TEST: 95,
+      READY: 100,
+      COMPLETED: 100,
+    };
+
+    const stepMessages: Record<OnboardingStep, string> = {
+      WELCOME: "Returned to Identity step. Enter or update your store business name below.",
+      STORE_SOURCE: "Returned to Catalog selection. Choose whether to use a Native catalog, CSV upload, or Shopify sync.",
+      SHOPIFY_CONNECT: "Returned to Shopify connection. Enter your domain (e.g. rohanm.in or brand.myshopify.com) and token.",
+      CATALOG_SETUP: "Returned to Native Catalog setup. You can add product details, CSV, and floor prices.",
+      AGENT_SETUP: "Returned to Agent Mandate step. Adjust your maximum discount caps or risk profile.",
+      WHATSAPP_CONNECT: "Returned to WhatsApp Channel step. Update your WhatsApp Business number or Meta credentials.",
+      RAZORPAY_CONNECT: "Returned to Razorpay payment setup. Enter your Key ID and Secret for live settlements.",
+      TEST: "Returned to verification test.",
+      READY: "Setup completed! Click 'Open Merchant Dashboard' to launch.",
+      COMPLETED: "Setup completed!",
+    };
+
+    const nextState: OnboardingState = {
+      ...state,
+      currentStep: targetStep,
+      completionPercentage: stepProgress[targetStep] || state.completionPercentage,
+      history: [
+        ...state.history,
+        {
+          id: `bot_step_${Date.now()}`,
+          sender: "assistant",
+          content: stepMessages[targetStep] || `Navigated to ${targetStep}.`,
+          step: targetStep,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    setState(nextState);
+  };
+
   if (!state) {
     return (
       <div className="min-h-screen bg-[#fafbfc] flex items-center justify-center text-xs text-zinc-500 font-mono">
@@ -297,7 +358,7 @@ export default function OnboardingPage() {
     );
   }
 
-  const stepList = [
+  const stepList: Array<{ key: OnboardingStep; label: string }> = [
     { key: "WELCOME", label: "Identity" },
     { key: "STORE_SOURCE", label: "Catalog" },
     { key: "AGENT_SETUP", label: "Mandate" },
@@ -332,7 +393,7 @@ export default function OnboardingPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowDrawer(!showDrawer)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/80 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200/80 border border-zinc-200/80 transition-colors cursor-pointer"
           >
             <Activity className="w-3.5 h-3.5 text-brand-600" />
             <span className="hidden sm:inline">Store HUD</span>
@@ -340,7 +401,7 @@ export default function OnboardingPage() {
 
           <button
             onClick={handleReset}
-            className="text-zinc-400 hover:text-zinc-700 p-2 rounded-full hover:bg-zinc-100 transition-colors"
+            className="text-zinc-400 hover:text-zinc-700 p-2 rounded-full hover:bg-zinc-100 transition-colors cursor-pointer"
             title="Reset Session"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -350,21 +411,30 @@ export default function OnboardingPage() {
 
       {/* ── Centered Conversational Stage ── */}
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-28 flex flex-col items-center">
-        {/* Step Progress Pills in the Middle */}
+        {/* Step Progress Pills in the Middle (Clickable) */}
         <div className="w-full mb-8 flex justify-center">
           <div className="flex items-center gap-0.5 sm:gap-1 px-2.5 py-1.5 rounded-full bg-zinc-100/90 border border-zinc-200/80 text-[11px] font-medium text-zinc-500 overflow-x-auto no-scrollbar max-w-full shadow-2xs">
             {stepList.map((st, idx) => {
-              const isCurrent = state.currentStep === st.key;
-              const isPassed = state.completionPercentage > (idx * 15);
+              const isCurrent =
+                state.currentStep === st.key ||
+                (st.key === "STORE_SOURCE" &&
+                  (state.currentStep === "SHOPIFY_CONNECT" || state.currentStep === "CATALOG_SETUP"));
+              const isPassed = state.completionPercentage > (idx * 16);
               return (
-                <div key={st.key} className="flex items-center shrink-0">
+                <button
+                  key={st.key}
+                  type="button"
+                  onClick={() => handleGoToStep(st.key)}
+                  title={`Jump to ${st.label} step`}
+                  className="flex items-center shrink-0 cursor-pointer outline-none group"
+                >
                   <div
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full whitespace-nowrap transition-all ${
                       isCurrent
-                        ? "bg-white text-zinc-900 font-semibold shadow-2xs border border-zinc-200/70"
+                        ? "bg-white text-zinc-900 font-semibold shadow-2xs border border-zinc-200/70 ring-1 ring-brand-500/20"
                         : isPassed
-                        ? "text-zinc-700 font-medium hover:text-zinc-900"
-                        : "text-zinc-400"
+                        ? "text-zinc-700 font-medium hover:bg-white/80 hover:text-zinc-900"
+                        : "text-zinc-400 hover:text-zinc-600"
                     }`}
                   >
                     <span
@@ -379,9 +449,9 @@ export default function OnboardingPage() {
                     <span>{st.label}</span>
                   </div>
                   {idx < stepList.length - 1 && (
-                    <ChevronRight className="w-3 h-3 text-zinc-300 mx-0.5 shrink-0" />
+                    <ChevronRight className="w-3 h-3 text-zinc-300 mx-0.5 shrink-0 group-hover:text-zinc-400" />
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -402,75 +472,181 @@ export default function OnboardingPage() {
                     {state.currentStep === "WELCOME" && (
                       <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200/80 text-xs text-zinc-600">
                         <p className="font-semibold text-zinc-900 mb-0.5">Enter Your Business Name</p>
-                        Type your real store or business name in the chat below to begin.
+                        Type your real store or brand name in the chat below to begin.
                       </div>
                     )}
 
                     {/* Step: STORE_SOURCE (Catalog Provider Choice) */}
                     {state.currentStep === "STORE_SOURCE" && (
-                      <ActionCard
-                        title="Select Catalog Origin:"
-                        options={[
-                          {
-                            id: "native",
-                            label: "Create Native Catalog",
-                            description: "Fast in-browser setup with instant price floor & discount mandates.",
-                            badge: "Manual / Batch",
-                            icon: <Store className="w-4 h-4" />,
-                            onClick: () => handleSelectProvider("ZAPAI"),
-                          },
-                          {
-                            id: "csv",
-                            label: "Import from CSV File",
-                            description: "Upload spreadsheet to bulk-index SKUs, stock levels, and price floors.",
-                            badge: "Bulk Import",
-                            icon: <Upload className="w-4 h-4" />,
-                            onClick: () => {
-                              handleSelectProvider("ZAPAI");
-                              setCsvModalOpen(true);
+                      <div className="space-y-3">
+                        <ActionCard
+                          title="Select Catalog Origin:"
+                          options={[
+                            {
+                              id: "native",
+                              label: "Create Native Catalog",
+                              description: "Fast in-browser setup with instant price floor & discount mandates.",
+                              badge: "Manual / Batch",
+                              icon: <Store className="w-4 h-4" />,
+                              onClick: () => handleSelectProvider("ZAPAI"),
                             },
-                          },
-                          {
-                            id: "shopify",
-                            label: "Sync Shopify Store",
-                            description: "Connect Admin API to auto-import live products, inventory & variants.",
-                            badge: "Shopify Sync",
-                            icon: <ShoppingBag className="w-4 h-4" />,
-                            onClick: () => handleSelectProvider("SHOPIFY"),
-                          },
-                        ]}
-                      />
+                            {
+                              id: "csv",
+                              label: "Import from CSV File",
+                              description: "Upload spreadsheet to bulk-index SKUs, stock levels, and price floors.",
+                              badge: "Bulk Import",
+                              icon: <Upload className="w-4 h-4" />,
+                              onClick: () => {
+                                handleSelectProvider("ZAPAI");
+                                setCsvModalOpen(true);
+                              },
+                            },
+                            {
+                              id: "shopify",
+                              label: "Sync Shopify Store",
+                              description: "Connect Admin API to auto-import live products, inventory & variants.",
+                              badge: "Shopify Sync",
+                              icon: <ShoppingBag className="w-4 h-4" />,
+                              onClick: () => handleSelectProvider("SHOPIFY"),
+                            },
+                          ]}
+                        />
+                        <div className="pt-1 flex items-center justify-start">
+                          <button
+                            type="button"
+                            onClick={() => handleGoToStep("WELCOME")}
+                            className="text-xs text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>← Change store name ({state.businessName || "My Store"})</span>
+                          </button>
+                        </div>
+                      </div>
                     )}
 
                     {/* Step: SHOPIFY_CONNECT */}
                     {state.currentStep === "SHOPIFY_CONNECT" && (
-                      <ShopifySyncCard onSyncComplete={handleShopifySyncComplete} />
+                      <ShopifySyncCard
+                        onSyncComplete={handleShopifySyncComplete}
+                        onBack={() => handleGoToStep("STORE_SOURCE")}
+                      />
                     )}
 
                     {/* Step: CATALOG_SETUP (Native Catalog Primitives) */}
                     {state.currentStep === "CATALOG_SETUP" && (
                       <div className="space-y-3 pt-1">
-                        <ActionCard
-                          title="Add Products to AI Index:"
-                          options={[
-                            {
-                              id: "add_modal",
-                              label: "Add Product Details",
-                              description: "Enter your product title, listed price, SKU, stock inventory, and negotiation floor.",
-                              badge: "Product Form",
-                              icon: <Layers className="w-4 h-4" />,
-                              onClick: () => setNativeModalOpen(true),
-                            },
-                            {
-                              id: "csv_modal",
-                              label: "Upload CSV Spreadsheet",
-                              description: "Bulk import multiple products from .csv file with auto-calculated price floors.",
-                              badge: "Spreadsheet",
-                              icon: <Upload className="w-4 h-4" />,
-                              onClick: () => setCsvModalOpen(true),
-                            },
-                          ]}
-                        />
+                        {createdProducts.length > 0 ? (
+                          <div className="p-4 rounded-2xl bg-white border border-zinc-200/90 shadow-sm space-y-3">
+                            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <h4 className="text-xs font-bold text-zinc-900">
+                                  {createdProducts.length} {createdProducts.length === 1 ? "Product" : "Products"} Indexed in Catalog
+                                </h4>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setNativeModalOpen(true)}
+                                  className="text-xs h-7 px-2.5 font-semibold text-brand-700 bg-brand-50/60 hover:bg-brand-100/70 border-brand-200 cursor-pointer"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Add More Items
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setCsvModalOpen(true)}
+                                  className="text-xs h-7 px-2.5 font-semibold text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+                                >
+                                  <Upload className="w-3 h-3 mr-1" />
+                                  CSV
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Product List Items */}
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                              {createdProducts.map((p, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between p-2.5 rounded-xl bg-zinc-50 border border-zinc-100 text-xs"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-zinc-900 truncate">{p.title}</p>
+                                    <div className="flex items-center gap-2 text-[11px] text-zinc-500 mt-0.5">
+                                      <span className="font-medium text-zinc-800">₹{p.price}</span>
+                                      <span>•</span>
+                                      <span>Floor: ₹{p.minPrice || Math.round(Number(p.price) * 0.88)}</span>
+                                      <span>•</span>
+                                      <span>{p.inventory || 10} in stock</span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-zinc-200 text-zinc-600">
+                                    {p.sku || `SKU-${idx + 1}`}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-zinc-100">
+                              <button
+                                type="button"
+                                onClick={() => handleGoToStep("STORE_SOURCE")}
+                                className="text-xs text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>← Back to Catalog Options</span>
+                              </button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => {
+                                  handleGoToStep("AGENT_SETUP");
+                                  handleSendMessage("Done adding products, let's configure negotiation rules.");
+                                }}
+                                className="w-full sm:w-auto text-xs h-9 px-4 bg-zinc-900 hover:bg-zinc-800 text-white font-semibold rounded-xl cursor-pointer shadow-xs gap-1.5"
+                              >
+                                <span>Continue to Mandate ({createdProducts.length} added)</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <ActionCard
+                              title="Add Products to AI Index:"
+                              options={[
+                                {
+                                  id: "add_modal",
+                                  label: "Add Product Details",
+                                  description: "Enter your product title, listed price, SKU, stock inventory, and negotiation floor.",
+                                  badge: "Product Form",
+                                  icon: <Layers className="w-4 h-4" />,
+                                  onClick: () => setNativeModalOpen(true),
+                                },
+                                {
+                                  id: "csv_modal",
+                                  label: "Upload CSV Spreadsheet",
+                                  description: "Bulk import multiple products from .csv file with auto-calculated price floors.",
+                                  badge: "Spreadsheet",
+                                  icon: <Upload className="w-4 h-4" />,
+                                  onClick: () => setCsvModalOpen(true),
+                                },
+                              ]}
+                            />
+                            <div className="pt-1">
+                              <button
+                                type="button"
+                                onClick={() => handleGoToStep("STORE_SOURCE")}
+                                className="text-xs text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>← Back to Catalog Options (Shopify / CSV)</span>
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -612,14 +788,23 @@ export default function OnboardingPage() {
                               ))}
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => setAgentSetupMode("custom")}
-                              className="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1.5 pt-1"
-                            >
-                              <Sliders className="w-3.5 h-3.5" />
-                              <span>Want to customize exact discount caps, shipping upsells & conversation tone? Click here</span>
-                            </button>
+                            <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
+                              <button
+                                type="button"
+                                onClick={() => handleGoToStep("STORE_SOURCE")}
+                                className="text-xs text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-1 cursor-pointer"
+                              >
+                                <span>← Back to Catalog Step</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setAgentSetupMode("custom")}
+                                className="text-xs text-brand-600 hover:text-brand-700 font-semibold flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Sliders className="w-3.5 h-3.5" />
+                                <span>Customize exact caps & shipping rules</span>
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           /* Fine-Tune Requirements Interactive Builder */
@@ -776,49 +961,58 @@ export default function OnboardingPage() {
                             </div>
 
                             {/* Apply Button */}
-                            <div className="flex items-center justify-end gap-2 pt-1">
-                              <Button
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <button
                                 type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setAgentSetupMode("presets")}
-                                className="text-xs h-8"
+                                onClick={() => handleGoToStep("STORE_SOURCE")}
+                                className="text-xs text-zinc-500 hover:text-zinc-800 font-medium flex items-center gap-1 cursor-pointer"
                               >
-                                Back to Presets
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                onClick={async () => {
-                                  const customRulesObj: NegotiationRules = {
-                                    maxDiscountPercent: customDiscount,
-                                    minimumOrderValue: customMinOrder,
-                                    freeShippingAbove: customFreeShipping,
-                                    humanApprovalAbove: customEscalation,
-                                    riskProfile: customDiscount <= 10 ? "conservative" : customDiscount <= 15 ? "balanced" : "aggressive",
-                                    bundleOffersEnabled: customUpsell,
-                                    alternativeProductsEnabled: true,
-                                  };
-                                  setNegotiationRules(customRulesObj);
-                                  await api.settings.saveRules(customRulesObj);
-                                  await api.settings.saveAgent({
-                                    name: "ZapAI Concierge",
-                                    tone: customTone,
-                                    status: "active",
-                                    autoNegotiationEnabled: true,
-                                    humanEscalationEnabled: true,
-                                    escalationThresholdAmount: customEscalation,
-                                    bundleUpsellEnabled: customUpsell,
-                                  });
-                                  handleSendMessage(
-                                    `Configured custom mandates: Max ${customDiscount}% discount, Free shipping above ₹${customFreeShipping}, ${customTone} tone.`
-                                  );
-                                }}
-                                className="text-xs h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-xs"
-                              >
-                                <span>Save & Activate Custom Requirements</span>
-                                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                              </Button>
+                                <span>← Back to Catalog</span>
+                              </button>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setAgentSetupMode("presets")}
+                                  className="text-xs h-8"
+                                >
+                                  Back to Presets
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const customRulesObj: NegotiationRules = {
+                                      maxDiscountPercent: customDiscount,
+                                      minimumOrderValue: customMinOrder,
+                                      freeShippingAbove: customFreeShipping,
+                                      humanApprovalAbove: customEscalation,
+                                      riskProfile: customDiscount <= 10 ? "conservative" : customDiscount <= 15 ? "balanced" : "aggressive",
+                                      bundleOffersEnabled: customUpsell,
+                                      alternativeProductsEnabled: true,
+                                    };
+                                    setNegotiationRules(customRulesObj);
+                                    await api.settings.saveRules(customRulesObj);
+                                    await api.settings.saveAgent({
+                                      name: "ZapAI Concierge",
+                                      tone: customTone,
+                                      status: "active",
+                                      autoNegotiationEnabled: true,
+                                      humanEscalationEnabled: true,
+                                      escalationThresholdAmount: customEscalation,
+                                      bundleUpsellEnabled: customUpsell,
+                                    });
+                                    handleSendMessage(
+                                      `Configured custom mandates: Max ${customDiscount}% discount, Free shipping above ₹${customFreeShipping}, ${customTone} tone.`
+                                    );
+                                  }}
+                                  className="text-xs h-8 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-xs"
+                                >
+                                  <span>Save & Activate Custom Requirements</span>
+                                  <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -952,24 +1146,35 @@ export default function OnboardingPage() {
                           )}
                         </div>
 
-                        <Button
-                          type="button"
-                          onClick={handleConnectWhatsApp}
-                          disabled={waVerifying || loading}
-                          className="w-full text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 gap-2 cursor-pointer shadow-xs"
-                        >
-                          {waVerifying ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>Verifying Meta Cloud API...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Verify & Connect WhatsApp Channel</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleGoToStep("AGENT_SETUP")}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl h-10 px-3.5 text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+                          >
+                            ← Back to Agent Mandate
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={handleConnectWhatsApp}
+                            disabled={waVerifying || loading}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white h-10 px-5 gap-2 cursor-pointer shadow-xs"
+                          >
+                            {waVerifying ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Verifying Meta Cloud API...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Verify & Connect WhatsApp Channel</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </motion.div>
                     )}
 
@@ -1088,29 +1293,37 @@ export default function OnboardingPage() {
                           )}
                         </div>
 
-                        <Button
-                          type="button"
-                          onClick={handleConnectRazorpay}
-                          disabled={rzpVerifying || loading}
-                          className="w-full text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 gap-2 cursor-pointer shadow-xs"
-                        >
-                          {rzpVerifying ? (
-                            <>
-                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                              <span>Validating with Razorpay API...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Verify & Connect Razorpay Credentials</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleGoToStep("WHATSAPP_CONNECT")}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl h-10 px-3.5 text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+                          >
+                            ← Back to WhatsApp
+                          </Button>
+
+                          <Button
+                            type="button"
+                            onClick={handleConnectRazorpay}
+                            disabled={rzpVerifying || loading}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl bg-brand-600 hover:bg-brand-700 text-white h-10 px-5 gap-2 cursor-pointer shadow-xs"
+                          >
+                            {rzpVerifying ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Validating with Razorpay API...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Verify & Connect Razorpay Credentials</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </motion.div>
                     )}
-
-                    {/* Step: TEST */}
-
 
                     {/* Step: READY / COMPLETED */}
                     {(state.currentStep === "READY" || state.currentStep === "COMPLETED") && (
@@ -1133,75 +1346,86 @@ export default function OnboardingPage() {
                           </div>
                         </div>
 
-                        <Button
-                          onClick={async () => {
-                            try {
-                              const token = typeof window !== "undefined"
-                                ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
-                                : null;
-                              const headers: Record<string, string> = { "Content-Type": "application/json" };
-                              if (token) {
-                                headers["Authorization"] = `Bearer ${token}`;
-                              }
-                              const payload = {
-                                businessName: state?.businessName || "ZapAI Store",
-                                provider: state?.provider || "ZAPAI",
-                                phone: waPhone || "+91 98765 00000",
-                                whatsappPhoneNumber: waPhone,
-                                whatsappPhoneNumberId: waPhoneId,
-                                whatsappAccessToken: waToken,
-                                whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
-                                razorpayKeyId: rzpKeyId,
-                                razorpayKeySecret: rzpKeySecret,
-                                razorpayWebhookSecret: rzpWebhookSecret,
-                                maxDiscountPercent: negotiationRules.maxDiscountPercent,
-                                minimumOrderValue: negotiationRules.minimumOrderValue,
-                                freeShippingAbove: negotiationRules.freeShippingAbove,
-                                humanApprovalAbove: negotiationRules.humanApprovalAbove,
-                                riskProfile: negotiationRules.riskProfile,
-                                products: createdProducts,
-                              };
-                              const res = await fetch("/api/v1/onboarding/complete", {
-                                method: "POST",
-                                headers,
-                                body: JSON.stringify(payload),
-                              });
-                              if (res.ok) {
-                                const data = await res.json();
-                                if (data.token && typeof window !== "undefined") {
-                                  localStorage.setItem("zapai_auth_token", data.token);
-                                  document.cookie = `zapai_auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+                        <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => handleGoToStep("AGENT_SETUP")}
+                            className="w-full sm:w-auto text-xs font-semibold rounded-xl h-11 px-4 text-zinc-700 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+                          >
+                            ← Edit Rules & Mandates
+                          </Button>
+
+                          <Button
+                            onClick={async () => {
+                              try {
+                                const token = typeof window !== "undefined"
+                                  ? localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token")
+                                  : null;
+                                const headers: Record<string, string> = { "Content-Type": "application/json" };
+                                if (token) {
+                                  headers["Authorization"] = `Bearer ${token}`;
                                 }
-                                if (data.storeId && typeof window !== "undefined") {
-                                  localStorage.setItem("zapai_selected_store_id", data.storeId);
+                                const payload = {
+                                  businessName: state?.businessName || "ZapAI Store",
+                                  provider: state?.provider || "ZAPAI",
+                                  phone: waPhone || "+91 98765 00000",
+                                  whatsappPhoneNumber: waPhone,
+                                  whatsappPhoneNumberId: waPhoneId,
+                                  whatsappAccessToken: waToken,
+                                  whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                                  razorpayKeyId: rzpKeyId,
+                                  razorpayKeySecret: rzpKeySecret,
+                                  razorpayWebhookSecret: rzpWebhookSecret,
+                                  maxDiscountPercent: negotiationRules.maxDiscountPercent,
+                                  minimumOrderValue: negotiationRules.minimumOrderValue,
+                                  freeShippingAbove: negotiationRules.freeShippingAbove,
+                                  humanApprovalAbove: negotiationRules.humanApprovalAbove,
+                                  riskProfile: negotiationRules.riskProfile,
+                                  products: createdProducts,
+                                };
+                                const res = await fetch("/api/v1/onboarding/complete", {
+                                  method: "POST",
+                                  headers,
+                                  body: JSON.stringify(payload),
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  if (data.token && typeof window !== "undefined") {
+                                    localStorage.setItem("zapai_auth_token", data.token);
+                                    document.cookie = `zapai_auth_token=${data.token}; path=/; max-age=2592000; SameSite=Lax`;
+                                  }
+                                  if (data.storeId && typeof window !== "undefined") {
+                                    localStorage.setItem("zapai_selected_store_id", data.storeId);
+                                  }
+                                  await Promise.all([
+                                    api.settings.saveRules(negotiationRules),
+                                    api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
+                                    api.settings.saveCredentials({
+                                      razorpayKeyId: rzpKeyId,
+                                      razorpayKeySecret: rzpKeySecret,
+                                      razorpayWebhookSecret: rzpWebhookSecret,
+                                      whatsappPhoneNumber: waPhone,
+                                      whatsappPhoneNumberId: waPhoneId,
+                                      whatsappAccessToken: waToken,
+                                      whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
+                                    }),
+                                  ]);
+                                  await refreshUser();
+                                  router.replace("/dashboard");
+                                } else {
+                                  console.error("Onboarding complete failed:", res.status);
                                 }
-                                await Promise.all([
-                                  api.settings.saveRules(negotiationRules),
-                                  api.profile.save({ storeName: state?.businessName || "ZapAI Store", phone: waPhone }),
-                                  api.settings.saveCredentials({
-                                    razorpayKeyId: rzpKeyId,
-                                    razorpayKeySecret: rzpKeySecret,
-                                    razorpayWebhookSecret: rzpWebhookSecret,
-                                    whatsappPhoneNumber: waPhone,
-                                    whatsappPhoneNumberId: waPhoneId,
-                                    whatsappAccessToken: waToken,
-                                    whatsappWebhookVerifyToken: "zapai_meta_webhook_secret_2026",
-                                  }),
-                                ]);
-                                await refreshUser();
-                                router.replace("/dashboard");
-                              } else {
-                                console.error("Onboarding complete failed:", res.status);
+                              } catch (e) {
+                                console.error("Onboarding complete error:", e);
                               }
-                            } catch (e) {
-                              console.error("Onboarding complete error:", e);
-                            }
-                          }}
-                          className="w-full text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
-                        >
-                          <span>Open Merchant Dashboard</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </Button>
+                            }}
+                            className="w-full sm:flex-1 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-11 gap-2 shadow-xs cursor-pointer"
+                          >
+                            <span>Open Merchant Dashboard</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </motion.div>
                     )}
                   </div>
@@ -1219,8 +1443,27 @@ export default function OnboardingPage() {
         </div>
       </main>
 
-      {/* ── Centered Floating Capsule Composer (Bottom) ── */}
-      <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 w-full max-w-2xl px-3 sm:px-4 z-30 pointer-events-none pb-[env(safe-area-inset-bottom)]">
+      {/* ── Centered Floating Capsule Composer with Context Chips (Bottom) ── */}
+      <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 w-full max-w-2xl px-3 sm:px-4 z-30 pointer-events-none pb-[env(safe-area-inset-bottom)] space-y-2">
+        {/* Quick Context Prompt Chips */}
+        <div className="pointer-events-auto flex items-center justify-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {[
+            { label: "💡 What is ZapAI?", query: "What is ZapAI and how does it work?" },
+            { label: "🛡️ How does negotiation work?", query: "How does the AI margin negotiation engine work?" },
+            { label: "⚡ Razorpay settlements?", query: "How do instant Razorpay settlements work?" },
+          ].map((chip, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSendMessage(chip.query)}
+              disabled={loading}
+              className="text-[11px] whitespace-nowrap px-2.5 py-1 rounded-full bg-white/95 backdrop-blur-md border border-zinc-200/90 text-zinc-600 hover:text-zinc-900 hover:border-brand-300 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -1233,7 +1476,7 @@ export default function OnboardingPage() {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type your reply or product name..."
+            placeholder="Ask anything about ZapAI or type your response..."
             disabled={loading}
             className="flex-1 min-w-0 bg-transparent text-xs sm:text-sm text-zinc-900 placeholder:text-zinc-400 outline-none border-none"
           />
@@ -1242,7 +1485,7 @@ export default function OnboardingPage() {
             type="submit"
             size="sm"
             disabled={!inputValue.trim() || loading}
-            className="w-8 sm:w-9 h-8 sm:h-9 p-0 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs flex-shrink-0 disabled:opacity-40 transition-transform active:scale-95"
+            className="w-8 sm:w-9 h-8 sm:h-9 p-0 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xs flex-shrink-0 disabled:opacity-40 transition-transform active:scale-95 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
           </Button>

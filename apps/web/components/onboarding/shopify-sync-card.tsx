@@ -22,9 +22,10 @@ import { api } from "@/lib/api/client";
 
 interface ShopifySyncCardProps {
   onSyncComplete: (shopDomain: string, accessToken: string) => void;
+  onBack?: () => void;
 }
 
-export function ShopifySyncCard({ onSyncComplete }: ShopifySyncCardProps) {
+export function ShopifySyncCard({ onSyncComplete, onBack }: ShopifySyncCardProps) {
   const [shopDomain, setShopDomain] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [showToken, setShowToken] = useState(false);
@@ -49,7 +50,7 @@ export function ShopifySyncCard({ onSyncComplete }: ShopifySyncCardProps) {
     const cleanToken = accessToken.trim();
 
     if (!cleanDomain) {
-      setErrorMsg("Please enter your Shopify store domain (e.g., your-brand.myshopify.com)");
+      setErrorMsg("Please enter your Shopify store domain (e.g., rohanm.in or your-brand.myshopify.com)");
       return;
     }
 
@@ -180,13 +181,16 @@ export function ShopifySyncCard({ onSyncComplete }: ShopifySyncCardProps) {
           <div className="space-y-2.5">
             {/* Store Domain Input */}
             <div>
-              <label className="text-[11px] font-semibold text-zinc-700 block mb-1">
-                Shopify Store Domain
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-semibold text-zinc-700 block">
+                  Shopify Store Domain
+                </label>
+                <span className="text-[10px] text-zinc-400">Custom domain or myshopify.com</span>
+              </div>
               <Input
                 value={shopDomain}
                 onChange={(e) => setShopDomain(e.target.value)}
-                placeholder="your-brand.myshopify.com"
+                placeholder="rohanm.in or your-brand.myshopify.com"
                 className="bg-white border-zinc-200 text-xs rounded-xl h-9 font-mono"
               />
             </div>
@@ -219,11 +223,22 @@ export function ShopifySyncCard({ onSyncComplete }: ShopifySyncCardProps) {
             </div>
           </div>
 
-          {/* Action Button */}
+          {/* Action Buttons: Back + Submit */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
+            {onBack ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onBack}
+                className="w-full sm:w-auto h-9 px-3.5 text-xs font-semibold rounded-xl text-zinc-600 hover:text-zinc-900 border-zinc-200 cursor-pointer"
+              >
+                ← Back to Options
+              </Button>
+            ) : <div />}
+
             <Button
               onClick={handleStartSync}
-              className="w-full sm:w-auto h-9 px-5 text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white gap-2"
+              className="w-full sm:w-auto h-9 px-5 text-xs font-semibold rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white gap-2 cursor-pointer shadow-xs"
             >
               <span>Authenticate & Sync Catalog</span>
               <ArrowRight className="w-3.5 h-3.5" />

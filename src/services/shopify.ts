@@ -28,13 +28,14 @@ export interface ShopifyProductItem {
 }
 
 /**
- * Normalizes a raw shop domain string (e.g. "https://brand.myshopify.com/" -> "brand.myshopify.com")
+ * Normalizes a raw shop domain string (e.g. "https://rohanm.in/" -> "rohanm.in", "brand" -> "brand.myshopify.com")
  */
 export function normalizeShopDomain(raw: string): string {
   if (!raw) return "";
   let clean = raw.trim().toLowerCase();
   clean = clean.replace(/^https?:\/\//, "");
   clean = clean.replace(/\/.*$/, "");
+  // If user entered just a handle without dots (e.g. "mybrand"), append .myshopify.com
   if (!clean.includes(".")) {
     clean = `${clean}.myshopify.com`;
   }
@@ -44,6 +45,7 @@ export function normalizeShopDomain(raw: string): string {
 /**
  * Validates Shopify credentials against the official Shopify Admin REST API.
  * Calls GET /admin/api/2024-01/shop.json
+ * Supports custom domains (e.g. rohanm.in, store.brand.co) as well as myshopify.com domains.
  */
 export async function verifyShopifyCredentials(
   shopDomain: string,
@@ -52,53 +54,66 @@ export async function verifyShopifyCredentials(
   const domain = normalizeShopDomain(shopDomain);
   const token = accessToken.trim();
 
-  if (!domain || !domain.includes(".myshopify.com")) {
-    return { valid: false, error: "Invalid Shopify domain. Must be in format 'brand-name.myshopify.com'" };
+  if (!domain) {
+    return { valid: false, error: "Shopify store domain is required." };
   }
 
   if (!token) {
     return { valid: false, error: "Shopify Admin API Access Token is required (starts with 'shpat_')" };
   }
 
-  try {
-    const url = `https://${domain}/admin/api/2024-01/shop.json`;
-    const res = await axios.get(url, {
-      headers: {
-        "X-Shopify-Access-Token": token,
-        "Content-Type": "application/json",
-      },
-      timeout: 8000,
-    });
-
-    if (res.status === 200 && res.data?.shop) {
-      return { valid: true, shop: res.data.shop };
+  // Candidate endpoints to test:
+  // 1. Clean entered domain (e.g. rohanm.in or brand.myshopify.com)
+  // 2. If it is a custom domain, also try handle.myshopify.com as fallback
+  const candidates: string[] = [domain];
+  if (!domain.includes(".myshopify.com")) {
+    const handle = domain.replace(/\.[a-z0-9.-]+$/i, "");
+    if (handle && handle !== domain) {
+      candidates.push(`${handle}.myshopify.com`);
     }
-
-    return { valid: false, error: "Shopify returned an unexpected response." };
-  } catch (err: any) {
-    if (err.response) {
-      if (err.response.status === 401 || err.response.status === 403) {
-        return {
-          valid: false,
-          error: "Authentication failed. Invalid Admin API token or insufficient permissions.",
-        };
-      }
-      if (err.response.status === 404) {
-        return {
-          valid: false,
-          error: `Shopify store '${domain}' not found. Please verify the subdomain.`,
-        };
-      }
-      return {
-        valid: false,
-        error: `Shopify API error (${err.response.status}): ${err.response.data?.errors || err.message}`,
-      };
-    }
-    return {
-      valid: false,
-      error: `Network error connecting to Shopify: ${err.message}`,
-    };
   }
+
+  let lastError = "";
+
+  for (const candidate of candidates) {
+    try {
+      const url = `https://${candidate}/admin/api/2024-01/shop.json`;
+      const res = await axios.get(url, {
+        headers: {
+          "X-Shopify-Access-Token": token,
+          "Content-Type": "application/json",
+        },
+        timeout: 8000,
+      });
+
+      if (res.status === 200 && res.data?.shop) {
+        return { valid: true, shop: res.data.shop };
+      }
+    } catch (err: any) {
+      if (err.response) {
+        if (err.response.status === 401 || err.response.status === 403) {
+          return {
+            valid: false,
+            error: "Authentication failed. Invalid Admin API token or insufficient permissions (ensure read_products and read_inventory scopes are granted).",
+          };
+        }
+        if (err.response.status === 404) {
+          lastError = `Shopify store '${candidate}' not found. Please verify the domain or token.`;
+          continue;
+        }
+        lastError = `Shopify API error (${err.response.status}): ${err.response.data?.errors || err.message}`;
+      } else {
+        lastError = `Network error connecting to '${candidate}': ${err.message}`;
+      }
+    }
+  }
+
+  return {
+    valid: false,
+    error:
+      lastError ||
+      `Could not connect to Shopify at '${domain}'. If using a custom domain, ensure your Admin API token is valid or try your 'name.myshopify.com' subdomain.`,
+  };
 }
 
 /**
@@ -112,16 +127,43 @@ export async function fetchShopifyProducts(
   const domain = normalizeShopDomain(shopDomain);
   const token = accessToken.trim();
 
-  const url = `https://${domain}/admin/api/2024-01/products.json?limit=250`;
-  const res = await axios.get(url, {
-    headers: {
-      "X-Shopify-Access-Token": token,
-      "Content-Type": "application/json",
-    },
-    timeout: 10000,
-  });
+  const candidates: string[] = [domain];
+  if (!domain.includes(".myshopify.com")) {
+    const handle = domain.replace(/\.[a-z0-9.-]+$/i, "");
+    if (handle && handle !== domain) {
+      candidates.push(`${handle}.myshopify.com`);
+    }
+  }
 
-  const rawProducts = res.data?.products || [];
+  let rawProducts: any[] = [];
+  let fetched = false;
+  let lastErr: any = null;
+
+  for (const candidate of candidates) {
+    try {
+      const url = `https://${candidate}/admin/api/2024-01/products.json?limit=250`;
+      const res = await axios.get(url, {
+        headers: {
+          "X-Shopify-Access-Token": token,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      });
+
+      rawProducts = res.data?.products || [];
+      fetched = true;
+      break;
+    } catch (err: any) {
+      lastErr = err;
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        throw err;
+      }
+    }
+  }
+
+  if (!fetched && lastErr) {
+    throw lastErr;
+  }
   const items: ShopifyProductItem[] = [];
 
   for (const p of rawProducts) {
