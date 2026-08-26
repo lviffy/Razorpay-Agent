@@ -486,15 +486,14 @@ GUIDELINES:
       historyMessages.push({ role: "user", content: userMessage });
     }
 
-    // 1. Try Groq with active models
+    // 1. Try Groq with prioritized model order
     const groq = getGroqClient();
     if (groq) {
       const modelsToTry = [
-        "qwen/qwen3.8-27b",
-        "groq/compound-mini",
-        "openai/gpt-oss-120b",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
+        "qwen/qwen3.6-27b",    // 1. Default conversation + intent parsing
+        "openai/gpt-oss-120b",  // 2. Hard / ambiguous reasoning fallback
+        "qwen/qwen3.8-27b",    // 3. Structured SellerAgent model fallback
+        "groq/compound-mini",  // 4. Ultra-fast simple responses
       ];
       for (const model of modelsToTry) {
         try {
@@ -505,13 +504,17 @@ GUIDELINES:
               ...historyMessages,
             ],
             temperature: 0.7,
-            max_tokens: 180,
+            max_tokens: 1500,
           });
 
-          const reply = chat.choices[0]?.message?.content?.trim();
-          if (reply) {
+          const rawReply = chat.choices[0]?.message?.content?.trim();
+          if (rawReply) {
+            // Strip any internal reasoning <think>...</think> tags (including truncated/streaming thinking blocks)
+            const cleanReplyText = rawReply.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "").trim();
+            if (!cleanReplyText) continue;
+
             // Track if product was mentioned
-            const mentioned = availableProducts.find(p => reply.toLowerCase().includes(p.title.toLowerCase()) || userMessage.toLowerCase().includes(p.title.toLowerCase()));
+            const mentioned = availableProducts.find(p => cleanReplyText.toLowerCase().includes(p.title.toLowerCase()) || userMessage.toLowerCase().includes(p.title.toLowerCase()));
             if (mentioned) {
               await updateConversationContext(conv.conversationId, to, {
                 activeProduct: {
@@ -526,7 +529,7 @@ GUIDELINES:
               });
             }
 
-            const cleanReply = reply.replace(/\$([0-9,]+(\.[0-9]+)?)/g, "₹$1").replace(/\$/g, "₹");
+            const cleanReply = cleanReplyText.replace(/\$([0-9,]+(\.[0-9]+)?)/g, "₹$1").replace(/\$/g, "₹");
             await sendText(to, cleanReply);
             return;
           }

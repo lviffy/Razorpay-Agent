@@ -203,11 +203,10 @@ RULES:
 
         let chat;
         const models = [
-          "qwen/qwen3.8-27b",
-          "groq/compound-mini",
-          "openai/gpt-oss-120b",
-          "llama-3.3-70b-versatile",
-          "llama-3.1-8b-instant",
+          "qwen/qwen3.6-27b",    // Default conversation + intent
+          "openai/gpt-oss-120b",  // Hard / ambiguous cases
+          "qwen/qwen3.8-27b",    // Structured seller agent model
+          "groq/compound-mini",  // Ultra-fast responses
         ];
         for (const m of models) {
           try {
@@ -218,14 +217,17 @@ RULES:
                 { role: "user", content: message },
               ],
               temperature: 0.7,
-              max_tokens: 200,
+              max_tokens: 1500,
             });
-            if (chat.choices[0]?.message?.content) break;
+            const content = chat.choices[0]?.message?.content?.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "").trim();
+            if (content) {
+              replyText = content;
+              break;
+            }
           } catch {
             // try next model
           }
         }
-        replyText = chat?.choices[0]?.message?.content?.trim() ?? "";
       }
     } catch (aiErr) {
       console.warn("[Simulator] Groq AI fallback:", (aiErr as any)?.message);

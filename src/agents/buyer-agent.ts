@@ -1,5 +1,5 @@
 import { SchemaType, FunctionCallingMode } from "@google/generative-ai";
-import { getGeminiClient } from "../services/ai.ts";
+import { getGeminiClient, getGroqClient } from "../services/ai.ts";
 import { getAllStores, getNegotiationRules } from "../services/merchant.ts";
 import { SellerAgent } from "./seller-agent.ts";
 import { db } from "../db/migrate.ts";
@@ -162,48 +162,93 @@ export class BuyerAgent {
     message: string,
     spendingLimit: number
   ): Promise<{ category?: string; keywords: string[] }> {
+    // 1. Try Groq (Qwen 3.6 27B default -> GPT-OSS 120B fallback)
+    try {
+      const groq = getGroqClient();
+      if (groq) {
+        const models = ["qwen/qwen3.6-27b", "openai/gpt-oss-120b"];
+        for (const m of models) {
+          try {
+            const res = await groq.chat.completions.create({
+              model: m,
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    'You are an intent parser. Output ONLY a valid raw JSON object with keys "category" (string) and "keywords" (array of strings). No markdown, no reasoning, just JSON.',
+                },
+                {
+                  role: "user",
+                  content: `User query: "${message}"\nBudget: ₹${spendingLimit}`,
+                },
+              ],
+              temperature: 0.1,
+              max_tokens: 1500,
+            });
+
+            let text = res.choices[0]?.message?.content?.trim() || "";
+            text = text.replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "").trim();
+            const match = text.match(/\{[\s\S]*?\}/);
+            if (match) {
+              const parsed = JSON.parse(match[0]);
+              if (parsed.keywords && Array.isArray(parsed.keywords)) {
+                return {
+                  category: parsed.category || "General",
+                  keywords: parsed.keywords,
+                };
+              }
+            }
+          } catch {
+            // try next model
+          }
+        }
+      }
+    } catch (groqErr) {
+      console.warn("⚠️ Groq intent parsing fallback active:", (groqErr as any)?.message || groqErr);
+    }
+
+    // 2. Gemini fallback
     try {
       const genAI = getGeminiClient();
-      if (!genAI) {
-        throw new Error("GEMINI_API_KEY is not configured");
-      }
-      let model = genAI.getGenerativeModel({
-        model: "gemini-3.6-flash",
-        tools: [
-          {
-            functionDeclarations: [
-              {
-                name: "extractIntent",
-                description: "Extract the shopping intent from the user message",
-                parameters: {
-                  type: SchemaType.OBJECT,
-                  properties: {
-                    category: {
-                      type: SchemaType.STRING,
-                      description:
-                        "Product category e.g. 'running shoes', 'socks', 'tee'",
+      if (genAI) {
+        const model = genAI.getGenerativeModel({
+          model: "gemini-3.6-flash",
+          tools: [
+            {
+              functionDeclarations: [
+                {
+                  name: "extractIntent",
+                  description: "Extract the shopping intent from the user message",
+                  parameters: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                      category: {
+                        type: SchemaType.STRING,
+                        description:
+                          "Product category e.g. 'running shoes', 'socks', 'tee'",
+                      },
+                      keywords: {
+                        type: SchemaType.ARRAY,
+                        items: { type: SchemaType.STRING },
+                        description: "Key search terms from the message",
+                      },
                     },
-                    keywords: {
-                      type: SchemaType.ARRAY,
-                      items: { type: SchemaType.STRING },
-                      description: "Key search terms from the message",
-                    },
+                    required: ["keywords"],
                   },
-                  required: ["keywords"],
                 },
-              },
-            ],
-          },
-        ],
-        toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY } },
-      });
+              ],
+            },
+          ],
+          toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY } },
+        });
 
-      const result = await model.generateContent(
-        `Extract shopping intent from: "${message}"\nBudget: ₹${spendingLimit}`
-      );
-      const calls = result.response.functionCalls();
-      if (calls?.length) {
-        return calls[0].args as { category?: string; keywords: string[] };
+        const result = await model.generateContent(
+          `Extract shopping intent from: "${message}"\nBudget: ₹${spendingLimit}`
+        );
+        const calls = result.response.functionCalls();
+        if (calls?.length) {
+          return calls[0].args as { category?: string; keywords: string[] };
+        }
       }
     } catch (err) {
       console.warn("⚠️ Gemini intent parsing fallback active:", (err as any)?.message || err);

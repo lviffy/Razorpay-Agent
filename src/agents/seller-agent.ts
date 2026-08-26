@@ -59,11 +59,10 @@ You MUST call the selectProduct function with your choice.`;
 
       let response;
       const models = [
-        "qwen/qwen3.8-27b",
+        "qwen/qwen3.8-27b",      // SellerAgent primary structured / tool calling model
+        "openai/gpt-oss-120b",    // Fallback for complex pricing reasoning
+        "qwen/qwen3.6-27b",
         "groq/compound-mini",
-        "openai/gpt-oss-120b",
-        "llama-3.3-70b-versatile",
-        "llama-3.1-8b-instant",
       ];
       for (const m of models) {
         try {
