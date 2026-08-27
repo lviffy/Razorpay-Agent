@@ -51,16 +51,20 @@ export async function resolveIntent(
     };
   }
 
-  // ── 4.1 Check for quantity expression ("i will get 2 rohann", "i want 2", "2 units", "buy 2", "qty 2", "2") ──
+  // ── 4.1 Check for quantity expression ("i will get 2 rohann", "i want one shayanna", "buy 2", "qty 2") ──
   const isStockAsk = /how many (qty|quantity|units|pieces|items)? (are )?available|how much stock|in stock|qty available|available qty/i.test(rawLower);
+  const extractedQuantity = !isStockAsk ? extractQuantityFromText(userMessage) : undefined;
 
-  const qtyMatch = !isStockAsk ? rawLower.match(/(?:i (?:will )?(?:get|take|want|buy|need|order)|buy|need|order|take|give me|send|get)\s+(\d+)|(\d+)\s*(?:units|qty|quantity|pieces|items|pairs|nos)|^\s*(\d+)\s*$/i) : null;
-  let extractedQuantity: number | undefined;
-  if (qtyMatch) {
-    const val = parseInt(qtyMatch[1] || qtyMatch[2] || qtyMatch[3], 10);
-    if (!isNaN(val) && val > 0 && val < 1000) {
-      extractedQuantity = val;
-    }
+  // ── 4.2 Check for Discount Request on Active Product ───────────────────────
+  const isDiscountAsk = /any discounts?|anything less|any deal|cheaper|less|discount|discounts|lower|best price|counter|can you do|reduce|margin|rock bottom|offers?|special price/i.test(rawLower);
+  if (isDiscountAsk && (state.activeProduct || state.currentOffer)) {
+    const prod = state.activeProduct || (availableProducts.find(p => p.title.toLowerCase().trim() === state.currentOffer?.productTitle.toLowerCase().trim()));
+    return {
+      intent: "PRICE_NEGOTIATION",
+      referencedProductTitle: prod?.title,
+      referencedVariantId: prod?.variantId || prod?.shopifyVariantId,
+      confidence: 0.96,
+    };
   }
 
   // Check direct product name match in catalog
@@ -107,28 +111,31 @@ export async function resolveIntent(
       intent: "PRODUCT_SEARCH",
       referencedProductTitle: exactProductMatch.title,
       referencedVariantId: exactProductMatch.shopifyVariantId,
+      requestedQuantity: extractedQuantity || 1,
       confidence: 0.95,
     };
   }
 
-  // ── 5. Context-driven Short Confirmations ("yes", "ok", "deal", "sure") ──
-  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|send payment link|i want this|take it|let's do it|go ahead|send it|please send)$/i.test(rawLower);
+  // ── 5. Context-driven Short Confirmations & Checkout Triggers ("yes", "ok", "deal", "okay checkout", "checkout") ──
+  const isAffirmativeOrCheckout =
+    /^(yes|yeah|yep|yup|sure|proceed|ok|okay|k|deal|done|checkout|okay checkout|ok checkout|checkout please|lets checkout|let's checkout|buy|buy it|buy now|order|order now|confirm|confirm order|lock deal|lock it|pay|pay now|lets pay|send link|send payment link|send payment|send razorpay link|payment link|payment link please|i want this|take it|let's do it|lets do it|go ahead|send it|please send|i will buy|i'll take it)$/i.test(rawLower) ||
+    /\b(checkout|send payment link|send link|pay now|confirm order|place order)\b/i.test(rawLower);
 
   // If user previously asked/offered catalog and replies "yes"
-  if (isAffirmative && state.awaitingConfirmation === "CATALOG") {
+  if (isAffirmativeOrCheckout && state.awaitingConfirmation === "CATALOG") {
     return {
       intent: "CATALOG_BROWSE",
       confidence: 0.95,
     };
   }
 
-  // If affirmative and an active product exists in context ("yes", "proceed")
-  if (isAffirmative && state.activeProduct) {
+  // If affirmative or checkout and an active product exists in context ("yes", "okay checkout", "proceed")
+  if (isAffirmativeOrCheckout && (state.activeProduct || state.currentOffer)) {
     return {
       intent: "ACCEPT_OFFER",
-      referencedProductTitle: state.activeProduct.title,
-      referencedVariantId: state.activeProduct.variantId,
-      requestedQuantity: state.requestedQuantity || 1,
+      referencedProductTitle: state.activeProduct?.title || state.currentOffer?.productTitle,
+      referencedVariantId: state.activeProduct?.variantId || state.currentOffer?.variantId,
+      requestedQuantity: extractedQuantity || state.requestedQuantity || 1,
       confidence: 0.95,
       isAffirmative: true,
     };
@@ -269,16 +276,19 @@ function fallbackIntentResolution(
   const { state, availableProducts } = context;
 
   const extractedBudget = extractBudgetFromText(message);
-  const isAffirmative = /^(yes|yeah|yep|sure|proceed|ok|okay|y|deal|buy it|send link|send payment link|i want this|take it|let's do it|go ahead|send it)$/i.test(lower);
+  const extractedQuantity = extractQuantityFromText(message);
+  const isAffirmativeOrCheckout =
+    /^(yes|yeah|yep|yup|sure|proceed|ok|okay|k|deal|done|checkout|okay checkout|ok checkout|checkout please|lets checkout|let's checkout|buy|buy it|buy now|order|order now|confirm|confirm order|lock deal|lock it|pay|pay now|lets pay|send link|send payment link|send payment|send razorpay link|payment link|payment link please|i want this|take it|let's do it|lets do it|go ahead|send it|please send|i will buy|i'll take it)$/i.test(lower) ||
+    /\b(checkout|send payment link|send link|pay now|confirm order|place order)\b/i.test(lower);
   const isNegative = /^(no|nah|nope|not interested|too expensive|too much|cancel|don't want)$/i.test(lower);
-  const isPriceAsk = /any discount|anything less|any deal|cheaper|less|discount|lower|best price|counter|can you do|reduce|margin|rock bottom/i.test(lower);
+  const isPriceAsk = /any discounts?|anything less|any deal|cheaper|less|discount|discounts|lower|best price|counter|can you do|reduce|margin|rock bottom|offers?|special price/i.test(lower);
 
-  if (isAffirmative && state.activeProduct) {
+  if (isAffirmativeOrCheckout && (state.activeProduct || state.currentOffer)) {
     return {
       intent: "ACCEPT_OFFER",
-      referencedProductTitle: state.activeProduct.title,
-      referencedVariantId: state.activeProduct.variantId,
-      requestedQuantity: state.requestedQuantity || 1,
+      referencedProductTitle: state.activeProduct?.title || state.currentOffer?.productTitle,
+      referencedVariantId: state.activeProduct?.variantId || state.currentOffer?.variantId,
+      requestedQuantity: extractedQuantity || state.requestedQuantity || 1,
       confidence: 0.95,
       isAffirmative: true,
     };
@@ -293,11 +303,12 @@ function fallbackIntentResolution(
     };
   }
 
-  if (isPriceAsk && state.activeProduct) {
+  if (isPriceAsk && (state.activeProduct || state.currentOffer)) {
+    const prod = state.activeProduct || (availableProducts.find(p => p.title.toLowerCase().trim() === state.currentOffer?.productTitle.toLowerCase().trim()));
     return {
       intent: "PRICE_NEGOTIATION",
-      referencedProductTitle: state.activeProduct.title,
-      referencedVariantId: state.activeProduct.variantId,
+      referencedProductTitle: prod?.title,
+      referencedVariantId: prod?.variantId || prod?.shopifyVariantId,
       requestedPrice: extractedBudget || undefined,
       confidence: 0.9,
     };
@@ -320,6 +331,7 @@ function fallbackIntentResolution(
       referencedProductTitle: matchedProd.title,
       referencedVariantId: matchedProd.shopifyVariantId,
       extractedBudget: extractedBudget || undefined,
+      requestedQuantity: extractedQuantity || 1,
       isPhotoRequest,
       confidence: 0.9,
     };
@@ -347,8 +359,66 @@ function fallbackIntentResolution(
     referencedProductTitle: state.activeProduct?.title,
     referencedVariantId: state.activeProduct?.variantId,
     extractedBudget: extractedBudget || undefined,
+    requestedQuantity: extractedQuantity || undefined,
     confidence: 0.6,
   };
+}
+
+const NUMBER_WORDS: Record<string, number> = {
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  single: 1,
+  a: 1,
+  an: 1,
+  pair: 1,
+};
+
+export function extractQuantityFromText(message: string): number | undefined {
+  const lower = message.toLowerCase().trim();
+
+  // "1x", "2x", "3x"
+  const xMatch = lower.match(/\b(\d+)\s*x\b/);
+  if (xMatch) {
+    const val = parseInt(xMatch[1], 10);
+    if (!isNaN(val) && val > 0 && val < 1000) return val;
+  }
+
+  // "i want 2", "i will get 2", "buy 2", "need 2", "order 2", "give me 2", "send 2", "get 2", "take 2", "i want one"
+  const verbMatch = lower.match(/(?:i (?:will )?(?:get|take|want|buy|need|order)|buy|need|order|take|give me|send|get)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten|single|a|an|pair)\b/);
+  if (verbMatch) {
+    const rawVal = verbMatch[1];
+    if (NUMBER_WORDS[rawVal] !== undefined) return NUMBER_WORDS[rawVal];
+    const val = parseInt(rawVal, 10);
+    if (!isNaN(val) && val > 0 && val < 1000) return val;
+  }
+
+  // "2 units", "2 qty", "2 pieces", "two items", "1 piece"
+  const unitMatch = lower.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:units|qty|quantity|pieces|piece|items|item|pairs|pair|nos)\b/);
+  if (unitMatch) {
+    const rawVal = unitMatch[1];
+    if (NUMBER_WORDS[rawVal] !== undefined) return NUMBER_WORDS[rawVal];
+    const val = parseInt(rawVal, 10);
+    if (!isNaN(val) && val > 0 && val < 1000) return val;
+  }
+
+  // Exact single number message: "2", "two", "1"
+  const exactMatch = lower.match(/^(\d+|one|two|three|four|five|six|seven|eight|nine|ten)$/);
+  if (exactMatch) {
+    const rawVal = exactMatch[1];
+    if (NUMBER_WORDS[rawVal] !== undefined) return NUMBER_WORDS[rawVal];
+    const val = parseInt(rawVal, 10);
+    if (!isNaN(val) && val > 0 && val < 1000) return val;
+  }
+
+  return undefined;
 }
 
 export function extractBudgetFromText(message: string): number | null {

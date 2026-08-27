@@ -46,6 +46,19 @@ export async function getStore(storeId: string): Promise<Store | null> {
   return rows[0] ?? null;
 }
 
+export function deduplicateProducts(products: Product[]): Product[] {
+  const seen = new Set<string>();
+  const unique: Product[] = [];
+  for (const p of products) {
+    const key = `${p.title.trim().toLowerCase()}_${(p.sku || "").trim().toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(p);
+    }
+  }
+  return unique;
+}
+
 export async function getProducts(storeId: string): Promise<Product[]> {
   try {
     await db.query(
@@ -86,7 +99,7 @@ export async function getProducts(storeId: string): Promise<Product[]> {
         ORDER BY created_at DESC`
       );
 
-  return rows.map(mapProductRow);
+  return deduplicateProducts(rows.map(mapProductRow));
 }
 
 export async function getAllActiveProducts(): Promise<Product[]> {
@@ -118,7 +131,7 @@ export async function getAllActiveProducts(): Promise<Product[]> {
     ORDER BY p.created_at DESC`
   );
 
-  return rows.map(mapProductRow);
+  return deduplicateProducts(rows.map(mapProductRow));
 }
 
 export async function getVariant(variantId: string): Promise<Product | null> {

@@ -46,7 +46,9 @@ NEGOTIATION RULES & BOUNDS:
 
 MATCHING & PRICING MANDATES:
 1. Product Category Match: Match the specific item requested by the buyer.
-2. Pricing & Negotiation: Apply discounts up to ${rules.maxDiscountPercentage}% off listed price to win the deal.
+2. Pricing Strategy:
+   - If the buyer explicitly asks for a discount, negotiates, or specifies a target price below listed price, offer a fair discounted price down to floorPrice (max discount ${rules.maxDiscountPercentage}%).
+   - If the buyer is simply searching, asking what you have, or expressing initial intent without negotiating, OFFER AT THE STANDARD LISTED PRICE (offeredPrice = listedPrice).
 3. Hard Floor Limit: NEVER offer below the product's floorPrice. NEVER exceed max discount.
 4. Free Shipping: Set shippingFree = true if the offered price >= ${rules.freeShippingThreshold || 999999}.
 5. Currency: Strictly use Indian Rupees (₹). NEVER use dollars ($) or USD.
@@ -194,11 +196,14 @@ You MUST call the selectProduct function with your choice.`;
     const targetPrice = query.targetPrice;
 
     let offeredPrice = listedPrice;
+    const isDiscountRequested = /discount|less|cheaper|lower|deal|offer|bargain|reduce|margin|budget|best price/i.test(qLower);
     if (targetPrice && targetPrice < listedPrice) {
       const minAllowed = Math.max(floorPrice, Math.round(listedPrice * (1 - maxDiscount / 100)));
       offeredPrice = Math.max(targetPrice, minAllowed);
-    } else {
+    } else if (isDiscountRequested) {
       offeredPrice = Math.max(floorPrice, Math.round(listedPrice * (1 - maxDiscount / 100)));
+    } else {
+      offeredPrice = listedPrice;
     }
 
     const freeShipping = Boolean(
@@ -218,7 +223,7 @@ You MUST call the selectProduct function with your choice.`;
       },
       offeredPrice,
       shippingFree: freeShipping,
-      reasoningTrace: `Matched ${match.title} at discounted price ₹${offeredPrice} (listed ₹${listedPrice}, floor ₹${floorPrice})`,
+      reasoningTrace: `Offered ${match.title} at ${offeredPrice < listedPrice ? "discounted" : "standard"} price ₹${offeredPrice} (listed ₹${listedPrice}, floor ₹${floorPrice})`,
       sessionId: query.sessionId,
     };
   }

@@ -29,20 +29,36 @@ export async function executeCommerceAction(
 
   // ── 2. Catalog Browsing ───────────────────────────────────────────────────
   if (intent.intent === "CATALOG_BROWSE") {
-    const catalogItems = availableProducts.slice(0, 10).map((p) => ({
+    const uniqueProducts: Product[] = [];
+    const seenTitles = new Set<string>();
+    for (const p of availableProducts) {
+      const key = p.title.trim().toLowerCase();
+      if (!seenTitles.has(key)) {
+        seenTitles.add(key);
+        uniqueProducts.push(p);
+      }
+    }
+
+    const catalogItems = uniqueProducts.slice(0, 10).map((p) => ({
       title: p.title,
       price: p.listedPrice || p.price || 0,
       sku: p.sku,
       inStock: (p.inventoryAvailable || 0) > 0,
     }));
 
-    const productsWithImages = availableProducts
-      .filter((p) => p.imageUrl && p.imageUrl.startsWith("http") && !p.imageUrl.startsWith("blob:"))
-      .slice(0, 5);
+    const seenImages = new Set<string>();
+    const productsWithImages = uniqueProducts
+      .filter((p) => {
+        if (!p.imageUrl || !p.imageUrl.startsWith("http") || p.imageUrl.startsWith("blob:")) return false;
+        if (seenImages.has(p.imageUrl)) return false;
+        seenImages.add(p.imageUrl);
+        return true;
+      })
+      .slice(0, 2);
 
     const mediaList = productsWithImages.map((p) => ({
       mediaUrl: p.imageUrl!,
-      caption: `• *${p.title}* — ₹${(p.listedPrice || p.price || 0).toLocaleString("en-IN")} (${p.inventoryAvailable} in stock) 📸`,
+      caption: `• *${p.title}* — ₹${(p.listedPrice || p.price || 0).toLocaleString("en-IN")} (${p.inventoryAvailable} in stock) 📦`,
     }));
 
     return {
@@ -498,7 +514,7 @@ function resolveTargetProduct(
     const refLower = intent.referencedProductTitle.toLowerCase().trim();
     const p = availableProducts.find((item) => {
       const tLower = item.title.toLowerCase().trim();
-      return tLower.includes(refLower) || refLower.includes(tLower) || (item.sku && refLower.includes(item.sku.toLowerCase()));
+      return tLower === refLower || tLower.includes(refLower) || refLower.includes(tLower) || (item.sku && refLower.includes(item.sku.toLowerCase()));
     });
     if (p) return p;
   }
@@ -513,7 +529,9 @@ function resolveTargetProduct(
     const p = availableProducts.find(
       (item) => item.title.toLowerCase().trim() === actLower ||
                 item.shopifyVariantId === activeProduct.variantId ||
-                item.id === activeProduct.id
+                item.id === activeProduct.id ||
+                item.title.toLowerCase().trim().includes(actLower) ||
+                actLower.includes(item.title.toLowerCase().trim())
     );
     if (p) return p;
   }
@@ -523,7 +541,7 @@ function resolveTargetProduct(
     if (p) return p;
   }
 
-  return availableProducts[0] || null;
+  return null;
 }
 
 function getProductKnownPrice(targetProduct: Product, state: ConversationState): number {

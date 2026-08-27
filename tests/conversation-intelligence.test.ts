@@ -405,4 +405,52 @@ describe("Conversational Intelligence Test Suite", () => {
     const mentionsTotal = resp11B.text.includes("2,200") || resp11B.text.includes("2200");
     expect(mentionsTotal).toBe(true);
   }, 45000);
+
+  test("Scenario 12: Word Quantity & Standard Listed Price ('I want one Shayanna')", async () => {
+    const ctx12 = createMockContext();
+    const intent12 = await resolveIntent("I want one Shayanna", ctx12);
+    expect(intent12.requestedQuantity).toBe(1);
+    expect(intent12.referencedProductTitle?.toLowerCase()).toContain("shayanna");
+
+    const comm12 = await executeCommerceAction(intent12, ctx12, "I want one Shayanna");
+    expect(comm12.product?.title.toLowerCase()).toContain("shayanna");
+    expect(comm12.product?.offeredPrice).toBe(23000); // Standard listed price, no premature discount!
+  }, 45000);
+
+  test("Scenario 13: Checkout Command Without Ambiguity ('OKAY CHECKOUT')", async () => {
+    const ctx13 = createMockContext({
+      activeProduct: {
+        id: "b1ad2e4b-79f4-41cf-a65a-8684d60e798c",
+        title: "Shayanna",
+        listedPrice: 23000,
+        floorPrice: 22000,
+        offeredPrice: 22000,
+        inventoryAvailable: 7,
+        variantId: "var_shayanna_002",
+      },
+      currentOffer: {
+        productTitle: "Shayanna",
+        variantId: "var_shayanna_002",
+        offeredPrice: 22000,
+        listedPrice: 23000,
+        shippingFree: true,
+        status: "COUNTER",
+      },
+      requestedQuantity: 1,
+      sessionState: "NEGOTIATING",
+    });
+
+    const intent13 = await resolveIntent("OKAY CHECKOUT", ctx13);
+    expect(intent13.intent).toBe("ACCEPT_OFFER");
+    expect(intent13.isAffirmative).toBe(true);
+
+    const comm13 = await executeCommerceAction(intent13, ctx13, "OKAY CHECKOUT");
+    expect(comm13.type).toBe("PAYMENT_LINK_CREATED");
+    expect(comm13.quantity).toBe(1);
+    expect(comm13.paymentAmount).toBe(22000);
+
+    const resp13 = await generateCustomerResponse("OKAY CHECKOUT", intent13, comm13, ctx13);
+    expect(resp13.text.toLowerCase()).not.toContain("what type of product are you looking for");
+    expect(resp13.isPaymentLink).toBe(true);
+  }, 45000);
 });

@@ -29,11 +29,13 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     return;
   }
 
-  const [availableProducts, rules, store] = await Promise.all([
-    getAllActiveProducts(),
+  const [storeProducts, rules, store] = await Promise.all([
+    getProducts(activeStoreId),
     getNegotiationRules(activeStoreId),
     getStore(activeStoreId),
   ]);
+
+  const availableProducts = storeProducts.length > 0 ? storeProducts : await getAllActiveProducts();
 
   const activeStore = store || {
     id: activeStoreId,
@@ -77,7 +79,17 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   let nextActiveProduct = state.activeProduct;
   let nextCurrentOffer = state.currentOffer;
   let nextAwaitingConfirmation = state.awaitingConfirmation;
-  let nextRequestedQuantity = intent.requestedQuantity || state.requestedQuantity;
+
+  let nextRequestedQuantity = 1;
+  if (intent.requestedQuantity !== undefined) {
+    nextRequestedQuantity = intent.requestedQuantity;
+  } else if (commerceResult.type === "GREETING" || commerceResult.type === "PAYMENT_LINK_CREATED") {
+    nextRequestedQuantity = 1;
+  } else if (commerceResult.product && state.activeProduct && commerceResult.product.id !== state.activeProduct.id) {
+    nextRequestedQuantity = 1;
+  } else if (state.requestedQuantity) {
+    nextRequestedQuantity = state.requestedQuantity;
+  }
 
   if (commerceResult.type === "GREETING") {
     nextActiveProduct = undefined;
@@ -128,7 +140,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     awaitingConfirmation: nextAwaitingConfirmation,
     activeCategory: intent.category,
     sessionState: nextSessionState,
-    dealAmount: commerceResult.paymentAmount || (nextActiveProduct?.offeredPrice ? nextActiveProduct.offeredPrice * (nextRequestedQuantity || 1) : undefined),
+    dealAmount: commerceResult.paymentAmount || (nextActiveProduct?.offeredPrice ? nextActiveProduct.offeredPrice * nextRequestedQuantity : undefined),
   });
 
   // ── 7. Dispatch to WhatsApp Outbound ──────────────────────────────────────
