@@ -79,15 +79,15 @@ export default function AuditExplorerPage() {
         const ev = JSON.parse(e.data);
         const ids = ev.ids || {};
         const newRecord: AuditRecord = {
-          id: `sse_${Date.now()}`,
+          id: ev.id || `sse_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
           eventType: ev.type || "SYSTEM_EVENT",
           whatsappMessageId: ids.whatsappMessageId,
           conversationId: ids.conversationId,
-          x402TransactionId: ids.x402TransactionId || `x402_${Date.now()}`,
+          x402TransactionId: ids.x402TransactionId || `x402_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           razorpayPaymentId: ids.razorpayPaymentId,
           orderId: ids.orderId,
           payload: ev.payload || {},
-          checksum: `sse_live_${Date.now().toString(16)}`,
+          checksum: `sse_live_${Date.now().toString(16)}_${Math.random().toString(36).slice(2, 6)}`,
           timestamp: new Date().toISOString(),
           isNew: true,
         };
@@ -162,7 +162,7 @@ export default function AuditExplorerPage() {
               : "border-zinc-600/60 bg-zinc-900";
             const hashColor = isCapture ? "text-emerald-400" : isLock ? "text-amber-400" : isFail ? "text-red-400" : "text-zinc-400";
             return (
-              <React.Fragment key={r.id}>
+              <React.Fragment key={`${r.id || 'rec'}_${i}`}>
                 <button
                   onClick={() => setSelectedRecord(r)}
                   className={`shrink-0 p-3 rounded-xl border ${blockColor} w-48 text-left transition-all hover:opacity-90 ${selectedRecord?.id === r.id ? "ring-2 ring-white/20" : ""}`}
@@ -309,14 +309,14 @@ export default function AuditExplorerPage() {
               No audit events matched your search query.
             </div>
           ) : (
-            filtered.map((item) => {
+            filtered.map((item, idx) => {
               const isSelected = active?.id === item.id;
               const isCaptured = item.eventType === "PAYMENT_CAPTURED";
               const isLock = item.eventType === "INVENTORY_LOCKED";
 
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id || 'item'}_${idx}`}
                   onClick={() => setSelectedRecord(item)}
                   className={`p-3.5 cursor-pointer transition-all ${
                     item.isNew

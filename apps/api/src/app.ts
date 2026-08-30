@@ -25,6 +25,7 @@ import activityRouter from "./modules/activity/routes.ts";
 import simulatorRouter from "./modules/simulator/routes.ts";
 import onboardingRouter from "./modules/onboarding/routes.ts";
 import shopifyRouter from "./modules/shopify/routes.ts";
+import growthAIRouter from "./modules/growth-ai/routes.ts";
 
 export const app = express();
 
@@ -214,6 +215,7 @@ app.use("/api/v1/activity", activityRouter);
 app.use("/api/v1/simulator", simulatorRouter);
 app.use("/api/v1/onboarding", onboardingRouter);
 app.use("/api/v1/shopify", shopifyRouter);
+app.use("/api/v1/growth-ai", growthAIRouter);
 
 // ── Centralized Error Handler ────────────────────────────────────────────────
 app.use(errorHandler);

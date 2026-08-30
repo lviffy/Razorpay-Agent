@@ -14,6 +14,7 @@ import {
   Zap,
   Settings,
   X,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import { useStore } from "@/lib/context/store-context";
 
 const mainNavItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/growth-ai", label: "Growth Advisor", icon: Sparkles, badge: "AI ✨" },
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/conversations", label: "Conversations", icon: MessageSquare },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
@@ -69,6 +71,18 @@ export function SidebarNavContent({ onItemClick }: { onItemClick?: () => void })
                 />
                 <span>{item.label}</span>
               </div>
+              {item.badge && (
+                <span
+                  className={cn(
+                    "text-[9px] font-bold px-1.5 py-0.5 rounded-md",
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                  )}
+                >
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

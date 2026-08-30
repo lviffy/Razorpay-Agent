@@ -51,12 +51,12 @@ router.get("/", async (req: Request, res: Response) => {
 
     const { rows: orderStats } = await db.query(
       `SELECT
-        COALESCE(SUM(amount), 0) as total_gmv,
+        COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN amount ELSE 0 END), 0) as total_gmv,
         COUNT(*) as total_orders,
         COUNT(CASE WHEN status = 'CAPTURED' THEN 1 END) as captured_orders,
         COALESCE(AVG(CASE WHEN status = 'CAPTURED' THEN amount END), 0) as avg_order_value,
-        COALESCE(SUM(discount_applied), 0) as total_discount_given,
-        COALESCE(SUM(original_price), 0) as total_original_value
+        COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN discount_applied ELSE 0 END), 0) as total_discount_given,
+        COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN original_price ELSE 0 END), 0) as total_original_value
        FROM orders
        WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
       [storeId]
@@ -98,10 +98,13 @@ router.get("/", async (req: Request, res: Response) => {
     );
 
     const totalGmv = parseFloat(orderStats[0]?.total_gmv || "0");
+    const totalOrders = parseInt(orderStats[0]?.total_orders || "0", 10);
     const capturedOrders = parseInt(orderStats[0]?.captured_orders || "0", 10);
     const totalConvs = parseInt(convStats[0]?.total_conversations || "0", 10);
     const closedDeals = parseInt(convStats[0]?.closed_deals || "0", 10);
-    const convRate = totalConvs > 0 ? Number(((closedDeals / totalConvs) * 100).toFixed(1)) : (capturedOrders > 0 ? 100 : 0);
+    const convRate = totalConvs > 0
+      ? Number(((closedDeals / totalConvs) * 100).toFixed(1))
+      : (totalOrders > 0 ? Number(((capturedOrders / totalOrders) * 100).toFixed(1)) : 0);
     const avgOrderVal = Math.round(parseFloat(orderStats[0]?.avg_order_value || "0"));
     const totalDiscountGiven = parseFloat(orderStats[0]?.total_discount_given || "0");
     const avgDiscount = totalGmv > 0 ? Number(((totalDiscountGiven / (totalGmv + totalDiscountGiven)) * 100).toFixed(1)) : 0;

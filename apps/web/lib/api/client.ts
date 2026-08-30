@@ -896,4 +896,53 @@ export const api = {
       return clientOnboardingSession;
     },
   },
+  growthAi: {
+    chat: async (payload: { messages?: Array<{ role: "user" | "assistant"; content: string }>; message?: string }): Promise<any> => {
+      return fetchJson<any>(
+        "/growth-ai/chat",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+        {
+          reply: "I have analyzed your store metrics. Total GMV is healthy and dealer margins are guarded.",
+          suggestedActions: [],
+        }
+      );
+    },
+    getBriefing: async (): Promise<any> => {
+      return fetchJson<any>(
+        "/growth-ai/briefing",
+        { method: "GET" },
+        {
+          headline: "Store Health Overview",
+          summary: "Autonomous AI is actively negotiating with buyers and defending margins.",
+          highlights: [],
+          inventoryAlerts: [],
+          growthOpportunities: [],
+        }
+      );
+    },
+    getInventoryRadar: async (filter = "ALL"): Promise<any> => {
+      return fetchJson<any>(
+        `/growth-ai/inventory-radar?filter=${filter}`,
+        { method: "GET" },
+        {
+          totalCatalogSKUs: 0,
+          summary: { criticalStockoutRisks: 0, lowStockWarnings: 0, deadStockAlerts: 0, healthyStockCount: 0 },
+          products: [],
+        }
+      );
+    },
+    executeAction: async (action: { actionType: string; sku?: string; value: number }): Promise<any> => {
+      return fetchJson<any>(
+        "/growth-ai/action",
+        {
+          method: "POST",
+          body: JSON.stringify(action),
+        },
+        { success: false, message: "Action failed" }
+      );
+    },
+  },
 };

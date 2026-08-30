@@ -6,12 +6,15 @@ import { AnalyticsSummary } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import {
   TrendingUp,
   Percent,
   ShieldCheck,
   CreditCard,
   ShoppingBag,
+  Sparkles,
 } from "lucide-react";
 
 export default function AnalyticsPage() {
@@ -52,6 +55,13 @@ export default function AnalyticsPage() {
             Performance metrics, dealer margin preservation, and conversion velocity across autonomous WhatsApp negotiations.
           </p>
         </div>
+
+        <Link href="/dashboard/growth-ai">
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold h-8 gap-1.5 shadow-xs">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Launch Growth Advisor</span>
+          </Button>
+        </Link>
       </div>
 
       {/* 4 Top KPI Cards using shadcn Cards */}

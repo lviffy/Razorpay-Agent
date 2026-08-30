@@ -62,7 +62,7 @@ export async function resolveIntent(
     return {
       intent: "PRICE_NEGOTIATION",
       referencedProductTitle: prod?.title,
-      referencedVariantId: prod?.variantId || prod?.shopifyVariantId,
+      referencedVariantId: (prod as any)?.variantId || (prod as any)?.shopifyVariantId,
       confidence: 0.96,
     };
   }
@@ -308,7 +308,7 @@ function fallbackIntentResolution(
     return {
       intent: "PRICE_NEGOTIATION",
       referencedProductTitle: prod?.title,
-      referencedVariantId: prod?.variantId || prod?.shopifyVariantId,
+      referencedVariantId: (prod as any)?.variantId || (prod as any)?.shopifyVariantId,
       requestedPrice: extractedBudget || undefined,
       confidence: 0.9,
     };

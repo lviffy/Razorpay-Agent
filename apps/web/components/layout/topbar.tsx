@@ -54,6 +54,7 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { ProfileDialog } from "@/components/layout/profile-dialog";
+import { GrowthAICopilotDrawer } from "@/components/growth-ai/growth-ai-copilot-drawer";
 import { api, defaultMerchantProfile } from "@/lib/api/client";
 import { MerchantProfile } from "@/lib/types";
 import { useStore } from "@/lib/context/store-context";
@@ -65,6 +66,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
@@ -246,9 +248,19 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <Search className="w-4 h-4" />
           </button>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCopilotOpen(true)}
+            className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 hover:text-blue-800 border-blue-200 px-2.5 py-1.5 h-8 rounded-lg shadow-2xs transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+            <span>Growth AI</span>
+          </Button>
+
           <Link
             href="/dashboard/whatsapp"
-            className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-3 py-1.5 h-8 rounded-lg transition-colors shadow-2xs"
           >
             <Radio className="w-3.5 h-3.5 text-blue-600" />
             <span>Simulate Lead</span>
@@ -436,6 +448,11 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <Store className="w-4 h-4 text-zinc-500" />
               <span>Dashboard Overview</span>
             </CommandItem>
+            <CommandItem onSelect={() => handleNavigate("/dashboard/growth-ai")}>
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span>AI Growth & Inventory Advisor</span>
+              <CommandShortcut>AI ✨</CommandShortcut>
+            </CommandItem>
             <CommandItem onSelect={() => handleNavigate("/dashboard/products")}>
               <Package className="w-4 h-4 text-zinc-500" />
               <span>Products & Catalog</span>
@@ -491,6 +508,12 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
         open={profileOpen}
         onOpenChange={setProfileOpen}
         onProfileUpdated={setProfile}
+      />
+
+      {/* Omnipresent Growth AI Copilot Drawer */}
+      <GrowthAICopilotDrawer
+        open={copilotOpen}
+        onOpenChange={setCopilotOpen}
       />
     </>
   );
