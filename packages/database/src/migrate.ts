@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { db } from "./client.ts";
+import { db } from "./client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Migration — idempotent, safe to run on every boot

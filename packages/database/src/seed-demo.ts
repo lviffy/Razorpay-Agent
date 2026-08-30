@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { db } from "./client.ts";
+import { db } from "./client";
 
 export async function seedDemoData() {
   const client = await db.connect();

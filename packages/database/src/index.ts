@@ -1,3 +1,3 @@
-export { db } from "./client.ts";
-export { migrate } from "./migrate.ts";
-export { seedDemoData } from "./seed-demo.ts";
+export { db } from "./client";
+export { migrate } from "./migrate";
+export { seedDemoData } from "./seed-demo";
