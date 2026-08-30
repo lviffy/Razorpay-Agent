@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  transpilePackages: ["@zapai/database", "@zapai/types"],
+  serverExternalPackages: ["pg"],
   eslint: {
     ignoreDuringBuilds: true,
   },

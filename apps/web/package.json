@@ -36,8 +36,9 @@
     "@radix-ui/react-toast": "^1.2.23",
     "@radix-ui/react-toggle": "^1.1.18",
     "@radix-ui/react-toggle-group": "^1.1.19",
-    "@radix-ui/react-tooltip": "^1.2.16",
+    "@zapai/database": "workspace:*",
     "@zapai/types": "workspace:*",
+    "pg": "^8.13.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -64,6 +65,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
+    "@types/pg": "^8.11.10",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@zapai/config-typescript": "workspace:*",
