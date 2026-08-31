@@ -116,10 +116,10 @@ export function HeroHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pt-3 sm:pt-4 transition-all duration-300 pointer-events-none">
       <div
         className={cn(
-          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass border border-black/[0.08]',
+          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass border border-black/[0.08] py-3',
           scrolled
-            ? 'max-w-5xl py-2.5 px-4 sm:px-6 bg-white/90 shadow-xs'
-            : 'py-3 px-5 sm:px-7 bg-white/80'
+            ? 'max-w-5xl px-4 sm:px-6 bg-white/95 backdrop-blur-md border-black/[0.12]'
+            : 'px-5 sm:px-7 bg-white/80 backdrop-blur-sm'
         )}
       >
         <div className="flex items-center justify-between">
