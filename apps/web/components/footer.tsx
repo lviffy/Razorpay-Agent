@@ -26,10 +26,10 @@ export default function Footer() {
           <div className="flex flex-wrap items-center justify-center gap-3.5">
             <Link
               href={isAuthenticated ? "/dashboard" : "/signup"}
-              className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-xs"
+              className="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-colors duration-150"
             >
               <span>{isAuthenticated ? "Dashboard" : "Sign Up"}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-3.5 h-3.5 opacity-85 group-hover:opacity-100 transition-opacity duration-150" />
             </Link>
           </div>
         </div>
@@ -39,7 +39,7 @@ export default function Footer() {
           <p>© 2026 ZapAI. Built for Razorpay Agentic Commerce.</p>
           <div className="flex items-center gap-5 text-[11px]">
             <span className="flex items-center gap-2 text-emerald-700 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-subtle-pulse" />
               A2A Protocol Live • Razorpay Rails Connected
             </span>
             <span className="text-surface-300 hidden sm:inline">•</span>

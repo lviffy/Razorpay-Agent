@@ -31,9 +31,9 @@ export default function CTASection() {
         {/* Primary CTA Button */}
         <div className="pt-2">
           <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
-            <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-9 h-14 text-base gap-2 cursor-pointer shadow-sm transition-all hover:scale-[1.02] active:scale-[0.99]">
+            <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-9 h-14 text-base gap-2 cursor-pointer transition-colors duration-150">
               <span>{isAuthenticated ? "Open Dashboard" : "Start Free"}</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-5 h-5 opacity-85 group-hover:opacity-100 transition-opacity duration-150" />
             </Button>
           </Link>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { motion } from 'framer-motion'
 import {
   CheckCircle2,
   XCircle,
@@ -132,7 +133,13 @@ export default function ComparisonSection() {
       id="why-agentic"
       className="py-12 sm:py-16 bg-[#fafbfc] text-surface-900 border-b border-black/[0.06] relative overflow-hidden"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-8">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-8"
+      >
         {/* Section Header */}
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-brand-50 border border-brand-200/80 text-brand-700 text-xs font-semibold tracking-wide uppercase font-mono">
@@ -154,7 +161,7 @@ export default function ComparisonSection() {
         </div>
 
         {/* Unified Primitives Matrix Container */}
-        <div className="bg-white rounded-2xl border border-black/[0.08] shadow-2xs overflow-hidden">
+        <div className="bg-white rounded-2xl border border-black/[0.08] overflow-hidden">
           {/* Table Header on Desktop */}
           <div className="hidden lg:grid grid-cols-12 gap-5 px-6 py-2.5 bg-surface-50/80 border-b border-black/[0.06] text-[10.5px] font-mono font-bold uppercase tracking-wider text-surface-500">
             <div className="col-span-4">Commerce Primitive</div>
@@ -175,13 +182,13 @@ export default function ComparisonSection() {
               return (
                 <div
                   key={item.id}
-                  className="p-4 sm:py-4 sm:px-6 hover:bg-surface-50/40 transition-colors duration-150"
+                  className="p-4 sm:py-4 sm:px-6 hover:bg-surface-50/50 transition-colors duration-150"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-start">
                     {/* Column 1: Primitive Details */}
                     <div className="lg:col-span-4 space-y-1.5">
                       <div className="flex items-start gap-2.5">
-                        <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100/90 flex items-center justify-center shrink-0 shadow-2xs text-brand-600">
+                        <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-100/90 flex items-center justify-center shrink-0 text-brand-600">
                           <Icon className="w-4 h-4" />
                         </div>
                         <div>
@@ -221,13 +228,13 @@ export default function ComparisonSection() {
                     </div>
 
                     {/* Column 3: ZapAI Dominant Primitive */}
-                    <div className="lg:col-span-5 p-3 rounded-xl bg-brand-50/70 border border-brand-200/80 shadow-2xs space-y-2">
+                    <div className="lg:col-span-5 p-3 rounded-xl bg-brand-50/70 border border-brand-200/80 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-brand-800 font-bold text-[10.5px] uppercase tracking-wider font-mono">
                           <CheckCircle2 className="w-3 h-3 text-brand-600 shrink-0" />
                           <span>ZapAI Primitive</span>
                         </div>
-                        <span className="text-[9px] font-mono text-brand-700 bg-white/90 px-2 py-0.2 rounded-full border border-brand-200/80 font-semibold shadow-2xs">
+                        <span className="text-[9px] font-mono text-brand-700 bg-white/90 px-2 py-0.2 rounded-full border border-brand-200/80 font-semibold">
                           ✓ Agent-Ready
                         </span>
                       </div>
@@ -245,7 +252,7 @@ export default function ComparisonSection() {
 
                       {/* Micro-flow execution visualization */}
                       {item.zapai.flowType === 'negotiate' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono space-y-1 shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono space-y-1">
                           <div className="flex items-center justify-between text-[9.5px]">
                             <span className="line-through text-surface-400 font-sans">₹3,999 (List Price)</span>
                             <span className="text-emerald-700 font-bold font-sans">₹3,799 + Free Delivery</span>
@@ -260,7 +267,7 @@ export default function ComparisonSection() {
                       )}
 
                       {item.zapai.flowType === 'inventory' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700 shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700">
                           <span className="text-[9.5px] text-surface-500">4 Available</span>
                           <ArrowRight className="w-2.5 h-2.5 text-brand-500" />
                           <span className="text-[9.5px] font-semibold text-brand-700 bg-brand-50 px-1.5 py-0.2 rounded border border-brand-200/50">
@@ -272,7 +279,7 @@ export default function ComparisonSection() {
                       )}
 
                       {item.zapai.flowType === 'x402' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between gap-1 text-surface-700 shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between gap-1 text-surface-700">
                           <span className="text-surface-600 font-semibold text-[9.5px]">x402 Challenge</span>
                           <span className="text-surface-400">→</span>
                           <span className="text-brand-700 font-bold text-[9.5px]">ZapAI Facilitator</span>
@@ -282,7 +289,7 @@ export default function ComparisonSection() {
                       )}
 
                       {item.zapai.flowType === 'audit' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[9.5px] font-mono flex items-center justify-between gap-1 text-surface-600 overflow-x-auto shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[9.5px] font-mono flex items-center justify-between gap-1 text-surface-600 overflow-x-auto">
                           <span className="px-1 py-0.2 rounded bg-surface-100 text-surface-700 font-semibold">Mandate</span>
                           <span>→</span>
                           <span className="px-1 py-0.2 rounded bg-surface-100 text-surface-700 font-semibold">Deal</span>
@@ -296,7 +303,7 @@ export default function ComparisonSection() {
                       )}
 
                       {item.zapai.flowType === 'catalog' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700 shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700">
                           <span className="text-surface-500 font-sans text-[9.5px]">Shopify Webhook</span>
                           <span className="text-brand-600">⇄</span>
                           <span className="font-semibold text-brand-800 font-mono text-[9.5px]">Agent Schema JSON</span>
@@ -306,7 +313,7 @@ export default function ComparisonSection() {
                       )}
 
                       {item.zapai.flowType === 'mandate' && (
-                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700 shadow-2xs">
+                        <div className="p-2 rounded-lg bg-white/95 border border-brand-200/70 text-[10px] font-mono flex items-center justify-between text-surface-700">
                           <span className="text-surface-500 text-[9.5px]">Max ₹5,000 Cap</span>
                           <span className="text-surface-400">•</span>
                           <span className="text-brand-700 font-semibold text-[9.5px]">Merchant Whitelist</span>
@@ -321,7 +328,7 @@ export default function ComparisonSection() {
             })}
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

@@ -169,7 +169,7 @@ export function HeroHeader() {
                   <DropdownMenuContent
                     align="end"
                     sideOffset={8}
-                    className="w-68 p-1.5 rounded-2xl shadow-2xl border-surface-200/90 bg-white/95 backdrop-blur-md"
+                    className="w-68 p-1.5 rounded-2xl border border-surface-200 bg-white/95 backdrop-blur-md"
                   >
                     {/* User Profile Summary Header */}
                     <div className="p-3 bg-surface-50/90 rounded-xl border border-surface-100 mb-1 space-y-2">
@@ -206,7 +206,7 @@ export function HeroHeader() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/dashboard"
-                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5"
+                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5 transition-colors"
                         >
                           <LayoutDashboard className="w-4 h-4 text-surface-500 shrink-0" />
                           <span>Dashboard Overview</span>
@@ -216,7 +216,7 @@ export function HeroHeader() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/dashboard/settings/agent"
-                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5"
+                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5 transition-colors"
                         >
                           <Sparkles className="w-4 h-4 text-brand-600 shrink-0" />
                           <span>AI Seller Agent</span>
@@ -226,7 +226,7 @@ export function HeroHeader() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/dashboard/products"
-                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5"
+                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5 transition-colors"
                         >
                           <Package className="w-4 h-4 text-surface-500 shrink-0" />
                           <span>Products & Catalog</span>
@@ -236,7 +236,7 @@ export function HeroHeader() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/dashboard/orders"
-                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5"
+                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5 transition-colors"
                         >
                           <ShoppingBag className="w-4 h-4 text-surface-500 shrink-0" />
                           <span>Orders & Invoices</span>
@@ -246,7 +246,7 @@ export function HeroHeader() {
                       <DropdownMenuItem asChild>
                         <Link
                           href="/dashboard/settings"
-                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5"
+                          className="px-2.5 py-2 text-xs font-medium text-surface-700 rounded-xl cursor-pointer hover:bg-surface-100 hover:text-surface-900 flex items-center gap-2.5 transition-colors"
                         >
                           <Sliders className="w-4 h-4 text-surface-500 shrink-0" />
                           <span>Store Mandates & Rules</span>
@@ -270,19 +270,19 @@ export function HeroHeader() {
                 {/* Direct Dashboard Link Button */}
                 <Link
                   href="/dashboard"
-                  className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3.5 sm:px-4 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
+                  className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3.5 sm:px-4 py-2 min-h-[36px] rounded-full transition-colors cursor-pointer"
                 >
                   <span>Dashboard</span>
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-3.5 h-3.5 opacity-85 group-hover:opacity-100 transition-opacity" />
                 </Link>
               </>
             ) : (
               <Link
                 href="/signup"
-                className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-all cursor-pointer shadow-xs"
+                className="group inline-flex items-center gap-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 sm:px-5 py-2 min-h-[36px] rounded-full transition-colors cursor-pointer"
               >
                 <span>Sign Up</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight className="w-3.5 h-3.5 opacity-85 group-hover:opacity-100 transition-opacity" />
               </Link>
             )}
 
@@ -303,11 +303,11 @@ export function HeroHeader() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-4 top-20 max-w-md mx-auto bg-white/95 backdrop-blur-2xl border border-surface-200 rounded-3xl p-6 pointer-events-auto md:hidden space-y-5 shadow-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-x-4 top-20 max-w-md mx-auto bg-white/95 backdrop-blur-2xl border border-surface-200 rounded-3xl p-6 pointer-events-auto md:hidden space-y-5"
           >
             <div className="flex items-center justify-between pb-3 border-b border-surface-100">
               <Logo size="sm" />

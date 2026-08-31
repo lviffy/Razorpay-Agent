@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import {
   ShieldCheck,
   Zap,
@@ -41,7 +42,7 @@ export default function MarginPlayground() {
     setHasPaid(false)
   }
 
-  const handleSimulatePayment = () => {
+  const handleSimulateCheckout = () => {
     if (hasPaid) {
       setHasPaid(false)
       return
@@ -50,15 +51,21 @@ export default function MarginPlayground() {
     setTimeout(() => {
       setIsSimulatingPayment(false)
       setHasPaid(true)
-    }, 800)
+    }, 750)
   }
 
   return (
     <section
-      id="margin-protection"
-      className="py-20 sm:py-28 bg-white text-surface-900 border-b border-black/[0.06] relative overflow-hidden"
+      id="guardrails"
+      className="py-20 sm:py-28 bg-[#fbfbfd] text-surface-900 border-b border-black/[0.06] relative overflow-hidden"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-10 sm:space-y-12"
+      >
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-2xl space-y-3">
@@ -76,7 +83,7 @@ export default function MarginPlayground() {
         {/* 2-Column Workstation Console */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           {/* Left Column: Merchant Guardrail Mandates (5 cols) */}
-          <div className="lg:col-span-5 bg-surface-50/80 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6 shadow-xs">
+          <div className="lg:col-span-5 bg-surface-50/80 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-black/[0.06] pb-4">
               <div>
@@ -95,7 +102,7 @@ export default function MarginPlayground() {
             {/* Slider Controls Body */}
             <div className="space-y-4 flex-1">
               {/* Slider 1: Floor Price */}
-              <div className="p-4 bg-white rounded-2xl border border-black/[0.06] space-y-2.5 shadow-2xs">
+              <div className="p-4 bg-white rounded-2xl border border-black/[0.06] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-surface-700 flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-emerald-600" />
@@ -121,7 +128,7 @@ export default function MarginPlayground() {
               </div>
 
               {/* Slider 2: Max Discount Cap */}
-              <div className="p-4 bg-white rounded-2xl border border-black/[0.06] space-y-2.5 shadow-2xs">
+              <div className="p-4 bg-white rounded-2xl border border-black/[0.06] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-surface-700 flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
@@ -145,7 +152,7 @@ export default function MarginPlayground() {
 
               {/* Fixed Thresholds Summary */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-white rounded-xl border border-black/[0.06] space-y-0.5 shadow-2xs">
+                <div className="p-3 bg-white rounded-xl border border-black/[0.06] space-y-0.5">
                   <span className="text-[10px] font-mono text-surface-500 uppercase block font-semibold">
                     Free Shipping
                   </span>
@@ -154,7 +161,7 @@ export default function MarginPlayground() {
                   </p>
                 </div>
 
-                <div className="p-3 bg-white rounded-xl border border-black/[0.06] space-y-0.5 shadow-2xs">
+                <div className="p-3 bg-white rounded-xl border border-black/[0.06] space-y-0.5">
                   <span className="text-[10px] font-mono text-surface-500 uppercase block font-semibold">
                     Lock Duration
                   </span>
@@ -191,7 +198,7 @@ export default function MarginPlayground() {
                     type="button"
                     onClick={() => handleQuickOffer(floorPrice - 200)}
                     className={cn(
-                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-colors duration-150 cursor-pointer text-center truncate',
                       buyerOffer < effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
@@ -204,7 +211,7 @@ export default function MarginPlayground() {
                     type="button"
                     onClick={() => handleQuickOffer(effectiveFloor)}
                     className={cn(
-                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-colors duration-150 cursor-pointer text-center truncate',
                       buyerOffer === effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
@@ -217,7 +224,7 @@ export default function MarginPlayground() {
                     type="button"
                     onClick={() => handleQuickOffer(listPrice - 100)}
                     className={cn(
-                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-all cursor-pointer text-center truncate shadow-2xs',
+                      'py-1.5 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-mono font-bold border transition-colors duration-150 cursor-pointer text-center truncate',
                       buyerOffer > effectiveFloor
                         ? 'bg-surface-900 text-white border-surface-900'
                         : 'bg-white border-black/[0.08] text-surface-700 hover:bg-surface-100'
@@ -240,7 +247,7 @@ export default function MarginPlayground() {
           </div>
 
           {/* Right Column: Live Decision Engine Output (7 cols) */}
-          <div className="lg:col-span-7 bg-surface-50/90 text-surface-900 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6 shadow-xs">
+          <div className="lg:col-span-7 bg-surface-50/90 text-surface-900 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/[0.06] pb-4">
               <div>
@@ -254,7 +261,7 @@ export default function MarginPlayground() {
 
               <span
                 className={cn(
-                  'text-[11px] font-mono font-bold px-3 py-1 rounded-full border self-start sm:self-auto shadow-2xs',
+                  'text-[11px] font-mono font-bold px-3 py-1 rounded-full border self-start sm:self-auto transition-colors duration-200',
                   isBelowFloor
                     ? 'bg-amber-50 text-amber-800 border-amber-200'
                     : 'bg-emerald-50 text-emerald-800 border-emerald-200'
@@ -266,7 +273,7 @@ export default function MarginPlayground() {
 
             {/* 3 Prominent Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1">
                 <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Buyer Bid
                 </span>
@@ -278,7 +285,7 @@ export default function MarginPlayground() {
                 </span>
               </div>
 
-              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1">
                 <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Effective Floor
                 </span>
@@ -290,7 +297,7 @@ export default function MarginPlayground() {
                 </span>
               </div>
 
-              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1">
                 <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Agent Offer
                 </span>
@@ -304,7 +311,7 @@ export default function MarginPlayground() {
             </div>
 
             {/* Simulated Agent Response Box */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/[0.08] space-y-3.5 shadow-2xs">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/[0.08] space-y-3.5">
               <div className="flex items-center justify-between text-xs font-mono text-surface-500 border-b border-black/[0.06] pb-2.5">
                 <span className="flex items-center gap-1.5 text-surface-800 font-bold">
                   <Bot className="w-3.5 h-3.5 text-brand-600" />
@@ -341,10 +348,10 @@ export default function MarginPlayground() {
 
                 <button
                   type="button"
-                  onClick={handleSimulatePayment}
+                  onClick={handleSimulateCheckout}
                   disabled={isSimulatingPayment}
                   className={cn(
-                    'px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
+                    'px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 shrink-0',
                     hasPaid
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : 'bg-[#0052ff] hover:bg-[#0045d8] text-white'
@@ -380,7 +387,7 @@ export default function MarginPlayground() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

@@ -378,12 +378,18 @@ export default function PaymentFlowSection() {
       id="payment-flow"
       className="py-20 sm:py-28 bg-white text-surface-900 border-b border-surface-200 relative"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12"
+      >
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-3xl space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold uppercase tracking-wider">
-              <Cpu className="w-3.5 h-3.5 text-brand-600 animate-pulse" />
+              <Cpu className="w-3.5 h-3.5 text-brand-600 animate-subtle-pulse" />
               Machine-to-Machine Protocol Architecture
             </div>
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
@@ -400,10 +406,10 @@ export default function PaymentFlowSection() {
         {/* Dual Role Callout Cards: x402 vs Razorpay - Solid Non-Transparent */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Autonomous Protocol Rail */}
-          <div className="p-6 rounded-2xl bg-brand-50 border border-brand-200 shadow-xs relative group hover:border-brand-300 transition-all">
+          <div className="p-6 rounded-2xl bg-brand-50 border border-brand-200 relative group hover:border-brand-300 transition-colors">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center">
                   <Zap className="w-4 h-4" />
                 </div>
                 <div>
@@ -425,10 +431,10 @@ export default function PaymentFlowSection() {
           </div>
 
           {/* Controlled Human Fallback Rail */}
-          <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 shadow-xs relative group hover:border-amber-300 transition-all">
+          <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 relative group hover:border-amber-300 transition-colors">
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center">
                   <CreditCard className="w-4 h-4" />
                 </div>
                 <div>
@@ -486,18 +492,18 @@ export default function PaymentFlowSection() {
                       }
                     }}
                     className={cn(
-                      'p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-start gap-4 select-none relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
+                      'p-4 rounded-2xl border transition-colors duration-150 cursor-pointer flex items-start gap-4 select-none relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500',
                       isSelected
-                        ? 'bg-white border-brand-500 shadow-md ring-1 ring-brand-500/30'
-                        : 'bg-white border-surface-200 hover:border-surface-300 hover:bg-surface-50 shadow-2xs'
+                        ? 'bg-white border-brand-500 ring-1 ring-brand-500/30'
+                        : 'bg-white border-surface-200 hover:border-surface-300 hover:bg-surface-50'
                     )}
                   >
                     {/* Step Node Circle */}
                     <div
                       className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs shrink-0 transition-all duration-200 z-10',
+                        'w-8 h-8 rounded-full flex items-center justify-center font-mono font-bold text-xs shrink-0 transition-colors duration-150 z-10',
                         isSelected
-                          ? 'bg-brand-600 text-white shadow-sm ring-4 ring-brand-100 scale-105'
+                          ? 'bg-brand-600 text-white ring-4 ring-brand-100'
                           : idx < activeStep
                           ? 'bg-brand-50 text-brand-700 border border-brand-200'
                           : 'bg-surface-100 text-surface-600 group-hover:bg-surface-200'
@@ -539,7 +545,7 @@ export default function PaymentFlowSection() {
 
           {/* Right Column: High-Fidelity Protocol Payload Debugger with Fixed Height */}
           <div
-            className="lg:col-span-7 bg-[#0b0f19] rounded-3xl p-6 text-white border border-slate-800 shadow-xl flex flex-col justify-between h-full min-h-[540px] font-mono relative overflow-hidden"
+            className="lg:col-span-7 bg-[#0b0f19] rounded-3xl p-6 text-white border border-slate-800 flex flex-col justify-between h-full min-h-[540px] font-mono relative overflow-hidden"
             role="tabpanel"
             id={`step-panel-${currentStepData.step}`}
             aria-labelledby={`step-tab-${currentStepData.step}`}
@@ -562,7 +568,7 @@ export default function PaymentFlowSection() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCopy}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-sans font-medium text-slate-300 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-400 cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-sans font-medium text-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-400 cursor-pointer"
                     title="Copy payload (Ctrl+C)"
                   >
                     {copied ? (
@@ -661,9 +667,9 @@ export default function PaymentFlowSection() {
                     onClick={() => setActiveStep(i)}
                     aria-label={`Jump to step ${i + 1}`}
                     className={cn(
-                      'h-1.5 rounded-full transition-all duration-200 focus-visible:outline-none cursor-pointer',
+                      'h-1.5 rounded-full transition-colors duration-200 focus-visible:outline-none cursor-pointer',
                       activeStep === i
-                        ? 'w-6 bg-brand-500 shadow-xs'
+                        ? 'w-6 bg-brand-500'
                         : 'w-1.5 bg-slate-700 hover:bg-slate-600'
                     )}
                   />
@@ -672,7 +678,7 @@ export default function PaymentFlowSection() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

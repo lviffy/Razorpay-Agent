@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { motion } from 'framer-motion'
 import {
   CreditCard,
   Zap,
@@ -119,7 +120,13 @@ export default function RazorpayServicesSection() {
       id="razorpay-services"
       className="py-20 sm:py-28 bg-[#fbfbfd] text-surface-900 border-b border-black/[0.06] relative overflow-hidden"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12"
+      >
         {/* Section Header */}
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs font-semibold uppercase tracking-wider">
@@ -145,9 +152,9 @@ export default function RazorpayServicesSection() {
                 key={tab.id}
                 onClick={() => setActiveTabId(tab.id)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all shrink-0 cursor-pointer border',
+                  'flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-colors duration-150 shrink-0 cursor-pointer border',
                   isActive
-                    ? 'bg-surface-900 text-white border-surface-900 shadow-sm'
+                    ? 'bg-surface-900 text-white border-surface-900'
                     : 'bg-white text-surface-600 border-surface-200 hover:border-surface-300 hover:text-surface-900'
                 )}
               >
@@ -159,7 +166,7 @@ export default function RazorpayServicesSection() {
         </div>
 
         {/* Active Tab Main Card Container */}
-        <div className="rounded-3xl bg-white border border-surface-200 shadow-sm p-6 sm:p-8 lg:p-10 space-y-8">
+        <div className="rounded-3xl bg-white border border-surface-200 p-6 sm:p-8 lg:p-10 space-y-8 animate-subtle-fade-in" key={activeTabId}>
           {/* Top Banner inside Tab */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-surface-100">
             <div className="space-y-1.5 max-w-2xl">
@@ -210,7 +217,7 @@ export default function RazorpayServicesSection() {
                 <div className="space-y-3">
                   <div
                     className={cn(
-                      'p-4 rounded-2xl border transition-all flex items-start gap-3',
+                      'p-4 rounded-2xl border transition-colors duration-150 flex items-start gap-3',
                       isWithinRbiLimit
                         ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
                         : 'bg-amber-50/70 border-amber-200 text-amber-900'
@@ -235,7 +242,7 @@ export default function RazorpayServicesSection() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08] shadow-2xs">
+              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08]">
                 <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] text-surface-500 text-[11px]">
                   <span>AUTOPAY TOKENIZED CHARGE PAYLOAD</span>
                   <span className={isWithinRbiLimit ? 'text-emerald-700 font-bold' : 'text-amber-700 font-bold'}>
@@ -273,7 +280,7 @@ export default function RazorpayServicesSection() {
                       key={o.id}
                       onClick={() => setSelectedOffer(o.id)}
                       className={cn(
-                        'p-3 rounded-xl border text-left transition-all cursor-pointer space-y-1',
+                        'p-3 rounded-xl border text-left transition-colors duration-150 cursor-pointer space-y-1',
                         selectedOffer === o.id
                           ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500/20'
                           : 'bg-surface-50 border-surface-200 hover:border-surface-300'
@@ -305,7 +312,7 @@ export default function RazorpayServicesSection() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08] shadow-2xs">
+              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08]">
                 <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] text-surface-500 text-[11px]">
                   <span>A2A COUNTER-OFFER WITH RAZORPAY OFFERS</span>
                   <span className="text-blue-700 font-bold">OFFER INJECTED</span>
@@ -371,7 +378,7 @@ export default function RazorpayServicesSection() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08] shadow-2xs">
+              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08]">
                 <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] text-surface-500 text-[11px]">
                   <span>RAZORPAY ROUTE SPLIT ORDER</span>
                   <span className="text-purple-700 font-bold">TOTAL: ₹{totalBasket}</span>
@@ -412,7 +419,7 @@ export default function RazorpayServicesSection() {
                           setRefundStatus('idle')
                         }}
                         className={cn(
-                          'p-2.5 rounded-xl border text-xs font-medium text-left transition-all cursor-pointer',
+                          'p-2.5 rounded-xl border text-xs font-medium text-left transition-colors duration-150 cursor-pointer',
                           refundReason === r.id
                             ? 'bg-amber-50 border-amber-500 text-amber-900 font-bold'
                             : 'bg-surface-50 border-surface-200 text-surface-600 hover:border-surface-300'
@@ -431,14 +438,14 @@ export default function RazorpayServicesSection() {
                       setTimeout(() => setRefundStatus('processed'), 600)
                     }}
                     disabled={refundStatus === 'processing'}
-                    className="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                    className="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors duration-150 cursor-pointer"
                   >
                     <RotateCcw className={cn('w-4 h-4', refundStatus === 'processing' && 'animate-spin')} />
                     <span>{refundStatus === 'processed' ? 'Refund Processed (₹3,799)' : 'Simulate Instant API Refund'}</span>
                   </button>
 
                   {refundStatus === 'processed' && (
-                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2.5 animate-in fade-in">
+                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center gap-2.5 animate-subtle-fade-in">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Speed: <strong>Instant (Optimum Rail)</strong>. Mandate balance restored in 420ms.</span>
                     </div>
@@ -446,7 +453,7 @@ export default function RazorpayServicesSection() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08] shadow-2xs">
+              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08]">
                 <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] text-surface-500 text-[11px]">
                   <span>INSTANT REFUND DISPATCH</span>
                   <span className="text-amber-700 font-bold">SPEED: OPTIMUM</span>
@@ -501,7 +508,7 @@ export default function RazorpayServicesSection() {
                 </div>
               </div>
 
-              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08] shadow-2xs">
+              <div className="lg:col-span-6 bg-surface-50 text-surface-900 p-5 rounded-2xl font-mono text-xs space-y-3 border border-black/[0.08]">
                 <div className="flex items-center justify-between pb-2 border-b border-black/[0.06] text-surface-500 text-[11px]">
                   <span>RAZORPAY DISPUTE EVIDENCE ATTACHMENT</span>
                   <span className="text-indigo-700 font-bold">HMAC VERIFIED</span>
@@ -526,28 +533,28 @@ export default function RazorpayServicesSection() {
 
         {/* 5 Bottom Mini Metric Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1">
             <div className="text-lg sm:text-xl font-bold font-mono text-emerald-700">≤ ₹15,000</div>
             <div className="text-[11px] text-surface-600 font-medium">No-OTP AutoPay Cap</div>
           </div>
-          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1">
             <div className="text-lg sm:text-xl font-bold font-mono text-blue-700">15+ Offers</div>
             <div className="text-[11px] text-surface-600 font-medium">Dynamic Bank Rewards</div>
           </div>
-          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1">
             <div className="text-lg sm:text-xl font-bold font-mono text-purple-700">Multi-Vendor</div>
             <div className="text-[11px] text-surface-600 font-medium">Razorpay Route Splits</div>
           </div>
-          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1">
             <div className="text-lg sm:text-xl font-bold font-mono text-amber-700">&lt; 2s Refund</div>
             <div className="text-[11px] text-surface-600 font-medium">Optimum Rail Velocity</div>
           </div>
-          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 col-span-2 sm:col-span-1 shadow-2xs">
+          <div className="p-4 rounded-2xl bg-white border border-surface-200 text-center space-y-1 col-span-2 sm:col-span-1">
             <div className="text-lg sm:text-xl font-bold font-mono text-indigo-700">SHA-256</div>
             <div className="text-[11px] text-surface-600 font-medium">Dispute Ledger Proof</div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

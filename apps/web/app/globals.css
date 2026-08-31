@@ -163,16 +163,15 @@ video {
   color: #ffffff;
   border: 1px solid #195adc;
   box-shadow: none;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
 }
 .apple-button-primary:hover {
   background: #1246b8;
   border-color: #1246b8;
   box-shadow: none;
-  transform: translateY(-0.5px);
 }
 .apple-button-primary:active {
-  transform: translateY(0px) scale(0.99);
+  opacity: 0.92;
 }
 
 /* Secondary Button */
@@ -181,16 +180,15 @@ video {
   border: 1px solid rgba(0, 0, 0, 0.12);
   color: #0f172a;
   box-shadow: none;
-  transition: all 0.15s ease;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
 }
 .apple-button-secondary:hover {
   background: #f8fafc;
   border-color: rgba(0, 0, 0, 0.2);
   box-shadow: none;
-  transform: translateY(-0.5px);
 }
 .apple-button-secondary:active {
-  transform: translateY(0px) scale(0.99);
+  opacity: 0.92;
 }
 
 /* =========================================================================
@@ -218,15 +216,16 @@ input[type=range].custom-slider::-webkit-slider-thumb {
   border: 2.5px solid #195adc;
   box-shadow: none;
   cursor: pointer;
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease;
 }
 
 input[type=range].custom-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+  background-color: #f0f6ff;
+  border-color: #1246b8;
 }
 
 input[type=range].custom-slider::-webkit-slider-thumb:active {
-  transform: scale(1.05);
+  background-color: #e0edff;
 }
 
 input[type=range].custom-slider-emerald::-webkit-slider-thumb {
@@ -235,7 +234,8 @@ input[type=range].custom-slider-emerald::-webkit-slider-thumb {
 }
 
 input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
-  box-shadow: none;
+  background-color: #ecfdf5;
+  border-color: #047857;
 }
 
 /* Sleek custom scrollbars */
@@ -271,32 +271,121 @@ input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
   display: none; /* Chrome, Safari, Opera */
 }
 
-/* Live SSE Telemetry Flash Animations */
-@keyframes event-flash {
-  0% {
-    background-color: rgba(220, 252, 231, 0.95);
-    transform: scale(1.01);
+/* Subtle, Tasteful Animations */
+@keyframes subtle-pulse {
+  0%, 100% {
+    opacity: 1;
   }
   50% {
-    background-color: rgba(220, 252, 231, 0.4);
+    opacity: 0.35;
+  }
+}
+
+.animate-subtle-pulse {
+  animation: subtle-pulse 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes subtle-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-subtle-fade-in {
+  animation: subtle-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes subtle-glow-cycle {
+  0%, 100% {
+    border-color: rgba(25, 90, 220, 0.2);
+  }
+  50% {
+    border-color: rgba(25, 90, 220, 0.55);
+  }
+}
+
+.animate-subtle-border {
+  animation: subtle-glow-cycle 3s ease-in-out infinite;
+}
+
+/* Flowing data line animation for cryptographic hash chain */
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.animate-flow-dash {
+  animation: flow-dash 1s linear infinite;
+}
+
+/* Seamless Continuous Marquee */
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-scroll {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 36s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* WhatsApp Agent Typing Indicator */
+@keyframes typing-dot {
+  0%, 80%, 100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.animate-typing-1 {
+  animation: typing-dot 1.2s infinite ease-in-out;
+}
+.animate-typing-2 {
+  animation: typing-dot 1.2s infinite ease-in-out 0.2s;
+}
+.animate-typing-3 {
+  animation: typing-dot 1.2s infinite ease-in-out 0.4s;
+}
+
+/* Live SSE Telemetry Flash Animations (Pure Color & Opacity, No Scale) */
+@keyframes event-flash {
+  0% {
+    background-color: rgba(220, 252, 231, 0.9);
+  }
+  50% {
+    background-color: rgba(220, 252, 231, 0.3);
   }
   100% {
     background-color: transparent;
-    transform: scale(1);
   }
 }
 
 .event-new {
-  animation: event-flash 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: event-flash 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes audit-flash {
   0% {
-    background-color: rgba(219, 234, 254, 0.95);
-    border-left: 4px solid #2563eb;
+    background-color: rgba(219, 234, 254, 0.9);
   }
   50% {
-    background-color: rgba(219, 234, 254, 0.5);
+    background-color: rgba(219, 234, 254, 0.3);
   }
   100% {
     background-color: transparent;
@@ -304,7 +393,7 @@ input[type=range].custom-slider-emerald::-webkit-slider-thumb:hover {
 }
 
 .audit-flash {
-  animation: audit-flash 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: audit-flash 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 

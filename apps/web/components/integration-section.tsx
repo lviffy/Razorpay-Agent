@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { CheckCircle2 } from 'lucide-react'
 import {
   WhatsAppIcon,
@@ -79,7 +80,13 @@ export default function IntegrationSection() {
       id="integrations"
       className="py-20 sm:py-28 overflow-hidden text-surface-900 bg-[#fbfbfd] border-b border-black/[0.06]"
     >
-      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12"
+      >
         {/* Section Header */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
@@ -95,13 +102,17 @@ export default function IntegrationSection() {
           {CORE_INTEGRATIONS.map((item, idx) => {
             const IconComponent = item.icon
             return (
-              <div
+              <motion.div
                 key={idx}
-                className="p-6 bg-white rounded-3xl border border-black/[0.08] hover:border-brand-500/40 transition-all duration-200 flex flex-col justify-between space-y-5 shadow-2xs"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="p-6 bg-white rounded-3xl border border-black/[0.08] hover:border-brand-500/40 hover:bg-surface-50/50 transition-colors duration-150 flex flex-col justify-between space-y-5"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className={`w-10 h-10 rounded-2xl ${item.iconBg} flex items-center justify-center shadow-xs`}>
+                    <div className={`w-10 h-10 rounded-2xl ${item.iconBg} flex items-center justify-center`}>
                       <IconComponent className="w-5 h-5" />
                     </div>
                     <span className={`text-[10.5px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${item.accent}`}>
@@ -129,11 +140,11 @@ export default function IntegrationSection() {
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Connected
                   </span>
                 </div>
-              </div>
+              </motion.div>
             )
           })}
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

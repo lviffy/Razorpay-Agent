@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -93,6 +93,15 @@ export default function HeroSection() {
   const [activeScenario, setActiveScenario] = useState<Scenario>(scenarios[0])
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [paid, setPaid] = useState<boolean>(false)
+  const [isTyping, setIsTyping] = useState<boolean>(false)
+
+  useEffect(() => {
+    setIsTyping(true)
+    const t = setTimeout(() => {
+      setIsTyping(false)
+    }, 800)
+    return () => clearTimeout(t)
+  }, [activeScenario])
 
   const handleScenarioChange = (s: Scenario) => {
     setActiveScenario(s)
@@ -150,18 +159,18 @@ export default function HeroSection() {
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-3.5">
               <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
-                <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-8 h-12 text-sm sm:text-base gap-2 cursor-pointer shadow-xs transition-all hover:scale-[1.01] active:scale-[0.99]">
+                <Button className="group bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-full px-8 h-12 text-sm sm:text-base gap-2 cursor-pointer transition-colors">
                   <span>{isAuthenticated ? "Open Dashboard" : "Start Free"}</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 opacity-85 group-hover:opacity-100 transition-opacity" />
                 </Button>
               </Link>
 
               <a
                 href="#negotiation"
-                className="inline-flex items-center gap-1.5 px-6 h-12 rounded-full bg-white border border-black/[0.12] text-surface-800 hover:text-surface-950 hover:bg-surface-50 text-sm font-semibold transition-all cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-1.5 px-6 h-12 rounded-full bg-white border border-black/[0.12] text-surface-800 hover:text-surface-950 hover:bg-surface-50 text-sm font-semibold transition-colors cursor-pointer"
               >
                 <span>See How Agents Negotiate</span>
-                <ChevronRight className="w-4 h-4 text-surface-500" />
+                <ChevronRight className="w-4 h-4 text-surface-500 opacity-85 hover:opacity-100 transition-opacity" />
               </a>
             </div>
 
@@ -212,9 +221,9 @@ export default function HeroSection() {
                     key={s.id}
                     onClick={() => handleScenarioChange(s)}
                     className={cn(
-                      'py-2 px-2 text-center rounded-xl text-xs font-semibold transition-all cursor-pointer truncate',
+                      'py-2 px-2 text-center rounded-xl text-xs font-semibold transition-colors duration-150 cursor-pointer truncate',
                       activeScenario.id === s.id
-                        ? 'bg-white text-surface-950 font-bold shadow-xs'
+                        ? 'bg-white text-surface-950 font-bold border border-black/[0.06]'
                         : 'text-surface-600 hover:text-surface-900 hover:bg-white/60'
                     )}
                   >
@@ -224,19 +233,19 @@ export default function HeroSection() {
               </div>
             </div>
 
-            {/* Realistic WhatsApp Phone Frame */}
-            <div className="relative rounded-[2rem] bg-white border border-black/[0.12] overflow-hidden shadow-md transition-all duration-300">
+            {/* Realistic WhatsApp Phone Frame with Stable Fixed Geometry */}
+            <div className="relative rounded-[2rem] bg-white border border-black/[0.12] overflow-hidden">
               {/* WhatsApp App Top Header Bar */}
-              <div className="bg-[#075e54] text-white px-4 py-3 flex items-center justify-between shadow-xs">
+              <div className="bg-[#075e54] text-white px-4 py-3 flex items-center justify-between border-b border-black/[0.06]">
                 <div className="flex items-center gap-2.5">
-                  <ChevronLeft className="w-5 h-5 text-white/90 -ml-1 cursor-pointer" />
+                  <ChevronLeft className="w-5 h-5 text-white/90 -ml-1 cursor-pointer opacity-90 hover:opacity-100 transition-opacity" />
                   
                   {/* Store Avatar with Online Dot */}
                   <div className="relative shrink-0">
                     <div className="w-9 h-9 rounded-full bg-[#128c7e] border border-white/20 flex items-center justify-center font-bold text-white text-xs">
                       <Store className="w-4 h-4 text-white" />
                     </div>
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25D366] border-2 border-[#075e54]" />
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#25D366] border-2 border-[#075e54] animate-subtle-pulse" />
                   </div>
 
                   {/* Merchant Name & Verified Badge */}
@@ -248,25 +257,34 @@ export default function HeroSection() {
                       </span>
                     </div>
                     <p className="text-[10.5px] text-emerald-100 flex items-center gap-1 font-medium truncate">
-                      Official Business • Online
+                      {isTyping ? (
+                        <span className="flex items-center gap-1 text-emerald-200 font-mono">
+                          <span>ZapAI Seller typing</span>
+                          <span className="animate-typing-1">.</span>
+                          <span className="animate-typing-2">.</span>
+                          <span className="animate-typing-3">.</span>
+                        </span>
+                      ) : (
+                        'Official Business • Online'
+                      )}
                     </p>
                   </div>
                 </div>
 
                 {/* Right Call & Overflow Icons */}
                 <div className="flex items-center gap-3 text-white/90">
-                  <Video className="w-4 h-4 cursor-pointer hover:text-white" />
-                  <Phone className="w-4 h-4 cursor-pointer hover:text-white" />
-                  <MoreVertical className="w-4 h-4 cursor-pointer hover:text-white" />
+                  <Video className="w-4 h-4 cursor-pointer opacity-85 hover:opacity-100 transition-opacity" />
+                  <Phone className="w-4 h-4 cursor-pointer opacity-85 hover:opacity-100 transition-opacity" />
+                  <MoreVertical className="w-4 h-4 cursor-pointer opacity-85 hover:opacity-100 transition-opacity" />
                 </div>
               </div>
 
-              {/* Chat Canvas (Realistic WhatsApp Wallpaper Background) */}
-              <div className="p-3.5 sm:p-4 space-y-3 bg-[#efeae2]/80 min-h-[380px] sm:min-h-[400px] flex flex-col justify-between dot-grid">
-                <div className="space-y-3">
+              {/* Chat Canvas (Consistent Stable Height, No Shrinking) */}
+              <div className="p-3.5 sm:p-4 space-y-3 bg-[#efeae2]/80 min-h-[440px] sm:min-h-[460px] flex flex-col justify-between dot-grid">
+                <div key={activeScenario.id} className="space-y-3 animate-subtle-fade-in">
                   {/* Encryption & Date Pill */}
                   <div className="text-center">
-                    <span className="text-[10px] font-medium text-surface-600 bg-white/90 px-3 py-1 rounded-full shadow-2xs inline-flex items-center gap-1 border border-black/[0.04]">
+                    <span className="text-[10px] font-medium text-surface-600 bg-white/90 px-3 py-1 rounded-full inline-flex items-center gap-1 border border-black/[0.04]">
                       <Lock className="w-2.5 h-2.5 text-amber-600" />
                       Messages are end-to-end encrypted
                     </span>
@@ -274,7 +292,7 @@ export default function HeroSection() {
 
                   {/* 1. Incoming Buyer Message Bubble (Left / White) */}
                   <div className="flex justify-start">
-                    <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-xs p-3 border border-black/[0.06] shadow-2xs space-y-1">
+                    <div className="max-w-[85%] bg-white rounded-2xl rounded-tl-xs p-3 border border-black/[0.06] space-y-1">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-[10px] font-bold text-surface-500">
                           Buyer (+91 98765 43210)
@@ -288,7 +306,7 @@ export default function HeroSection() {
                   </div>
 
                   {/* 2. System HUD: AI Margin Guardrail Evaluation Pill */}
-                  <div className="px-3 py-2 rounded-xl bg-blue-50/90 border border-blue-200/90 text-[11px] space-y-0.5 shadow-2xs">
+                  <div className="px-3 py-2 rounded-xl bg-blue-50/90 border border-blue-200/90 text-[11px] space-y-0.5">
                     <div className="flex items-center justify-between text-brand-900 font-bold text-[10.5px]">
                       <span className="flex items-center gap-1.5">
                         <ShieldCheck className="w-3.5 h-3.5 text-brand-600" />
@@ -303,7 +321,7 @@ export default function HeroSection() {
 
                   {/* 3. Outgoing Seller Agent Message Bubble (Right / WhatsApp Green) */}
                   <div className="flex justify-end">
-                    <div className="max-w-[92%] bg-[#d9fdd3] rounded-2xl rounded-tr-xs p-3.5 border border-[#c4eec0] shadow-2xs space-y-3">
+                    <div className="max-w-[92%] bg-[#d9fdd3] rounded-2xl rounded-tr-xs p-3.5 border border-[#c4eec0] space-y-3">
                       <div className="flex items-center justify-between gap-4">
                         <span className="text-[10px] font-bold text-[#008069] flex items-center gap-1">
                           <Bot className="w-3 h-3" /> ZapAI Seller
@@ -319,7 +337,7 @@ export default function HeroSection() {
                       </p>
 
                       {/* Razorpay 1-Tap Checkout Card Embedded inside WhatsApp */}
-                      <div className="p-3.5 rounded-xl bg-white text-surface-900 space-y-3 border border-black/[0.08] shadow-2xs">
+                      <div className="p-3.5 rounded-xl bg-white text-surface-900 space-y-3 border border-black/[0.08]">
                         <div className="flex items-center justify-between border-b border-black/[0.06] pb-2">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-md bg-[#0052ff] flex items-center justify-center font-bold text-xs text-white">
@@ -355,7 +373,7 @@ export default function HeroSection() {
                             onClick={handleSimulatePayment}
                             disabled={isProcessing}
                             className={cn(
-                              'w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
+                              'w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 shrink-0',
                               paid
                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                 : 'bg-[#0052ff] hover:bg-[#0045d8] text-white'
@@ -363,18 +381,18 @@ export default function HeroSection() {
                           >
                             {isProcessing ? (
                               <>
-                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                <span>Verifying...</span>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Verifying...</span>
                               </>
                             ) : paid ? (
                               <>
-                                <CheckCircle2 className="w-4 h-4" />
-                                <span>Paid ₹{activeScenario.agreedPrice.toLocaleString('en-IN')}</span>
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Paid ₹{activeScenario.agreedPrice.toLocaleString('en-IN')}</span>
                               </>
                             ) : (
                               <>
-                                <Zap className="w-3.5 h-3.5 fill-current" />
-                                <span>Pay via UPI</span>
+                              <Zap className="w-3.5 h-3.5 fill-current" />
+                              <span>Pay via UPI</span>
                               </>
                             )}
                           </button>
@@ -394,13 +412,13 @@ export default function HeroSection() {
 
                 {/* Bottom WhatsApp Input Bar Mockup */}
                 <div className="pt-2 flex items-center gap-2">
-                  <div className="flex-1 bg-white rounded-full px-3.5 py-2 flex items-center gap-2 border border-black/[0.08] shadow-2xs">
+                  <div className="flex-1 bg-white rounded-full px-3.5 py-2 flex items-center gap-2 border border-black/[0.08]">
                     <Smile className="w-4 h-4 text-surface-400" />
                     <span className="text-xs text-surface-400 flex-1 select-none">Type a message...</span>
-                    <Paperclip className="w-4 h-4 text-surface-400 rotate-45" />
+                    <Paperclip className="w-4 h-4 text-surface-400" />
                     <Camera className="w-4 h-4 text-surface-400" />
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-[#00a884] text-white flex items-center justify-center shadow-xs shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-[#00a884] text-white flex items-center justify-center shrink-0">
                     <Mic className="w-4 h-4" />
                   </div>
                 </div>

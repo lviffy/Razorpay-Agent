@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import {
   ShieldCheck,
   ShieldAlert,
@@ -344,7 +345,13 @@ export default function AuditTrailSection() {
       id="audit-trail"
       className="py-20 sm:py-28 bg-[#fbfbfd] text-surface-900 border-b border-black/[0.06] relative overflow-hidden"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-10">
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-10"
+      >
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-2xl space-y-3">
@@ -371,16 +378,16 @@ export default function AuditTrailSection() {
           </div>
 
           {/* Verification & Tamper Simulation Control Panel */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-white p-3 rounded-2xl border border-surface-200 shadow-sm shrink-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 bg-white p-3 rounded-2xl border border-surface-200 shrink-0">
             <button
               onClick={() => {
                 setIsTampered(false)
                 handleVerify()
               }}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer',
+                'px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-150 flex items-center justify-center gap-2 cursor-pointer',
                 !isTampered
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                   : 'bg-surface-100 hover:bg-surface-200 text-surface-700'
               )}
             >
@@ -394,9 +401,9 @@ export default function AuditTrailSection() {
                 setSelectedNodeId('negotiation')
               }}
               className={cn(
-                'px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer',
+                'px-4 py-2 rounded-xl text-xs font-bold transition-colors duration-150 flex items-center justify-center gap-2 cursor-pointer',
                 isTampered
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20'
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
                   : 'bg-surface-100 hover:bg-rose-50 hover:text-rose-700 text-surface-700'
               )}
             >
@@ -406,7 +413,7 @@ export default function AuditTrailSection() {
 
             <button
               onClick={handleDownloadReceipt}
-              className="px-3 py-2 rounded-xl text-xs font-medium text-surface-600 hover:text-surface-900 hover:bg-surface-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-surface-200"
+              className="px-3 py-2 rounded-xl text-xs font-medium text-surface-600 hover:text-surface-900 hover:bg-surface-100 transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer border border-surface-200"
               title="Download Signed Cryptographic Audit Receipt"
             >
               <Download className="w-3.5 h-3.5" />
@@ -418,19 +425,19 @@ export default function AuditTrailSection() {
         {/* Verification Status Banner */}
         <div
           className={cn(
-            'p-4 rounded-2xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4',
+            'p-4 rounded-2xl border transition-colors duration-150 flex flex-col md:flex-row md:items-center justify-between gap-4',
             !isTampered
               ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-              : 'bg-rose-50/90 border-rose-300 text-rose-950 animate-pulse'
+              : 'bg-rose-50/90 border-rose-300 text-rose-950 animate-subtle-pulse'
           )}
         >
           <div className="flex items-center gap-3">
             {!isTampered ? (
-              <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-5 h-5" />
               </div>
             )}
@@ -454,7 +461,7 @@ export default function AuditTrailSection() {
           {isTampered && (
             <button
               onClick={() => setIsTampered(false)}
-              className="px-3.5 py-1.5 rounded-xl bg-white text-rose-700 border border-rose-300 text-xs font-bold hover:bg-rose-100 transition-colors flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-white text-rose-700 border border-rose-300 text-xs font-bold hover:bg-rose-100 transition-colors duration-150 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               <span>Restore Untampered Ledger</span>
@@ -463,15 +470,15 @@ export default function AuditTrailSection() {
         </div>
 
         {/* Animated Horizontal Cryptographic Pipeline Flow */}
-        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-surface-200 shadow-lg space-y-4">
+        <div className="bg-white rounded-3xl p-5 sm:p-6 border border-surface-200 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-bold text-surface-800 uppercase tracking-wider">
-              <Zap className={cn('w-4 h-4', isTampered ? 'text-rose-600' : 'text-brand-600 animate-pulse')} />
+              <Zap className={cn('w-4 h-4', isTampered ? 'text-rose-600' : 'text-brand-600 animate-subtle-pulse')} />
               <span>Cryptographic Hash Link Pipeline (H_{'{n-1}'} ──► H_{'{n}'})</span>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-mono text-surface-500">
               <span className="flex items-center gap-1.5">
-                <span className={cn('w-2 h-2 rounded-full', isTampered ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 animate-pulse')} />
+                <span className={cn('w-2 h-2 rounded-full', isTampered ? 'bg-rose-500 animate-subtle-pulse' : 'bg-emerald-500 animate-subtle-pulse')} />
                 {isTampered ? 'Chain Severed at #3' : 'Live Linear Chaining Active'}
               </span>
             </div>
@@ -491,26 +498,26 @@ export default function AuditTrailSection() {
                     <div
                       onClick={() => setSelectedNodeId(node.id)}
                       className={cn(
-                        'flex flex-col items-center text-center p-3 rounded-2xl border transition-all cursor-pointer select-none w-[105px] shrink-0 group relative',
+                        'flex flex-col items-center text-center p-3 rounded-2xl border transition-colors duration-150 cursor-pointer select-none w-[105px] shrink-0 group relative',
                         isSelected
                           ? isBroken
-                            ? 'bg-rose-50 border-rose-500 shadow-md ring-2 ring-rose-500/30 -translate-y-1'
-                            : 'bg-brand-50/70 border-brand-500 shadow-md ring-2 ring-brand-500/20 -translate-y-1'
+                            ? 'bg-rose-50 border-rose-500 ring-2 ring-rose-500/30'
+                            : 'bg-brand-50/70 border-brand-500 ring-2 ring-brand-500/20'
                           : isBroken
                             ? 'bg-rose-50/30 border-rose-200 hover:bg-rose-50 hover:border-rose-300'
-                            : 'bg-surface-50/60 border-surface-200 hover:bg-white hover:border-surface-300 hover:shadow-xs'
+                            : 'bg-surface-50/60 border-surface-200 hover:bg-white hover:border-surface-300'
                       )}
                     >
                       {/* Step Badge */}
                       <div
                         className={cn(
-                          'w-6 h-6 rounded-full flex items-center justify-center font-mono text-[10px] font-bold mb-1.5 transition-colors',
+                          'w-6 h-6 rounded-full flex items-center justify-center font-mono text-[10px] font-bold mb-1.5 transition-colors duration-150',
                           isOriginOfTamper
-                            ? 'bg-rose-600 text-white animate-bounce'
+                            ? 'bg-rose-600 text-white animate-subtle-pulse'
                             : isBroken
                               ? 'bg-rose-100 text-rose-700'
                               : isSelected
-                                ? 'bg-brand-600 text-white shadow-xs'
+                                ? 'bg-brand-600 text-white'
                                 : 'bg-surface-200 text-surface-700 group-hover:bg-brand-100 group-hover:text-brand-800'
                         )}
                       >
@@ -548,7 +555,7 @@ export default function AuditTrailSection() {
                       <div className="flex-1 flex flex-col items-center justify-center px-1 min-w-[28px] shrink-0">
                         {isTampered && idx === 1 ? (
                           /* Severed Link Animation */
-                          <div className="flex flex-col items-center gap-0.5 animate-pulse">
+                          <div className="flex flex-col items-center gap-0.5 animate-subtle-pulse">
                             <span className="text-[9px] font-mono font-extrabold text-rose-600 bg-rose-100 px-1 py-0.2 rounded border border-rose-300">
                               SEVERED
                             </span>
@@ -562,12 +569,12 @@ export default function AuditTrailSection() {
                             </svg>
                           </div>
                         ) : (
-                          /* Healthy Animated Pulse Connector */
+                          /* Healthy Animated Flow Connector */
                           <div className="w-full flex items-center justify-center relative">
                             <svg
                               className={cn(
                                 'w-full h-3 transition-colors',
-                                isTampered && idx >= 2 ? 'text-rose-300' : 'text-brand-300'
+                                isTampered && idx >= 2 ? 'text-rose-300' : 'text-brand-400'
                               )}
                               viewBox="0 0 40 8"
                               fill="none"
@@ -579,11 +586,12 @@ export default function AuditTrailSection() {
                                 y2="4"
                                 stroke="currentColor"
                                 strokeWidth="1.5"
-                                strokeDasharray={isTampered && idx >= 2 ? '2 2' : '3 3'}
+                                strokeDasharray={isTampered && idx >= 2 ? '2 2' : '4 4'}
+                                className={cn(!isTampered || idx < 2 ? 'animate-flow-dash' : '')}
                               />
                               <polygon
                                 points="34,1 40,4 34,7"
-                                fill={isTampered && idx >= 2 ? '#f43f5e' : '#3b82f6'}
+                                fill={isTampered && idx >= 2 ? '#f43f5e' : '#2563eb'}
                               />
                             </svg>
                           </div>
@@ -598,7 +606,7 @@ export default function AuditTrailSection() {
         </div>
 
         {/* Deep Block Inspector Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-surface-200 shadow-xl space-y-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-surface-200 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-surface-100 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -700,7 +708,7 @@ export default function AuditTrailSection() {
           {/* Cryptographic Linkage Block */}
           <div
             className={cn(
-              'grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-[11px] p-4 rounded-2xl border shadow-2xs',
+              'grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-[11px] p-4 rounded-2xl border',
               isTampered && selectedNode.stepNumber >= 3
                 ? 'bg-rose-50/60 border-rose-200'
                 : 'bg-surface-50 border-black/[0.08]'
@@ -787,7 +795,7 @@ export default function AuditTrailSection() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </section>
   )
 }

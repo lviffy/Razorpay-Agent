@@ -173,7 +173,7 @@ export default function AgentNegotiationSection() {
             <button
               onClick={handleReplay}
               disabled={isReplaying}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-surface-50 text-xs font-mono font-bold text-surface-800 transition-all cursor-pointer border border-black/[0.12] active:scale-95 shadow-xs"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-surface-50 text-xs font-mono font-bold text-surface-800 transition-colors duration-150 cursor-pointer border border-black/[0.12]"
             >
               <RefreshCw className={cn("w-3.5 h-3.5", isReplaying && "animate-spin text-brand-600")} />
               <span>{isReplaying ? "Simulating Negotiation..." : "Replay Live Negotiation"}</span>
@@ -184,9 +184,9 @@ export default function AgentNegotiationSection() {
         {/* Merchant Storefront & Product Context Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Merchant Catalog Card */}
-          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-brand-500/80 ring-2 ring-brand-500/10 transition-all flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-xs">
+          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-brand-500/80 ring-1 ring-brand-500/20 transition-colors flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
                 <Store className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -209,9 +209,9 @@ export default function AgentNegotiationSection() {
           </div>
 
           {/* Negotiated Deal Outcome Card */}
-          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-emerald-500/40 ring-2 ring-emerald-500/10 transition-all flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-2xs">
+          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-emerald-500/40 ring-1 ring-emerald-500/20 transition-colors flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
                 <Check className="w-5 h-5" />
               </div>
               <div className="min-w-0">
@@ -237,7 +237,7 @@ export default function AgentNegotiationSection() {
         {/* 2-Column Split Workspace */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           {/* Left Column: Clear Dialogue Stream (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between space-y-5 shadow-xs">
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between space-y-5">
             <div className="flex items-center justify-between border-b border-black/[0.06] pb-3.5">
               <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-brand-600" />
@@ -246,7 +246,7 @@ export default function AgentNegotiationSection() {
                 </h3>
               </div>
               <span className="text-xs text-emerald-700 font-mono font-medium flex items-center gap-1.5 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live A2A Channel
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-subtle-pulse" /> Live A2A Channel
               </span>
             </div>
 
@@ -255,11 +255,11 @@ export default function AgentNegotiationSection() {
               {dialogueSteps.slice(0, activeStep).map((item) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                   className={cn(
-                    'p-4 rounded-2xl border transition-all space-y-2',
+                    'p-4 rounded-2xl border transition-colors duration-150 space-y-2',
                     item.speaker === 'user' && 'bg-surface-50/70 border-black/[0.06]',
                     item.speaker === 'buyer' && 'bg-blue-50/40 border-blue-200/70',
                     item.speaker === 'seller' && 'bg-emerald-50/40 border-emerald-200/70'
@@ -302,6 +302,18 @@ export default function AgentNegotiationSection() {
                   )}
                 </motion.div>
               ))}
+
+              {/* In-progress A2A step evaluation indicator */}
+              {isReplaying && activeStep < dialogueSteps.length && (
+                <div className="p-3 rounded-2xl bg-surface-50 border border-black/[0.06] flex items-center gap-2 text-xs font-mono text-brand-700 animate-subtle-fade-in">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-600 animate-typing-1" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-600 animate-typing-2" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-600 animate-typing-3" />
+                  <span className="text-[11px] font-medium ml-1">
+                    A2A State Machine: Verifying step {activeStep + 1} of {dialogueSteps.length}...
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Bottom Status */}
@@ -314,7 +326,7 @@ export default function AgentNegotiationSection() {
           </div>
 
           {/* Right Column: Execution State Machine (5 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between space-y-5 shadow-xs">
+          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between space-y-5">
             <div className="flex items-center justify-between border-b border-black/[0.06] pb-3.5">
               <div className="flex items-center gap-2">
                 <Layers className="w-4 h-4 text-brand-600" />
@@ -332,13 +344,16 @@ export default function AgentNegotiationSection() {
               {executionPipeline.map((step) => {
                 const IconComponent = step.icon
                 const isStepActive = step.id <= activeStep
+                const isCurrentStep = step.id === activeStep
 
                 return (
                   <div
                     key={step.id}
                     className={cn(
-                      'p-3.5 rounded-2xl border transition-all duration-200 flex items-start justify-between gap-3',
-                      isStepActive
+                      'p-3.5 rounded-2xl border transition-colors duration-150 flex items-start justify-between gap-3',
+                      isCurrentStep
+                        ? 'bg-brand-50/40 border-brand-300 ring-1 ring-brand-400/30'
+                        : isStepActive
                         ? 'bg-surface-50/80 border-black/[0.08]'
                         : 'bg-white opacity-40 border-black/[0.04]'
                     )}
@@ -368,7 +383,7 @@ export default function AgentNegotiationSection() {
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-surface-100 text-surface-400"
                     )}>
-                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <Check className={cn("w-3.5 h-3.5 stroke-[2.5]", isCurrentStep && "animate-subtle-pulse")} />
                     </div>
                   </div>
                 )
