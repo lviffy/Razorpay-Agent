@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS orders (
     razorpay_order_id   VARCHAR(100) UNIQUE NOT NULL,
     razorpay_payment_id VARCHAR(100) UNIQUE,
     order_id            VARCHAR(100) UNIQUE,          -- e.g. ORD-1042
+    shopify_order_id    VARCHAR(100),                 -- e.g. 5892304820
+    shopify_order_number VARCHAR(100),                -- e.g. #1042
     x402_tx_hash        VARCHAR(255) UNIQUE NOT NULL,
     mandate_id          VARCHAR(100),
     amount              NUMERIC(12,2) NOT NULL,
@@ -159,6 +161,38 @@ CREATE TABLE IF NOT EXISTS orders (
     status              payment_status DEFAULT 'CREATED',
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6.1 Dedicated Shopify Connected Stores
+CREATE TABLE IF NOT EXISTS shopify_connections (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id                UUID REFERENCES stores(id) ON DELETE CASCADE,
+    shop_domain             VARCHAR(255) NOT NULL,
+    shop_name               VARCHAR(255),
+    myshopify_domain        VARCHAR(255),
+    access_token            TEXT NOT NULL,
+    webhook_secret          VARCHAR(255),
+    api_version             VARCHAR(20) DEFAULT '2024-07',
+    currency                VARCHAR(10) DEFAULT 'INR',
+    status                  VARCHAR(50) DEFAULT 'connected', -- connected | disconnected | auth_error
+    last_synced_at          TIMESTAMPTZ,
+    products_synced_count   INT DEFAULT 0,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(store_id)
+);
+
+-- 6.2 Shopify Webhook Event Idempotency Ledger
+CREATE TABLE IF NOT EXISTS shopify_sync_events (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    store_id            UUID REFERENCES stores(id) ON DELETE SET NULL,
+    topic               VARCHAR(100) NOT NULL,
+    shopify_event_id    VARCHAR(255) UNIQUE,
+    shop_domain         VARCHAR(255),
+    payload             JSONB NOT NULL,
+    status              VARCHAR(50) DEFAULT 'PROCESSED', -- PROCESSED | FAILED | DUPLICATE
+    processed_at        TIMESTAMPTZ DEFAULT NOW(),
+    error               TEXT
 );
 
 -- 7. Webhook Idempotency — prevents double-processing on Razorpay retries

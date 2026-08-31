@@ -194,6 +194,8 @@ export interface StoreCredentials {
   shopifyShopDomain?: string;
   shopifyAccessToken?: string;
   hasShopifyAccessToken?: boolean;
+  shopifyWebhookSecret?: string;
+  shopifyWebhookUrl?: string;
 }
 
 export interface AuthUser {

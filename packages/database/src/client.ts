@@ -1,5 +1,11 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve } from "path";
 import { Pool } from "pg";
+
+// Load local and workspace root .env
+config();
+config({ path: resolve(__dirname, "../../../.env") });
+config({ path: resolve(process.cwd(), ".env") });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Neon DB client — Postgres connection pool

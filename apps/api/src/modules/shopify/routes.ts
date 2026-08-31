@@ -3,6 +3,8 @@ import { db } from "@zapai/database";
 import {
   verifyShopifyCredentials,
   syncShopifyToStore,
+  getShopifyConnection,
+  disconnectShopifyConnection,
   normalizeShopDomain,
 } from "../../integrations/shopify/index.ts";
 import jwt from "jsonwebtoken";
@@ -126,30 +128,37 @@ router.get("/status", async (req: Request, res: Response) => {
       return res.json({ connected: false });
     }
 
-    const { rows } = await db.query(
-      "SELECT agent_settings, name FROM stores WHERE id = $1 LIMIT 1",
-      [storeId]
-    );
-
-    const creds = rows[0]?.agent_settings?.credentials || {};
-    const shopifyMeta = rows[0]?.agent_settings?.shopify || {};
-    const hasToken = Boolean(creds.shopifyAccessToken);
+    const conn = await getShopifyConnection(storeId);
 
     const { rows: prodCount } = await db.query(
       "SELECT COUNT(*) as count FROM products WHERE store_id = $1 AND shopify_product_id IS NOT NULL AND shopify_product_id != ''",
       [storeId]
     );
 
+    const productCount = parseInt(prodCount[0]?.count || "0", 10);
+    const appUrl = env.APP_URL || "http://localhost:8000";
+
+    if (conn && conn.status !== "disconnected" && conn.accessToken) {
+      return res.json({
+        connected: true,
+        shopDomain: conn.shopDomain,
+        shopName: conn.shopName,
+        myshopifyDomain: conn.myshopifyDomain,
+        currency: conn.currency || "INR",
+        productCount: productCount || conn.productsSyncedCount,
+        lastSyncedAt: conn.lastSyncedAt || null,
+        webhookUrl: `${appUrl}/webhooks/shopify`,
+        hasWebhookSecret: Boolean(conn.webhookSecret || env.SHOPIFY_WEBHOOK_SECRET),
+        maskedToken: conn.accessToken
+          ? `${conn.accessToken.slice(0, 8)}••••••••${conn.accessToken.slice(-4)}`
+          : null,
+      });
+    }
+
     return res.json({
-      connected: hasToken,
-      shopDomain: creds.shopifyShopDomain || shopifyMeta.domain || "",
-      shopName: shopifyMeta.shopName || rows[0]?.name || "",
-      currency: shopifyMeta.currency || "INR",
-      productCount: parseInt(prodCount[0]?.count || "0", 10),
-      lastSyncedAt: shopifyMeta.lastSyncedAt || null,
-      maskedToken: hasToken
-        ? `${creds.shopifyAccessToken.slice(0, 8)}••••••••${creds.shopifyAccessToken.slice(-4)}`
-        : null,
+      connected: false,
+      productCount,
+      webhookUrl: `${appUrl}/webhooks/shopify`,
     });
   } catch (err: any) {
     logger.error({ err }, "Shopify status error");
@@ -165,16 +174,8 @@ router.post("/resync", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Store not found" });
     }
 
-    const { rows } = await db.query(
-      "SELECT agent_settings FROM stores WHERE id = $1 LIMIT 1",
-      [storeId]
-    );
-
-    const creds = rows[0]?.agent_settings?.credentials || {};
-    const domain = creds.shopifyShopDomain;
-    const token = creds.shopifyAccessToken;
-
-    if (!domain || !token) {
+    const conn = await getShopifyConnection(storeId);
+    if (!conn || !conn.accessToken || !conn.shopDomain) {
       return res.status(400).json({
         error: "No Shopify credentials saved for this store. Please connect Shopify first.",
       });
@@ -188,7 +189,7 @@ router.post("/resync", async (req: Request, res: Response) => {
       ? parseFloat(ruleRow[0].max_discount_percentage)
       : 15;
 
-    const result = await syncShopifyToStore(storeId, domain, token, maxDiscount);
+    const result = await syncShopifyToStore(storeId, conn.shopDomain, conn.accessToken, maxDiscount);
 
     return res.json({
       success: true,
@@ -199,6 +200,26 @@ router.post("/resync", async (req: Request, res: Response) => {
   } catch (err: any) {
     logger.error({ err }, "Shopify resync error");
     return res.status(500).json({ error: err.message || "Failed to resync Shopify catalog" });
+  }
+});
+
+// POST /api/v1/shopify/disconnect
+router.post("/disconnect", async (req: Request, res: Response) => {
+  try {
+    const storeId = await getStoreIdFromReq(req);
+    if (!storeId) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    await disconnectShopifyConnection(storeId);
+
+    return res.json({
+      success: true,
+      message: "Shopify store disconnected successfully",
+    });
+  } catch (err: any) {
+    logger.error({ err }, "Shopify disconnect error");
+    return res.status(500).json({ error: err.message || "Failed to disconnect Shopify store" });
   }
 });
 

@@ -53,8 +53,8 @@ const dialogueSteps: DialogueItem[] = [
     avatarText: 'BA',
     avatarBg: 'bg-brand-600 text-white',
     avatarColor: 'text-brand-600',
-    content: 'Scanning verified catalogs in parallel: RunFast Sports (₹3,999) vs SpeedGear (₹4,199). Opening negotiation with Store A...',
-    statusBadge: 'Parallel Discovery',
+    content: 'Found Nike Pegasus 40 in RunFast Sports catalog (Listed ₹3,999). Initiating A2A negotiation with Seller Agent within ₹4,000 spending mandate...',
+    statusBadge: 'Catalog Match',
   },
   {
     id: 3,
@@ -134,7 +134,6 @@ const executionPipeline = [
 
 export default function AgentNegotiationSection() {
   const [activeStep, setActiveStep] = useState<number>(5)
-  const [selectedStore, setSelectedStore] = useState<'storeA' | 'storeB'>('storeA')
   const [isReplaying, setIsReplaying] = useState<boolean>(false)
 
   const handleReplay = () => {
@@ -166,8 +165,7 @@ export default function AgentNegotiationSection() {
               <span className="text-brand-600">Negotiation in Action.</span>
             </h2>
             <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
-              Not a scripted chatbot. Watch how a Buyer Agent discovers products across stores,
-              negotiates pricing directly with the Seller Agent, and executes an atomic settlement.
+              Not a scripted chatbot. Watch how a Buyer Agent negotiates price directly against the Seller Agent&apos;s margin rules and executes an atomic settlement.
             </p>
           </div>
 
@@ -183,31 +181,48 @@ export default function AgentNegotiationSection() {
           </div>
         </div>
 
-        {/* Parallel Store Comparison Strip */}
+        {/* Merchant Storefront & Product Context Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Store A */}
-          <div
-            onClick={() => setSelectedStore('storeA')}
-            className={cn(
-              'p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-xs',
-              selectedStore === 'storeA'
-                ? 'bg-white border-brand-500/80 ring-2 ring-brand-500/10'
-                : 'bg-white/80 border-black/[0.08] hover:border-black/[0.15]'
-            )}
-          >
+          {/* Merchant Catalog Card */}
+          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-brand-500/80 ring-2 ring-brand-500/10 transition-all flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                A
+                <Store className="w-5 h-5" />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <h4 className="font-bold text-sm text-surface-900 truncate">RunFast Sports (BLR)</h4>
                   <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
-                    Winner
+                    Verified Merchant
                   </span>
                 </div>
                 <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">
-                  Listed ₹3,999 • Floor ₹3,600 • In Stock: 14
+                  Nike Pegasus 40 (UK 9) • Listed ₹3,999 • Floor ₹3,600
+                </p>
+              </div>
+            </div>
+
+            <div className="text-left xs:text-right shrink-0 xs:pl-3 w-full xs:w-auto pt-1 xs:pt-0 border-t xs:border-t-0 border-black/[0.05]">
+              <span className="text-xs font-mono text-surface-500 block">Stock Available</span>
+              <span className="text-sm font-mono font-bold text-surface-900">14 Units in Stock</span>
+            </div>
+          </div>
+
+          {/* Negotiated Deal Outcome Card */}
+          <div className="p-4 sm:p-5 rounded-2xl border bg-white border-emerald-500/40 ring-2 ring-emerald-500/10 transition-all flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+                <Check className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <h4 className="font-bold text-sm text-surface-900 truncate">A2A Agreed Deal</h4>
+                  <span className="text-[10px] font-mono font-bold bg-brand-50 text-brand-700 border border-brand-200 px-2 py-0.5 rounded">
+                    Deal Closed
+                  </span>
+                </div>
+                <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">
+                  Initial Bid: ₹3,700 ──► Seller Counter: ₹3,799
                 </p>
               </div>
             </div>
@@ -215,39 +230,6 @@ export default function AgentNegotiationSection() {
             <div className="text-left xs:text-right shrink-0 xs:pl-3 w-full xs:w-auto pt-1 xs:pt-0 border-t xs:border-t-0 border-black/[0.05]">
               <span className="text-sm font-mono font-bold text-emerald-700 block">Agreed: ₹3,799</span>
               <span className="text-[11px] text-surface-500 font-medium">+ Free Express Delivery</span>
-            </div>
-          </div>
-
-          {/* Store B */}
-          <div
-            onClick={() => setSelectedStore('storeB')}
-            className={cn(
-              'p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 shadow-2xs',
-              selectedStore === 'storeB'
-                ? 'bg-white border-brand-500/80 ring-2 ring-brand-500/10'
-                : 'bg-white/60 border-black/[0.06] hover:border-black/[0.12]'
-            )}
-          >
-            <div className="flex items-center gap-3.5 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-surface-200 text-surface-600 flex items-center justify-center font-bold text-sm shrink-0">
-                B
-              </div>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <h4 className="font-bold text-sm text-surface-700 truncate">SpeedGear (MUM)</h4>
-                  <span className="text-[10px] font-mono text-surface-600 bg-surface-100 px-2 py-0.5 rounded">
-                    Compared
-                  </span>
-                </div>
-                <p className="text-xs text-surface-500 font-mono mt-0.5 truncate">
-                  Listed ₹4,199 • Floor ₹3,900 • In Stock: 3
-                </p>
-              </div>
-            </div>
-
-            <div className="text-left xs:text-right shrink-0 xs:pl-3 w-full xs:w-auto pt-1 xs:pt-0 border-t xs:border-t-0 border-black/[0.05]">
-              <span className="text-xs font-mono text-surface-500 block">Counter: ₹3,950</span>
-              <span className="text-[11px] text-rose-600 font-medium">Outbid by Store A</span>
             </div>
           </div>
         </div>

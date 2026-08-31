@@ -52,11 +52,14 @@ export default function GeneralSettingsPage() {
   const [shopifyTestResult, setShopifyTestResult] = useState<{ success?: boolean; message?: string; error?: string; shop?: any } | null>(null);
   const [syncingShopify, setSyncingShopify] = useState(false);
   const [shopifySyncResult, setShopifySyncResult] = useState<{ success?: boolean; message?: string; error?: string; syncedCount?: number } | null>(null);
+  const [shopifyStatus, setShopifyStatus] = useState<{ connected: boolean; shopDomain?: string; shopName?: string; currency?: string; productCount?: number; lastSyncedAt?: string; maskedToken?: string; webhookUrl?: string } | null>(null);
+  const [disconnectingShopify, setDisconnectingShopify] = useState(false);
 
   // Copy states
   const [copiedRzpUrl, setCopiedRzpUrl] = useState(false);
   const [copiedWaUrl, setCopiedWaUrl] = useState(false);
   const [copiedWaToken, setCopiedWaToken] = useState(false);
+  const [copiedShopifyWebhookUrl, setCopiedShopifyWebhookUrl] = useState(false);
 
   // Dynamic simulated price outcome
   const [sampleRetail, setSampleRetail] = useState<number>(4000);
@@ -64,11 +67,12 @@ export default function GeneralSettingsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [r, p, c, prods] = await Promise.all([
+        const [r, p, c, prods, shpStatus] = await Promise.all([
           api.settings.getRules(),
           api.profile.get(),
           api.settings.getCredentials(),
           api.products.list(),
+          api.shopify.getStatus(),
         ]);
         if (r) setRules(r);
         if (p) {
@@ -80,6 +84,9 @@ export default function GeneralSettingsPage() {
           if (c.whatsappPhoneNumber && !supportPhone) {
             setSupportPhone(c.whatsappPhoneNumber);
           }
+        }
+        if (shpStatus) {
+          setShopifyStatus(shpStatus);
         }
         if (prods && prods.length > 0 && prods[0].price > 0) {
           setSampleRetail(prods[0].price);
@@ -174,6 +181,8 @@ export default function GeneralSettingsPage() {
           syncedCount: res.syncedCount,
           message: `Synced ${res.syncedCount} products from ${res.shop?.name || creds.shopifyShopDomain}!`,
         });
+        const updatedStatus = await api.shopify.getStatus();
+        if (updatedStatus) setShopifyStatus(updatedStatus);
       } else {
         setShopifySyncResult({ error: res.error || "Failed to sync Shopify products" });
       }
@@ -181,6 +190,25 @@ export default function GeneralSettingsPage() {
       setShopifySyncResult({ error: err.message || "Failed to sync Shopify catalog" });
     } finally {
       setSyncingShopify(false);
+    }
+  };
+
+  const handleDisconnectShopify = async () => {
+    if (!confirm("Are you sure you want to disconnect this Shopify store?")) return;
+    setDisconnectingShopify(true);
+    try {
+      await api.shopify.disconnect();
+      setCreds({
+        ...creds,
+        shopifyAccessToken: "",
+        hasShopifyAccessToken: false,
+      });
+      setShopifyStatus({ connected: false });
+      setShopifySyncResult({ message: "Shopify store disconnected." });
+    } catch (err: any) {
+      setShopifySyncResult({ error: err.message || "Failed to disconnect Shopify store" });
+    } finally {
+      setDisconnectingShopify(false);
     }
   };
 
@@ -202,6 +230,7 @@ export default function GeneralSettingsPage() {
           whatsappWebhookVerifyToken: creds.whatsappWebhookVerifyToken,
           shopifyShopDomain: creds.shopifyShopDomain,
           shopifyAccessToken: creds.shopifyAccessToken,
+          shopifyWebhookSecret: creds.shopifyWebhookSecret,
         }),
       ]);
       setSaved(true);
@@ -680,43 +709,89 @@ export default function GeneralSettingsPage() {
 
         {/* 5. Shopify Store Integration */}
         <Card className="border-zinc-200 shadow-xs">
-          <CardHeader className="pb-3 border-b border-zinc-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                  <ShoppingBag className="w-4 h-4" />
-                </div>
-                <div>
-                  <CardTitle className="text-sm font-bold text-zinc-900">Shopify Connected Store & Catalog Sync</CardTitle>
-                  <CardDescription className="text-xs text-zinc-500">
-                    Connect your Shopify store using an authenticated Admin API Access Token (<code className="font-mono text-[10px]">shpat_...</code>).
-                  </CardDescription>
-                </div>
+          <CardHeader className="p-6 pb-4 border-b border-zinc-100 flex flex-row items-center justify-between space-y-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <ShoppingBag className="w-4 h-4" />
               </div>
-              <Badge variant="outline" className="text-[11px] font-mono bg-emerald-50 text-emerald-700 border-emerald-200">
-                {creds.hasShopifyAccessToken ? "Connected" : "Custom App"}
+              <div>
+                <CardTitle className="text-sm font-bold text-zinc-900">Shopify Connected Store & Catalog Sync</CardTitle>
+                <CardDescription className="text-[11px] text-zinc-500">
+                  Real-time catalog ingestion from Shopify & autonomous order creation on payment settlement.
+                </CardDescription>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={`gap-1 font-mono text-[10px] ${
+                  shopifyStatus?.connected || creds.hasShopifyAccessToken
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    shopifyStatus?.connected || creds.hasShopifyAccessToken ? "bg-emerald-500" : "bg-zinc-400"
+                  }`}
+                />
+                {shopifyStatus?.connected || creds.hasShopifyAccessToken ? "Shopify Connected" : "Not Connected"}
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-4 sm:p-5 space-y-4">
+
+          <CardContent className="p-6 space-y-4">
+            {/* Live Connection Stats banner when connected */}
+            {(shopifyStatus?.connected || creds.hasShopifyAccessToken) && (
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <div>
+                    <span className="font-semibold text-emerald-950">
+                      {shopifyStatus?.shopName || "Shopify Store"}
+                    </span>
+                    <span className="text-emerald-700 font-mono text-[11px] ml-1.5">
+                      ({shopifyStatus?.shopDomain || creds.shopifyShopDomain})
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] font-mono text-emerald-800">
+                  <span>
+                    <strong>{shopifyStatus?.productCount || 0}</strong> SKUs Cached
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Currency: <strong>{shopifyStatus?.currency || "INR"}</strong>
+                  </span>
+                  {shopifyStatus?.lastSyncedAt && (
+                    <>
+                      <span>•</span>
+                      <span>
+                        Last synced: {new Date(shopifyStatus.lastSyncedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-zinc-700">Shopify Store Domain</label>
-                  <span className="text-[10px] text-zinc-400">Custom domain or myshopify.com</span>
+                  <label className="text-xs font-semibold text-zinc-800">Shopify Store Domain</label>
+                  <span className="text-[10px] text-zinc-400 font-mono">Custom or myshopify.com</span>
                 </div>
                 <Input
                   value={creds.shopifyShopDomain || ""}
                   onChange={(e) => setCreds({ ...creds, shopifyShopDomain: e.target.value })}
-                  placeholder="rohanm.in or your-brand.myshopify.com"
+                  placeholder="e.g. rohanm.in or runfast-sports.myshopify.com"
                   className="bg-white border-zinc-200 text-xs font-mono"
                 />
-                <p className="text-[11px] text-zinc-400">Your custom domain (e.g. rohanm.in) or myshopify.com subdomain</p>
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-zinc-700">Admin API Access Token</label>
+                  <label className="text-xs font-semibold text-zinc-800">Admin API Access Token</label>
                   <span className="text-[10px] text-zinc-400 font-mono">Starts with shpat_</span>
                 </div>
                 <div className="relative">
@@ -735,7 +810,49 @@ export default function GeneralSettingsPage() {
                     {showShopifyToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-zinc-400">Requires <code className="bg-zinc-100 px-1 rounded text-[10px]">read_products</code> and <code className="bg-zinc-100 px-1 rounded text-[10px]">read_inventory</code></p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-800">Shopify Webhook Endpoint</label>
+                  <span className="text-[10px] text-zinc-400 font-mono">Fast Async ACK</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={creds.shopifyWebhookUrl || "https://razorpay-agent-production.up.railway.app/webhooks/shopify"}
+                    readOnly
+                    className="bg-zinc-50 font-mono text-[11px] text-zinc-600 truncate"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(creds.shopifyWebhookUrl || "https://razorpay-agent-production.up.railway.app/webhooks/shopify");
+                      setCopiedShopifyWebhookUrl(true);
+                      setTimeout(() => setCopiedShopifyWebhookUrl(false), 2000);
+                    }}
+                    className="h-9 px-3 shrink-0 text-xs gap-1"
+                  >
+                    {copiedShopifyWebhookUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedShopifyWebhookUrl ? "Copied" : "Copy"}</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-800">Shopify Webhook Secret</label>
+                  <span className="text-[10px] text-zinc-400 font-mono">HMAC SHA256 Verification</span>
+                </div>
+                <Input
+                  value={creds.shopifyWebhookSecret || ""}
+                  onChange={(e) => setCreds({ ...creds, shopifyWebhookSecret: e.target.value })}
+                  placeholder="Enter Shopify Webhook Signature Secret (optional)"
+                  className="bg-white border-zinc-200 text-xs font-mono"
+                />
               </div>
             </div>
 
@@ -753,29 +870,54 @@ export default function GeneralSettingsPage() {
               </div>
             )}
 
-            <div className="pt-2 flex flex-wrap items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleTestShopify}
-                disabled={testingShopify}
-                className="h-8 text-xs gap-1.5"
-              >
-                {testingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
-                <span>Test Shopify Connection</span>
-              </Button>
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={handleSyncShopify}
-                disabled={syncingShopify}
-                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
-              >
-                {syncingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                <span>Sync Catalog Now</span>
-              </Button>
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[11px] text-zinc-500">
+                <span>Scopes required: </span>
+                <code className="text-zinc-800 font-mono bg-zinc-100 px-1 py-0.5 rounded text-[10px]">read_products</code>
+                <span className="mx-1">•</span>
+                <code className="text-zinc-800 font-mono bg-zinc-100 px-1 py-0.5 rounded text-[10px]">read_inventory</code>
+                <span className="mx-1">•</span>
+                <code className="text-zinc-800 font-mono bg-zinc-100 px-1 py-0.5 rounded text-[10px]">write_orders</code>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {(shopifyStatus?.connected || creds.hasShopifyAccessToken) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDisconnectShopify}
+                    disabled={disconnectingShopify}
+                    className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <span>Disconnect</span>
+                  </Button>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestShopify}
+                  disabled={testingShopify}
+                  className="h-8 text-xs gap-1.5"
+                >
+                  {testingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
+                  <span>Test Connection</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={handleSyncShopify}
+                  disabled={syncingShopify}
+                  className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
+                >
+                  {syncingShopify ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  <span>Sync Catalog Now</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

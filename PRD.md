@@ -154,14 +154,17 @@ Inventory state transitions follow a strict two-tier mechanism:
 ```sql
 -- Atomic reservation transaction
 BEGIN;
-  SELECT inventory_available FROM variants WHERE id = $1 FOR UPDATE;
+  SELECT id, sku, inventory_available, inventory_reserved 
+  FROM products WHERE id = $1 FOR UPDATE;
+
   -- If inventory_available >= $quantity:
-  UPDATE variants 
+  UPDATE products 
   SET inventory_available = inventory_available - $quantity,
-      inventory_reserved = inventory_reserved + $quantity
-  WHERE id = $1;
-  INSERT INTO reservations (id, variant_id, quantity, expires_at, status) 
-  VALUES ($2, $1, $3, NOW() + INTERVAL '120 seconds', 'RESERVED');
+      inventory_reserved = inventory_reserved + $quantity,
+      inventory_state = 'RESERVED',
+      reservation_expires_at = NOW() + INTERVAL '120 seconds',
+      updated_at = NOW()
+  WHERE id = $1 AND inventory_available >= $quantity;
 COMMIT;
 ```
 

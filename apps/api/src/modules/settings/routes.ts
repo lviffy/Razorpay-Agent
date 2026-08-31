@@ -290,6 +290,7 @@ router.get("/credentials", async (req: Request, res: Response) => {
 
     const shopifyShopDomain = creds.shopifyShopDomain || "";
     const hasShopifyToken = Boolean(creds.shopifyAccessToken);
+    const shopifyWebhookSecret = creds.shopifyWebhookSecret || env.SHOPIFY_WEBHOOK_SECRET || "";
 
     return res.json({
       razorpayKeyId,
@@ -305,6 +306,8 @@ router.get("/credentials", async (req: Request, res: Response) => {
       shopifyShopDomain,
       hasShopifyAccessToken: hasShopifyToken,
       shopifyAccessToken: hasShopifyToken ? `${creds.shopifyAccessToken.slice(0, 8)}••••••••` : "",
+      shopifyWebhookSecret,
+      shopifyWebhookUrl: `${appUrl}/webhooks/shopify`,
     });
   } catch (err) {
     logger.error({ err }, "Get credentials error");
@@ -326,6 +329,7 @@ router.put("/credentials", async (req: Request, res: Response) => {
       whatsappWebhookVerifyToken,
       shopifyShopDomain,
       shopifyAccessToken,
+      shopifyWebhookSecret,
     } = req.body;
 
     if (storeId) {
@@ -348,6 +352,7 @@ router.put("/credentials", async (req: Request, res: Response) => {
         ...(shopifyShopDomain !== undefined && { shopifyShopDomain }),
         ...(shopifyAccessToken && { shopifyAccessToken }),
         ...(shopifyAccessToken && { hasShopifyAccessToken: true }),
+        ...(shopifyWebhookSecret !== undefined && { shopifyWebhookSecret }),
       };
 
       const updatedAgentSettings = {
@@ -370,6 +375,28 @@ router.put("/credentials", async (req: Request, res: Response) => {
           storeId,
         ]
       );
+
+      // If Shopify token or webhook secret provided, update shopify_connections table as well
+      if (shopifyShopDomain && shopifyAccessToken) {
+        await db.query(
+          `INSERT INTO shopify_connections (
+            store_id, shop_domain, shop_name, myshopify_domain,
+            access_token, webhook_secret, status, updated_at
+          ) VALUES ($1, $2, 'Shopify Store', $2, $3, $4, 'connected', NOW())
+          ON CONFLICT (store_id) DO UPDATE SET
+            shop_domain = EXCLUDED.shop_domain,
+            access_token = EXCLUDED.access_token,
+            webhook_secret = COALESCE(EXCLUDED.webhook_secret, shopify_connections.webhook_secret),
+            status = 'connected',
+            updated_at = NOW()`,
+          [
+            storeId,
+            shopifyShopDomain,
+            shopifyAccessToken,
+            shopifyWebhookSecret || null,
+          ]
+        );
+      }
     }
 
     const appUrl = env.APP_URL || "http://localhost:8000";
@@ -379,6 +406,7 @@ router.put("/credentials", async (req: Request, res: Response) => {
       razorpayKeyId: razorpayKeyId || env.RAZORPAY_KEY_ID,
       razorpayWebhookUrl: `${appUrl}/webhooks/razorpay`,
       whatsappWebhookUrl: `${appUrl}/webhooks/whatsapp`,
+      shopifyWebhookUrl: `${appUrl}/webhooks/shopify`,
     });
   } catch (err) {
     logger.error({ err }, "Save credentials error");

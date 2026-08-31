@@ -1,7 +1,11 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, join } from "path";
 import { readFileSync } from "fs";
-import { join } from "path";
 import { db } from "./client";
+
+config();
+config({ path: resolve(__dirname, "../../../.env") });
+config({ path: resolve(process.cwd(), ".env") });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Migration — idempotent, safe to run on every boot
@@ -51,6 +55,38 @@ async function migrate() {
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS sku VARCHAR(100);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS original_price NUMERIC(12,2);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_applied NUMERIC(12,2) DEFAULT 0;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS shopify_order_id VARCHAR(100);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS shopify_order_number VARCHAR(100);
+
+      CREATE TABLE IF NOT EXISTS shopify_connections (
+          id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          store_id                UUID REFERENCES stores(id) ON DELETE CASCADE,
+          shop_domain             VARCHAR(255) NOT NULL,
+          shop_name               VARCHAR(255),
+          myshopify_domain        VARCHAR(255),
+          access_token            TEXT NOT NULL,
+          webhook_secret          VARCHAR(255),
+          api_version             VARCHAR(20) DEFAULT '2024-07',
+          currency                VARCHAR(10) DEFAULT 'INR',
+          status                  VARCHAR(50) DEFAULT 'connected',
+          last_synced_at          TIMESTAMPTZ,
+          products_synced_count   INT DEFAULT 0,
+          created_at              TIMESTAMPTZ DEFAULT NOW(),
+          updated_at              TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(store_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS shopify_sync_events (
+          id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          store_id            UUID REFERENCES stores(id) ON DELETE SET NULL,
+          topic               VARCHAR(100) NOT NULL,
+          shopify_event_id    VARCHAR(255) UNIQUE,
+          shop_domain         VARCHAR(255),
+          payload             JSONB NOT NULL,
+          status              VARCHAR(50) DEFAULT 'PROCESSED',
+          processed_at        TIMESTAMPTZ DEFAULT NOW(),
+          error               TEXT
+      );
 
       ALTER TABLE conversations ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES stores(id) ON DELETE CASCADE;
       ALTER TABLE conversations ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);

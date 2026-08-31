@@ -3,6 +3,7 @@ import { releaseLock } from "../integrations/redis/index.ts";
 import { setInventoryState } from "./merchant.ts";
 import { logEvent } from "./audit.ts";
 import { sendConfirmation } from "../integrations/whatsapp/index.ts";
+import { createShopifyOrder } from "../integrations/shopify/index.ts";
 import { logger } from "../core/logger/index.ts";
 
 export async function processOrderPaymentSuccess(opts: {
@@ -40,7 +41,7 @@ export async function processOrderPaymentSuccess(opts: {
     return order;
   }
 
-  // 1. Update order
+  // 1. Update order status
   await db.query(
     `UPDATE orders
      SET razorpay_payment_id = $1, status = 'CAPTURED', updated_at = NOW()
@@ -107,6 +108,30 @@ export async function processOrderPaymentSuccess(opts: {
   } catch (err: any) {
     logger.warn({ err: err.message }, "⚠️ WhatsApp confirmation dispatch failed");
   }
+
+  // 6. Post-settlement: Outbound Shopify Order creation (Non-blocking & resilient)
+  setImmediate(async () => {
+    try {
+      await createShopifyOrder({
+        storeId: order.store_id,
+        orderId: order.id,
+        orderReferenceId: order.order_id,
+        amount: parseFloat(order.amount),
+        originalPrice: order.original_price ? parseFloat(order.original_price) : undefined,
+        discountApplied: order.discount_applied ? parseFloat(order.discount_applied) : 0,
+        productTitle: order.product_title,
+        sku: order.sku,
+        customerName: order.customer_name,
+        customerPhone: order.customer_phone,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpayOrderId: order.razorpay_order_id,
+        x402TxHash: order.x402_tx_hash,
+        currency: order.currency || "INR",
+      });
+    } catch (err: any) {
+      logger.warn({ err: err.message, orderId: order.order_id }, "⚠️ Async Shopify order creation failed (safe fallback)");
+    }
+  });
 
   logger.info({ orderId: order.order_id, paymentId: razorpayPaymentId }, "✅ [PaymentSettlement] Payment settled and order captured");
   return order;

@@ -9,6 +9,7 @@ import { processOrderPaymentSuccess } from "./services/payment-settlement.ts";
 // Routers
 import whatsappWebhookRouter from "./modules/webhooks/whatsapp.routes.ts";
 import razorpayWebhookRouter from "./modules/webhooks/razorpay.routes.ts";
+import shopifyWebhookRouter from "./modules/webhooks/shopify.routes.ts";
 import demoRouter from "./modules/demo/routes.ts";
 import authRouter from "./modules/auth/routes.ts";
 import catalogRouter from "./modules/catalog/routes.ts";
@@ -56,6 +57,14 @@ app.use(requestIdMiddleware);
 
 // Webhook raw body preservation
 app.use("/webhooks/razorpay", express.raw({ type: "application/json" }));
+app.use(
+  "/webhooks/shopify",
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString("utf8");
+    },
+  })
+);
 app.use(
   "/webhooks/whatsapp",
   express.json({
@@ -198,6 +207,7 @@ app.get("/payment-complete", async (req, res) => {
 app.use("/demo", demoRouter);
 app.use("/webhooks/whatsapp", whatsappWebhookRouter);
 app.use("/webhooks/razorpay", razorpayWebhookRouter);
+app.use("/webhooks/shopify", shopifyWebhookRouter);
 
 // ── REST API v1 Routes ───────────────────────────────────────────────────────
 app.use("/api/v1/auth", authRouter);

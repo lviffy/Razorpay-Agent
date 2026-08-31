@@ -88,7 +88,7 @@ Razorpay-Agent/
 
 ## 3. Detailed Technical Specifications
 
-### 3.1 Spending Mandate & Server-Side Policy Evaluator (`src/mandate/`)
+### 3.1 Spending Mandate & Server-Side Policy Evaluator (`apps/api/src/mandate/`)
 Delegated authority is represented as an immutable, cryptographically signed token:
 
 ```typescript
@@ -120,7 +120,7 @@ The LLM does NOT enforce spending rules. The server validates:
 
 ---
 
-### 3.2 Structured A2A Negotiation Protocol (`src/commerce/`)
+### 3.2 Structured A2A Negotiation Protocol (`apps/api/src/commerce/`)
 All communication between Buyer and Seller agents is structured as strongly typed JSON events:
 
 ```
@@ -136,7 +136,7 @@ OFFER ──► COUNTER_OFFER ──► ACCEPT ──► RESERVE ──► PAYME
   "merchantId": "runfast",
   "skuId": "SKU-SHOE-001",
   "quantity": 1,
-  "price": 399900,
+  "targetPrice": 399900,
   "currency": "INR",
   "expiresAt": "2026-08-31T18:35:00Z"
 }
@@ -150,7 +150,8 @@ OFFER ──► COUNTER_OFFER ──► ACCEPT ──► RESERVE ──► PAYME
   "price": 379900,
   "discount": 20000,
   "currency": "INR",
-  "bundleItems": [{ "skuId": "SKU-SOCK-001", "price": 0 }],
+  "shippingFree": true,
+  "bundleItems": [{ "skuId": "SKU-SOCK-001", "title": "Pro Performance Socks", "price": 0 }],
   "expiresAt": "2026-08-31T18:35:00Z"
 }
 ```
@@ -158,15 +159,17 @@ OFFER ──► COUNTER_OFFER ──► ACCEPT ──► RESERVE ──► PAYME
 ```json
 {
   "type": "ACCEPT",
-  "counterOfferId": "cnt_98125",
+  "offerId": "off_98124",
   "agreedPrice": 379900,
-  "currency": "INR"
+  "quantity": 1,
+  "currency": "INR",
+  "timestamp": "2026-08-31T18:33:00Z"
 }
 ```
 
 ---
 
-### 3.3 Atomic Inventory Reservation State Machine (`src/commerce/inventory.ts`)
+### 3.3 Atomic Inventory Reservation State Machine (`apps/api/src/commerce/inventory.ts`)
 Inventory follows a strict transactional state machine:
 
 ```
@@ -178,26 +181,30 @@ AVAILABLE ──► RESERVED ──► PAYMENT_PENDING ──┬──► PAID (
 * **Postgres Source of Truth:**
   ```sql
   BEGIN;
-    SELECT inventory_available FROM variants WHERE id = $1 FOR UPDATE;
-    UPDATE variants 
+    SELECT id, sku, inventory_available, inventory_reserved
+    FROM products WHERE id = $1 FOR UPDATE;
+    
+    UPDATE products 
     SET inventory_available = inventory_available - $quantity,
-        inventory_reserved = inventory_reserved + $quantity
+        inventory_reserved = inventory_reserved + $quantity,
+        inventory_state = 'RESERVED',
+        reservation_expires_at = NOW() + INTERVAL '120 seconds'
     WHERE id = $1 AND inventory_available >= $quantity;
   COMMIT;
   ```
 * **Redis Atomic Lock:**
-  * Key: `lock:reservation:{reservationId}`
+  * Key: `lock:inventory:{storeId}:{skuOrVariantId}`
   * TTL: `120` seconds
-  * Auto-expiry returns reserved count to `inventory_available` if payment is not captured within 120s.
+  * Auto-expiry / failure handler returns reserved count to `AVAILABLE` if payment is not captured within 120s.
 
 ---
 
-### 3.4 x402 V2 Protocol & ZapAI Facilitator (`src/x402/`)
+### 3.4 x402 V2 Protocol & ZapAI Facilitator (`apps/api/src/x402/`)
 
 ZapAI adheres to modern x402 V2 header semantics:
 
 #### 1. Seller Challenge: `PAYMENT-REQUIRED`
-HTTP Status: `402 Payment Required`
+HTTP Status: `402 Payment Required`  
 Header: `PAYMENT-REQUIRED: <base64-json>`
 
 ```json
@@ -209,7 +216,7 @@ Header: `PAYMENT-REQUIRED: <base64-json>`
   "payTo": "merchant_runfast",
   "resource": "order/ORD-1042",
   "expiresAt": "2026-08-31T18:35:00Z",
-  "nonce": "nonce_77af98b1"
+  "nonce": "n_98a7fbc3"
 }
 ```
 
@@ -218,12 +225,12 @@ Header: `PAYMENT-SIGNATURE: <base64-json>`
 
 ```json
 {
-  "paymentId": "zap_pay_1029",
-  "mandateId": "mandate_8819",
+  "paymentId": "zap_pay_89123c8901",
+  "mandateId": "mnd_8821901a9b",
   "resource": "order/ORD-1042",
   "amount": "379900",
   "currency": "INR",
-  "nonce": "nonce_77af98b1",
+  "nonce": "n_98a7fbc3",
   "timestamp": "2026-08-31T18:33:10Z",
   "signature": "sig_hmac_99812..."
 }
@@ -231,7 +238,7 @@ Header: `PAYMENT-SIGNATURE: <base64-json>`
 
 #### 3. Facilitator Verification & Settlement (`POST /x402/verify` & `POST /x402/settle`)
 * `/x402/verify`: Executes deterministic zero-trust validation of the mandate and signature.
-* `/x402/settle`: Coordinates payment execution via the payment adapter and returns `PAYMENT-RESPONSE`.
+* `/x402/settle`: Coordinates payment execution via the configured payment adapter and returns `PAYMENT-RESPONSE`.
 
 ---
 
@@ -255,7 +262,7 @@ ZapAI integrates deeply with Razorpay across 5 distinct financial modules:
 
 ---
 
-### 3.6 Tamper-Evident Hash-Chained Audit Ledger & Signed Checkpoints (`src/audit/`)
+### 3.6 Tamper-Evident Hash-Chained Audit Ledger & Signed Checkpoints (`apps/api/src/audit/`)
 
 Every agent action and financial transition appends an entry to a deterministic, tamper-evident cryptographic chain:
 $$H_n = \text{SHA256}(H_{n-1} \parallel \text{eventType} \parallel \text{actor} \parallel \text{payloadHash} \parallel \text{timestamp})$$
@@ -267,17 +274,17 @@ Where:
 * **Concurrency Protection:** Appends are serialized using PostgreSQL row locks (`SELECT event_checksum FROM audit_ledger ORDER BY id DESC LIMIT 1 FOR UPDATE`) inside atomic transactions.
 
 ```sql
-CREATE TABLE audit_ledger (
-  sequence_id BIGSERIAL PRIMARY KEY,
-  event_id VARCHAR(64) UNIQUE NOT NULL,
-  transaction_id VARCHAR(64) NOT NULL,
-  event_type VARCHAR(64) NOT NULL,
-  actor VARCHAR(64) NOT NULL,
-  payload JSONB NOT NULL,
-  payload_hash VARCHAR(64) NOT NULL,
-  previous_hash VARCHAR(64) NOT NULL,
-  current_hash VARCHAR(64) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS audit_ledger (
+    id                      BIGSERIAL PRIMARY KEY,
+    event_type              VARCHAR(50) NOT NULL,
+    whatsapp_message_id     VARCHAR(255),
+    conversation_id         VARCHAR(255),
+    x402_transaction_id     VARCHAR(255) NOT NULL,
+    razorpay_payment_id     VARCHAR(100),
+    order_id                VARCHAR(100),
+    payload                 JSONB NOT NULL,
+    event_checksum          VARCHAR(255) NOT NULL,
+    timestamp               TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 

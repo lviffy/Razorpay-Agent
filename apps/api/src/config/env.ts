@@ -32,10 +32,12 @@ const envSchema = z.object({
   // x402
   X402_SIGNING_SECRET: z.string().default("zapai_x402_signing_secret_key_2026"),
 
-  // Shopify (Optional)
+  // Shopify
   SHOPIFY_API_KEY: z.string().default(""),
   SHOPIFY_API_SECRET: z.string().default(""),
-  SHOPIFY_SCOPES: z.string().default("read_products,write_products,read_orders"),
+  SHOPIFY_API_VERSION: z.string().default("2024-07"),
+  SHOPIFY_WEBHOOK_SECRET: z.string().default(""),
+  SHOPIFY_SCOPES: z.string().default("read_products,read_inventory,write_orders"),
   SHOPIFY_REDIRECT_URI: z.string().default(""),
 
   // Cloudinary (Optional)

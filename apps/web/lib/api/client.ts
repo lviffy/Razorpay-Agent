@@ -33,6 +33,8 @@ export const defaultStoreCredentials: StoreCredentials = {
   shopifyShopDomain: "",
   shopifyAccessToken: "",
   hasShopifyAccessToken: false,
+  shopifyWebhookSecret: "",
+  shopifyWebhookUrl: "",
 };
 
 export const emptyAnalytics: AnalyticsSummary = {
@@ -621,6 +623,13 @@ export const api = {
           body: JSON.stringify(params),
         },
         { success: false, error: "Failed to test connection" }
+      );
+    },
+    disconnect: async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+      return fetchJson<{ success: boolean; message?: string; error?: string }>(
+        "/shopify/disconnect",
+        { method: "POST" },
+        { success: false, error: "Failed to disconnect store" }
       );
     },
   },
