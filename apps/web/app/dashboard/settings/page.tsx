@@ -58,13 +58,17 @@ export default function GeneralSettingsPage() {
   const [copiedWaUrl, setCopiedWaUrl] = useState(false);
   const [copiedWaToken, setCopiedWaToken] = useState(false);
 
+  // Dynamic simulated price outcome
+  const [sampleRetail, setSampleRetail] = useState<number>(4000);
+
   useEffect(() => {
     async function load() {
       try {
-        const [r, p, c] = await Promise.all([
+        const [r, p, c, prods] = await Promise.all([
           api.settings.getRules(),
           api.profile.get(),
           api.settings.getCredentials(),
+          api.products.list(),
         ]);
         if (r) setRules(r);
         if (p) {
@@ -76,6 +80,9 @@ export default function GeneralSettingsPage() {
           if (c.whatsappPhoneNumber && !supportPhone) {
             setSupportPhone(c.whatsappPhoneNumber);
           }
+        }
+        if (prods && prods.length > 0 && prods[0].price > 0) {
+          setSampleRetail(prods[0].price);
         }
       } catch (err) {
         console.error("Failed to load settings", err);
@@ -208,7 +215,6 @@ export default function GeneralSettingsPage() {
 
 
   // Dynamic simulated price outcome
-  const sampleRetail = 4000;
   const maxDiscountAmount = Math.round(sampleRetail * (rules.maxDiscountPercent / 100));
   const finalCounterOffer = sampleRetail - maxDiscountAmount;
   const qualifiesFreeShipping = finalCounterOffer >= rules.freeShippingAbove;
@@ -366,19 +372,19 @@ export default function GeneralSettingsPage() {
                 <CardTitle className="text-xs font-bold text-zinc-900">Real-Time Mandate Simulator</CardTitle>
               </div>
               <CardDescription className="text-[11px] text-zinc-500">
-                Visualizing AI negotiation behavior on a sample ₹4,000 product.
+                Visualizing AI negotiation behavior on catalog baseline price.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="p-5 pt-0 space-y-3">
               <div className="p-3.5 bg-white border border-zinc-200 rounded-lg space-y-2 text-xs">
-                <div className="flex justify-between text-zinc-600">
-                  <span>Sample Retail Price</span>
-                  <span className="font-mono font-bold text-zinc-900">₹4,000</span>
+                <div className="flex justify-between items-center text-zinc-600">
+                  <span>Simulated Product Price</span>
+                  <span className="font-mono font-bold text-zinc-900">{formatINR(sampleRetail)}</span>
                 </div>
-                <div className="flex justify-between text-zinc-600">
+                <div className="flex justify-between items-center text-zinc-600">
                   <span>Buyer Extreme Ask (25% off)</span>
-                  <span className="font-mono text-red-600 font-medium">₹3,000 (Rejected)</span>
+                  <span className="font-mono text-red-600 font-medium">{formatINR(Math.round(sampleRetail * 0.75))} (Rejected)</span>
                 </div>
                 <div className="pt-2 border-t border-zinc-100 flex justify-between items-center">
                   <div>
@@ -406,7 +412,7 @@ export default function GeneralSettingsPage() {
 
             <CardFooter className="p-5 pt-2 border-t border-zinc-200 text-[11px] text-zinc-500 font-mono flex items-center justify-between">
               <span>Dealer Margin Saved:</span>
-              <span className="font-bold text-zinc-900 font-mono">+{formatINR(4000 - finalCounterOffer)} protected</span>
+              <span className="font-bold text-zinc-900 font-mono">+{formatINR(sampleRetail - finalCounterOffer)} protected</span>
             </CardFooter>
           </Card>
         </div>

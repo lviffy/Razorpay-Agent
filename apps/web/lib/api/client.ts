@@ -696,7 +696,7 @@ export const api = {
           body: JSON.stringify({ message, storeId }),
         },
         {
-          reply: "Offer generated based on store catalog and live margin guardrails.",
+          reply: "Unable to connect to live AI seller agent. Please ensure the backend server is running.",
           logs: [],
           traces: [],
         }

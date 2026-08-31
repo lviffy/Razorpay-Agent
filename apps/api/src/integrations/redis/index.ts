@@ -60,10 +60,10 @@ export function lockKey(storeId: string, variantId: string): string {
 }
 
 export async function acquireLock(
-  storeId: string,
-  variantId: string
+  storeIdOrKey: string,
+  variantId?: string
 ): Promise<boolean> {
-  const key = lockKey(storeId, variantId);
+  const key = variantId ? lockKey(storeIdOrKey, variantId) : storeIdOrKey;
 
   if (isRedisConnected && redisClient) {
     try {
@@ -85,10 +85,10 @@ export async function acquireLock(
 }
 
 export async function releaseLock(
-  storeId: string,
-  variantId: string
+  storeIdOrKey: string,
+  variantId?: string
 ): Promise<void> {
-  const key = lockKey(storeId, variantId);
+  const key = variantId ? lockKey(storeIdOrKey, variantId) : storeIdOrKey;
 
   if (isRedisConnected && redisClient) {
     try {

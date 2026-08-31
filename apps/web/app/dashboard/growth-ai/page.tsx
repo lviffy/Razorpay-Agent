@@ -183,6 +183,9 @@ export default function GrowthAIPage() {
     loadAllData();
   }
 
+  const topProduct = inventoryRadar?.products?.[0];
+  const criticalProduct = inventoryRadar?.products?.find((p: any) => p.stockStatus === "CRITICAL_LOW" || p.stockStatus === "LOW_STOCK");
+
   const promptCategories = [
     {
       category: "📈 Revenue & Growth",
@@ -194,7 +197,9 @@ export default function GrowthAIPage() {
     {
       category: "📦 Stock & Inventory",
       prompts: [
-        "Which products are at high risk of stockout this week?",
+        criticalProduct
+          ? `Check stockout risk for ${criticalProduct.title} (${criticalProduct.sku})`
+          : "Which products are at high risk of stockout this week?",
         "Show products with zero orders in the last 14 days",
       ],
     },
@@ -202,7 +207,9 @@ export default function GrowthAIPage() {
       category: "🛡️ Margin & Pricing",
       prompts: [
         "How much dealer margin did my AI agent preserve?",
-        "Can I safely raise listed prices on top-selling shoes?",
+        topProduct
+          ? `Can I safely raise listed prices on ${topProduct.title}?`
+          : "Can I safely raise listed prices on top-selling catalog items?",
       ],
     },
   ];

@@ -23,9 +23,11 @@ export default function OrdersPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [escalatedCount, setEscalatedCount] = useState<number>(0);
 
   useEffect(() => {
     loadOrders();
+    loadEscalations();
   }, []);
 
   const loadOrders = async () => {
@@ -34,6 +36,18 @@ export default function OrdersPage() {
       if (list) setOrders(list);
     } catch (err) {
       console.error("Failed to load orders", err);
+    }
+  };
+
+  const loadEscalations = async () => {
+    try {
+      const convs = await api.conversations.list();
+      if (convs && Array.isArray(convs)) {
+        const count = convs.filter((c) => c.status === "escalated").length;
+        setEscalatedCount(count);
+      }
+    } catch (err) {
+      // ignore
     }
   };
 
@@ -93,7 +107,7 @@ export default function OrdersPage() {
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Payment Gateway</p>
-          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">Razorpay UPI</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">Razorpay Instant</p>
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Settlement Success</p>
@@ -101,7 +115,7 @@ export default function OrdersPage() {
         </Card>
         <Card className="p-4 border-zinc-200 shadow-xs">
           <p className="text-[11px] font-medium text-zinc-500">Human Escalation</p>
-          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">0 Interventions</p>
+          <p className="text-xl font-bold font-mono text-zinc-900 mt-0.5">{escalatedCount} Interventions</p>
         </Card>
       </div>
 

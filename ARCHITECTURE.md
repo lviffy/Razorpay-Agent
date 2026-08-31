@@ -1,381 +1,311 @@
 # ZapAI — Production Product & System Architecture
 
-**Document Version:** 1.0 (Production Blueprint)  
-**Target:** Enterprise Production Deployment & Long-Term System Architecture  
+**Document Version:** 2.0 (x402 V2 & Agentic Commerce Blueprint)  
+**Target:** Enterprise Production Architecture & Razorpay AI Buildathon Submission  
 **Classification:** Technical Architecture Document (TAD)
 
 ---
 
-## 1. Executive Product Architecture
+## 1. Executive Product & Systems Blueprint
 
-ZapAI is an enterprise-grade agentic commerce middleware connecting e-commerce platforms (two seeded mock merchants for buildathon scope) to autonomous AI Buyer Agents and conversational surfaces (WhatsApp Business Cloud API). It operates on a **Fiat-Native x402 Protocol** using **Razorpay's Financial & Settlement Stack** as the core money movement and trust engine. The buildathon implementation uses **Bun + TypeScript 100%** with **Neon DB** (managed serverless Postgres) hosted on **Railway**.
+ZapAI is an enterprise-grade agentic commerce middleware connecting digital storefronts to autonomous AI Buyer Agents and conversational messaging surfaces (WhatsApp Business Cloud API). 
+
+It implements an **x402 V2-compatible HTTP payment boundary** with a custom **`zapai-inr` payment scheme** and a **ZapAI Settlement Facilitator**, backed by **Razorpay's Financial & Settlement Stack** with an explicit **Human Approval Fallback**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                                 BUYER ECOSYSTEM                                  │
 │   ┌────────────────────────┐   ┌────────────────────────┐   ┌─────────────────┐  │
 │   │ Autonomous Buyer Agent │   │ Consumer on WhatsApp   │   │ Procurement Bot │  │
+│   │   (Spending Mandate)   │   │ (Conversational Shell) │   │ (Bounded Agent) │  │
 │   └───────────┬────────────┘   └───────────┬────────────┘   └────────┬────────┘  │
 └───────────────┼────────────────────────────┼─────────────────────────┼───────────┘
                 │                            │                         │
-                ▼ (x402 Fiat HTTP)           ▼ (WhatsApp Cloud API)    ▼
+                ▼ (x402 V2 / REST)           ▼ (WhatsApp Cloud API)    ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│                            ZAPAI GATEWAY & ROUTER                                │
-│       • API Gateway (Envoy/Kong)         • Rate Limiting & Sybil Defense         │
-│       • TLS 1.3 Termination              • Auth & Identity Management (JWT)      │
+│                            ZAPAI API GATEWAY & ROUTER                            │
+│       • API Ingress & Async Queue Router       • Rate Limiting & Sybil Defense   │
+│       • TLS 1.3 Termination                    • Auth & Webhook Ingress (HMAC)   │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
                                        │
 ┌──────────────────────────────────────▼───────────────────────────────────────────┐
-│                          CORE DISTRIBUTED SERVICES                               │
+│                          CORE DISTRIBUTED MODULES                                │
 │                                                                                  │
 │   ┌────────────────────────┐   ┌────────────────────────┐   ┌─────────────────┐  │
-│   │    A2A Negotiation     │   │   Catalog & Dynamic    │   │  Redis Redlock  │  │
-│   │    Protocol Engine     │   │    Schema Registry     │   │  Locking Engine │  │
+│   │   Structured A2A       │   │   Catalog & Dynamic    │   │  Redis Atomic   │  │
+│   │   Negotiation Engine   │   │    Schema Registry     │   │  TTL Lock Engine│  │
 │   └───────────┬────────────┘   └───────────┬────────────┘   └────────┬────────┘  │
 │               │                            │                         │           │
 │   ┌───────────▼────────────┐   ┌───────────▼────────────┐   ┌────────▼────────┐  │
-│   │   Razorpay Payment     │   │  Shopify Sync Engine   │   │ Immutable Audit │  │
-│   │   State Machine        │   │  (GraphQL + Webhooks)  │   │ Ledger (PG/TS)  │  │
-│   └────────────────────────┘   └────────────────────────┘   └─────────────────┘  │
-└───────────────────┬─────────────────────────────────────────────┬────────────────┘
-                    │                                             │
-                    ▼                                             ▼
-┌──────────────────────────────────────┐     ┌─────────────────────────────────────┐
-│          RAZORPAY FINANCIAL BUS      │     │           SHOPIFY MERCHANTS         │
-│   • Orders API & Optimizer           │     │   • Shopify Admin GraphQL API       │
-│   • Instant Settlements (IMPS/UPI)   │     │   • Bulk Operations API             │
-│   • Smart Collect & Virtual Accounts │     │   • Real-Time Webhooks Engine       │
-│   • Route (Marketplace Splits)       │     │   • Multi-Store Fulfillment         │
-│   • Vulcan AI & Thirdwatch Scoring   │     │                                     │
-│   • Invoices API (Automated GST)     │     │                                     │
-└──────────────────────────────────────┘     └─────────────────────────────────────┘
+│   │   ZapAI Facilitator    │   │ Zero-Trust Mandate     │   │ Tamper-Evident  │  │
+│   │  (x402 V2 Coordinator) │   │ Policy Evaluator       │   │ Audit Ledger    │  │
+│   └───────────┬────────────┘   └────────────────────────┘   │  (SHA-256 PG)   │  │
+│               │                                             └─────────────────┘  │
+└───────────────┼──────────────────────────────────────────────────────────────────┘
+                │
+        ┌───────┴───────────────────────────────┐
+        ▼ (Autonomous Settlement)               ▼ (Human Fallback Rail)
+┌──────────────────────────────────┐   ┌───────────────────────────────────┐
+│     RAZORPAY SETTLEMENT BUS      │   │    RAZORPAY PAYMENT LINK BUS      │
+│ • Orders API (Idempotent Orders) │   │ • Test Mode Standard Payment Link │
+│ • Instant Settlements (IMPS/UPI) │   │ • Direct WhatsApp CTA Delivery    │
+│ • Webhook Verification (HMAC)    │   │ • User Approval / Rejection Flow  │
+│ • Deduplication (x-razorpay-id)  │   │ • Synchronous State Synchronization│
+└──────────────────────────────────┘   └───────────────────────────────────┘
 ```
 
 ---
 
-## 2. Component Microservice Architecture
+## 2. 6-Module Component Architecture
 
-The production architecture decomposes into 7 decoupled, horizontally scalable services communicating over gRPC internally and REST/WebSockets externally.
-
-### 2.1 API Gateway & Ingress Layer
-- **Technology:** Express (Bun runtime) — single service for buildathon
-- **Responsibilities:**
-  - Ingress routing for WhatsApp webhooks, Buyer Agent HTTP 402 requests, Razorpay webhooks, and `/demo` SSE dashboard
-  - HMAC-SHA256 verification for both Meta (X-Hub-Signature-256) and Razorpay (X-Razorpay-Signature) webhook payloads
-  - Agent rate limiting per `buyer_agent_id`
-
-### 2.2 Merchant Catalog & Schema Service (Buildathon: Seeded Mock Data)
-- **Technology:** `src/services/merchant.ts` — thin Postgres wrapper
-- **Responsibilities:**
-  - Two pre-seeded merchants (**RunFast Sports** + **SpeedGear**) loaded via `migrate.ts` on boot
-  - `getProducts(storeId)`, `getVariant(variantId)`, `getNegotiationRules(storeId)`, `setInventoryState(variantId, state)`
-  - Serves **Agent JSON Schemas** (variant IDs, pricing tiers, floor prices, live inventory counts)
-  - No live Shopify sync, no GraphQL calls, no OAuth
-
-### 2.3 Dual-Agent Orchestration & A2A Engine
-- **Runtime:** Autonomous AI LLM with structured function calling
-- **Seller Agent (`src/agents/seller-agent.ts`):**
-  - Evaluates buyer queries against per-merchant negotiation rules from Postgres
-  - Executes one counter-offer within `max_discount_percentage` bound
-  - Produces structured steps: `PROPOSE`, `COUNTER`, `ACCEPT`, `REJECT`
-- **Buyer Agent (`src/agents/buyer-agent.ts`):**
-  - Initialized with natural language task + AP2-inspired mandate (`mandate_id`, `spending_limit`, `currency`, `purpose`, `expires_at`, `status`, `signature`)
-  - Queries **both stores in parallel** via `searchCatalogs` tool call
-  - Hard guardrail: cannot call `triggerPayment` if `agreed_price > mandate.spending_limit` — enforced at tool level AND server-side
-
-### 2.4 WhatsApp Async Worker
-- **Technology:** Redis queue (`LPUSH` / `BRPOP`) + `src/workers/whatsapp-worker.ts`
-- **Pattern:**
-  - `POST /webhooks/whatsapp` validates Meta signature, persists message, pushes job to Redis, returns **200 immediately**
-  - Worker dequeues job and runs full Buyer Agent → Seller Agent → Razorpay flow asynchronously
-  - Prevents Meta webhook timeouts during AI model reasoning calls (which may take 5–15s)
-
-### 2.5 Distributed Inventory Reservation & Locking
-- **Technology:** Redis `SET NX EX 120` — atomic, single-key lock
-- **Mechanism:**
-  - On deal acceptance, sets `lock:inventory:{store_id}:{variant_id}` with TTL = 120s
-  - Postgres tracks state machine: `AVAILABLE → RESERVED → PAYMENT_PENDING → PAID/SOLD`
-  - DB columns: `inventory_available`, `inventory_reserved`, `reservation_expires_at`
-  - On `payment.captured`: state moves to `PAID`, Redis key deleted
-  - On `payment.failed` or TTL expiry: state returns to `AVAILABLE`, Redis key auto-expires
-  - **Postgres = source of truth. Redis = temporary atomic concurrency lock only.**
-
-### 2.6 Razorpay Payment & Financial State Machine
-- **Responsibilities:**
-  - Translates negotiated cart into Razorpay Orders (`POST /v1/orders`) with idempotency key
-  - Issues HTTP 402 challenge (`X-402-*` headers) per Fiat-Native protocol spec
-  - Creates **Razorpay Standard Payment Link** (not UPI-specific — verified working in test mode)
-  - Listens to Razorpay Webhooks (`payment.captured`, `payment.failed`)
-  - Enforces HMAC-SHA256 signature verification on all inbound webhooks
-  - **Webhook idempotency:** checks `processed_webhook_events` table before any state change — prevents double-deduction on retried webhooks
-  - Updates inventory state machine in Postgres post-capture
-
-### 2.7 Order Write-Back
-- **Responsibilities:**
-  - Writes completed order record to `orders` table in Neon DB post-`payment.captured`
-  - Tags order with: `x402_tx_hash`, `buyer_agent_id`, `mandate_id`, `razorpay_payment_id`
-  - Sends WhatsApp confirmation with 5-field audit IDs
-  - Emits SSE event to `/demo` dashboard
-
-### 2.8 Immutable Audit Ledger & Event Store
-- **Technology:** Neon DB (Postgres) append-only table with checksum chaining
-- **5-field linkage per event:**
-  - `whatsapp_message_id` — inbound WA message that triggered the session
-  - `conversation_id` — persistent session identifier
-  - `x402_transaction_id` — Fiat-Native HTTP 402 transaction reference
-  - `razorpay_payment_id` — canonical money-movement proof
-  - `order_id` — ZapAI order reference
-  - `agent_reasoning_trace` — full AI tool call trace log
-  - `event_checksum` — SHA256(prev_checksum + payload)
-
----
-
-## 3. The Fiat-Native x402 Protocol Specification
-
-The system uses standard HTTP semantics for machine-to-machine commerce negotiation and settlement:
+The codebase is organized into decoupled domain modules:
 
 ```
-Buyer Agent                                                   ZapAI Gateway (Seller)
-    │                                                                      │
-    │ ─── 1. POST /api/v1/a2a/negotiate {sku, target_price} ────────────► │
-    │ ◄── 2. 200 OK {status: "OFFER_ACCEPTED", agreed_price: 379900} ─── │
-    │                                                                      │
-    │ ─── 3. POST /api/v1/checkout/reserve {deal_id} ────────────────────► │
-    │ ◄── 4. HTTP 402 Payment Required ─────────────────────────────────── │
-    │        Headers:                                                      │
-    │          X-402-Version: 1.0                                          │
-    │          X-402-Scheme: razorpay-inr                                  │
-    │          X-402-Order-ID: order_Nz123abc                              │
-    │          X-402-Amount: 379900                                        │
-    │          X-402-Expiry: 1724161800                                    │
-    │          X-402-Challenge: <HMAC_SIGNED_PAYLOAD>                      │
-    │                                                                      │
-    │ ─── 5. POST /api/v1/checkout/pay ──────────────────────────────────► │
-    │        Headers:                                                      │
-    │          X-402-Authorization: <UPI_MANDATE_AUTH_TOKEN>               │
-    │                                                                      │
-    │                                                    [Razorpay Captures]
-    │                                                    [Instant Settlement IMPS]
-    │                                                                      │
-    │ ◄── 6. 200 OK (Payment Complete) ─────────────────────────────────── │
-    │        Headers:                                                      │
-    │          X-402-Receipt: rzp_pay_Xyz123                               │
-    │          X-Shopify-Order: #1042                                      │
+src/
+├── agents/             # Buyer & Seller AI orchestration & tool calling
+├── commerce/           # Catalog discovery, structured negotiation & inventory
+├── mandate/            # Spending mandate creation, cryptographic signing & zero-trust policy
+├── x402/               # x402 V2 protocol handlers, headers, client, server & facilitator
+├── payments/           # Gateway abstraction & Razorpay implementation
+│   └── razorpay/       # Orders API, Payment Link fallback & Webhook handlers
+├── orders/             # Order state machine & persistence
+├── audit/              # SHA-256 hash-chained immutable audit ledger
+└── whatsapp/           # Async webhook queue & message dispatching
 ```
 
 ---
 
-## 4. Deep Razorpay Integration Matrix
+## 3. Detailed Technical Specifications
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                                RAZORPAY PLATFORM                                 │
-└──────┬──────────────────────┬──────────────────────┬──────────────────────┬──────┘
-       │                      │                      │                      │
-       ▼ (Inbound Core)       ▼ (AI & Optimization)  ▼ (Disbursement)       ▼ (Risk & Auth)
-┌──────────────┐       ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
-│  Orders API  │       │  Optimizer   │       │   Instant    │       │  Vulcan AI   │
-│  Webhooks    │       │  Magic Ckout │       │ Settlements  │       │  TokenHQ     │
-│  SmartCollect│       │  Offers API  │       │ RazorpayX    │       │  Thirdwatch  │
-│  Dynamic QR  │       │  Invoices    │       │ Route        │       │  AutoPay     │
-└──────────────┘       └──────────────┘       └──────────────┘       └──────────────┘
+### 3.1 Spending Mandate & Server-Side Policy Evaluator (`src/mandate/`)
+Delegated authority is represented as an immutable, cryptographically signed token:
+
+```typescript
+export interface SpendingMandate {
+  mandateId: string;
+  buyerId: string;
+  spendingLimit: number; // in paise (e.g., 400000 = ₹4,000.00)
+  currency: "INR";
+  purpose: {
+    category?: string;
+    skuIds?: string[];
+  };
+  merchantAllowlist?: string[];
+  expiresAt: string; // ISO 8601
+  nonce: string;     // Unique single-use challenge
+  signature: string; // HMAC-SHA256(secret, canonicalPayload) or Ed25519
+}
 ```
 
-| Razorpay Module | Production Function | Fallback / Failure Path |
-|---|---|---|
-| **Orders API** | Idempotent transaction generation with cryptographic x402 receipt binding. | Exponential backoff retry with same idempotency key. |
-| **Optimizer** | Dynamic AI routing across SBI, HDFC, ICICI, and Axis acquiring banks for highest UPI success. | Automated downgrade to tokenized card or Netbanking. |
-| **Webhooks Engine** | HMAC-SHA256 verified event bus triggering atomic inventory changes on `payment.captured`. | Redundant webhook polling worker checking order status every 30s. |
-| **Instant Settlements** | Programmatic payout (`/v1/settlements/ondemand`) delivering INR to merchant's bank via IMPS/UPI in 10-15s. | Automatic retry or rollover to standard scheduled batch settlement. |
-| **Smart Collect 2.0** | Dedicated Virtual VPAs (`agent.<buyer_id>@rzp`) for managing pre-funded agent balances and auto-reconciliation. | Manual UPI payment link fallback. |
-| **Dynamic QR Codes** | Dynamic BharatQR/UPI QR generation pushed into WhatsApp for hybrid human+agent handoffs. | Payment Link via WhatsApp message. |
-| **UPI AutoPay** | Pre-authorized customer recurring mandates allowing autonomous agent purchases up to user limit. | WhatsApp interactive authorization prompt sent to user. |
-| **TokenHQ** | RBI-compliant tokenized card storage for 1-click machine-authorized payments. | Standard 3DS/OTP challenge redirected to user. |
-| **Route API** | Automated multi-vendor split settlements for multi-store carts + platform take-rate deduction. | Direct single-merchant capture with ledger adjustment. |
-| **Vulcan AI** | Real-time agent risk scoring (detects rapid automated sweeps, coupon abuse, spoofed orders). | Temporary transaction hold + merchant WhatsApp alert. |
-| **Thirdwatch ML** | AI-driven RTO (Return-to-Origin) risk prediction on COD and hybrid checkout flows. | Disables COD option for high-risk buyer profiles. |
-| **Invoices API** | Automated GST-compliant tax invoice PDF generation dispatched via WhatsApp. | Async invoice generation worker retry. |
-| **Refunds API** | Instant automated refunds (`POST /v1/payments/{id}/refund`) when post-capture physical stock conflict occurs. | Merchant escalation dashboard alert. |
+#### Deterministic Policy Evaluator (`verifyMandate`)
+The LLM does NOT enforce spending rules. The server validates:
+1. `verifySignature(mandate)` is cryptographically valid.
+2. `Date.now() <= new Date(mandate.expiresAt).getTime()`.
+3. `isNonceUnused(mandate.nonce)` prevents replay attacks.
+4. `mandate.currency === "INR"`.
+5. `requestAmount <= mandate.spendingLimit`.
+6. `!mandate.merchantAllowlist || mandate.merchantAllowlist.includes(merchantId)`.
+7. `!mandate.purpose.skuIds || mandate.purpose.skuIds.includes(skuId)`.
 
 ---
 
-## 5. Production Database Schema (PostgreSQL DDL)
+### 3.2 Structured A2A Negotiation Protocol (`src/commerce/`)
+All communication between Buyer and Seller agents is structured as strongly typed JSON events:
+
+```
+OFFER ──► COUNTER_OFFER ──► ACCEPT ──► RESERVE ──► PAYMENT_REQUIRED
+```
+
+* **`OFFER` Payload:**
+```json
+{
+  "type": "OFFER",
+  "offerId": "off_98124",
+  "conversationId": "conv_wa_102",
+  "merchantId": "runfast",
+  "skuId": "SKU-SHOE-001",
+  "quantity": 1,
+  "price": 399900,
+  "currency": "INR",
+  "expiresAt": "2026-08-31T18:35:00Z"
+}
+```
+* **`COUNTER_OFFER` Payload:**
+```json
+{
+  "type": "COUNTER_OFFER",
+  "offerId": "off_98124",
+  "counterOfferId": "cnt_98125",
+  "price": 379900,
+  "discount": 20000,
+  "currency": "INR",
+  "bundleItems": [{ "skuId": "SKU-SOCK-001", "price": 0 }],
+  "expiresAt": "2026-08-31T18:35:00Z"
+}
+```
+* **`ACCEPT` Payload:**
+```json
+{
+  "type": "ACCEPT",
+  "counterOfferId": "cnt_98125",
+  "agreedPrice": 379900,
+  "currency": "INR"
+}
+```
+
+---
+
+### 3.3 Atomic Inventory Reservation State Machine (`src/commerce/inventory.ts`)
+Inventory follows a strict transactional state machine:
+
+```
+AVAILABLE ──► RESERVED ──► PAYMENT_PENDING ──┬──► PAID (SOLD)
+                                             └──► EXPIRED ──► AVAILABLE
+```
+
+#### Concurrency & Locking Strategy:
+* **Postgres Source of Truth:**
+  ```sql
+  BEGIN;
+    SELECT inventory_available FROM variants WHERE id = $1 FOR UPDATE;
+    UPDATE variants 
+    SET inventory_available = inventory_available - $quantity,
+        inventory_reserved = inventory_reserved + $quantity
+    WHERE id = $1 AND inventory_available >= $quantity;
+  COMMIT;
+  ```
+* **Redis Atomic Lock:**
+  * Key: `lock:reservation:{reservationId}`
+  * TTL: `120` seconds
+  * Auto-expiry returns reserved count to `inventory_available` if payment is not captured within 120s.
+
+---
+
+### 3.4 x402 V2 Protocol & ZapAI Facilitator (`src/x402/`)
+
+ZapAI adheres to modern x402 V2 header semantics:
+
+#### 1. Seller Challenge: `PAYMENT-REQUIRED`
+HTTP Status: `402 Payment Required`
+Header: `PAYMENT-REQUIRED: <base64-json>`
+
+```json
+{
+  "scheme": "exact",
+  "network": "zapai-inr",
+  "amount": "379900",
+  "asset": "INR",
+  "payTo": "merchant_runfast",
+  "resource": "order/ORD-1042",
+  "expiresAt": "2026-08-31T18:35:00Z",
+  "nonce": "nonce_77af98b1"
+}
+```
+
+#### 2. Buyer Payment Authorization: `PAYMENT-SIGNATURE`
+Header: `PAYMENT-SIGNATURE: <base64-json>`
+
+```json
+{
+  "paymentId": "zap_pay_1029",
+  "mandateId": "mandate_8819",
+  "resource": "order/ORD-1042",
+  "amount": "379900",
+  "currency": "INR",
+  "nonce": "nonce_77af98b1",
+  "timestamp": "2026-08-31T18:33:10Z",
+  "signature": "sig_hmac_99812..."
+}
+```
+
+#### 3. Facilitator Verification & Settlement (`POST /x402/verify` & `POST /x402/settle`)
+* `/x402/verify`: Executes deterministic zero-trust validation of the mandate and signature.
+* `/x402/settle`: Coordinates payment execution via the payment adapter and returns `PAYMENT-RESPONSE`.
+
+---
+
+### 3.5 Razorpay Integration & Webhook Handling (`src/payments/razorpay/`)
+
+#### Orders API & Receipt Idempotency:
+* `POST /v1/orders` with payload:
+  ```json
+  {
+    "amount": 379900,
+    "currency": "INR",
+    "receipt": "zap_pay_1029",
+    "notes": {
+      "mandateId": "mandate_8819",
+      "orderId": "ORD-1042",
+      "x402Network": "zapai-inr"
+    }
+  }
+  ```
+
+#### Webhook Ingress & Idempotency:
+* Endpoint: `POST /webhooks/razorpay`
+* Header Verification: `X-Razorpay-Signature` calculated against **raw byte body**.
+* Deduplication: `x-razorpay-event-id` checked against `processed_webhook_events` table before applying state updates.
+* Resilient Transitions: Handles out-of-order events (`payment.authorized` $\to$ `payment.captured` $\to$ `payment.failed`).
+
+---
+
+### 3.6 Tamper-Evident Hash-Chained Audit Ledger (`src/audit/`)
+
+Every action forms an immutable cryptographic node:
+$$H_n = \text{SHA256}(H_{n-1} \parallel \text{eventType} \parallel \text{actor} \parallel \text{payloadHash} \parallel \text{timestamp})$$
 
 ```sql
--- 1. Connected Shopify Stores
-CREATE TABLE stores (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    shopify_domain VARCHAR(255) UNIQUE NOT NULL,
-    access_token_encrypted BYTEA NOT NULL,
-    razorpay_account_id VARCHAR(100) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'INR',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 2. Merchant Negotiation Rules & Guardrails
-CREATE TABLE negotiation_rules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
-    max_discount_percentage NUMERIC(5,2) DEFAULT 0.00,
-    min_order_value_for_discount NUMERIC(12,2) DEFAULT 0.00,
-    free_shipping_threshold NUMERIC(12,2),
-    allow_bundle_offers BOOLEAN DEFAULT TRUE,
-    auto_accept_threshold NUMERIC(12,2),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Product Catalog & Live Stock Cache
-CREATE TABLE products (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    store_id UUID REFERENCES stores(id) ON DELETE CASCADE,
-    shopify_product_id VARCHAR(100) NOT NULL,
-    shopify_variant_id VARCHAR(100) NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    sku VARCHAR(100) NOT NULL,
-    listed_price NUMERIC(12,2) NOT NULL,
-    floor_price NUMERIC(12,2) NOT NULL,
-    available_inventory INT NOT NULL,
-    locked_inventory INT DEFAULT 0,
-    agent_schema JSONB NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(store_id, shopify_variant_id)
-);
-
--- 4. Agent-to-Agent Sessions & Negotiation State
-CREATE TYPE negotiation_status AS ENUM ('ACTIVE', 'AGREED', 'REJECTED', 'EXPIRED', 'LOCKED', 'PAID');
-
-CREATE TABLE negotiation_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    buyer_agent_id VARCHAR(100) NOT NULL,
-    store_id UUID REFERENCES stores(id),
-    product_id UUID REFERENCES products(id),
-    status negotiation_status DEFAULT 'ACTIVE',
-    initial_offer NUMERIC(12,2) NOT NULL,
-    agreed_price NUMERIC(12,2),
-    redis_lock_key VARCHAR(255),
-    lock_expires_at TIMESTAMPTZ,
-    transcript JSONB DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5. Financial Orders & Razorpay Settlement State
-CREATE TYPE payment_status AS ENUM ('CREATED', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED');
-
-CREATE TABLE orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID REFERENCES negotiation_sessions(id),
-    store_id UUID REFERENCES stores(id),
-    razorpay_order_id VARCHAR(100) UNIQUE NOT NULL,
-    razorpay_payment_id VARCHAR(100) UNIQUE,
-    order_id VARCHAR(100) UNIQUE,          -- ZapAI order reference e.g. ORD-1042
-    x402_tx_hash VARCHAR(255) UNIQUE NOT NULL,
-    mandate_id VARCHAR(100),               -- AP2-inspired mandate reference
-    amount NUMERIC(12,2) NOT NULL,
-    currency VARCHAR(10) DEFAULT 'INR',
-    status payment_status DEFAULT 'CREATED',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5b. Webhook Idempotency
-CREATE TABLE processed_webhook_events (
-    payment_event_id VARCHAR(100) PRIMARY KEY,  -- Razorpay event ID
-    event_type       VARCHAR(50) NOT NULL,
-    processed_at     TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5c. AP2-Inspired Spending Mandates
-CREATE TABLE mandates (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    mandate_id      VARCHAR(100) UNIQUE NOT NULL,
-    buyer_agent_id  VARCHAR(100) NOT NULL,
-    spending_limit  NUMERIC(12,2) NOT NULL,
-    spent_amount    NUMERIC(12,2) DEFAULT 0,
-    currency        VARCHAR(10) DEFAULT 'INR',
-    purpose         VARCHAR(255),
-    expires_at      TIMESTAMPTZ NOT NULL,
-    status          VARCHAR(20) DEFAULT 'ACTIVE',
-    signature       VARCHAR(255),
-    created_at      TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 6. Immutable Five-Way Audit Trail
 CREATE TABLE audit_ledger (
-    id BIGSERIAL PRIMARY KEY,
-    event_type VARCHAR(50) NOT NULL,
-    whatsapp_message_id VARCHAR(255),
-    conversation_id VARCHAR(255),
-    x402_transaction_id VARCHAR(255) NOT NULL,
-    razorpay_payment_id VARCHAR(100),
-    order_id VARCHAR(100),
-    payload JSONB NOT NULL,
-    event_checksum VARCHAR(255) NOT NULL,     -- SHA256(prev_checksum + payload)
-    timestamp TIMESTAMPTZ DEFAULT NOW()
+  sequence_id BIGSERIAL PRIMARY KEY,
+  event_id VARCHAR(64) UNIQUE NOT NULL,
+  transaction_id VARCHAR(64) NOT NULL,
+  event_type VARCHAR(64) NOT NULL,
+  actor VARCHAR(64) NOT NULL,
+  payload JSONB NOT NULL,
+  payload_hash VARCHAR(64) NOT NULL,
+  previous_hash VARCHAR(64) NOT NULL,
+  current_hash VARCHAR(64) NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
-
-CREATE INDEX idx_audit_lookup ON audit_ledger (x402_transaction_id, razorpay_payment_id, order_id);
 ```
 
 ---
 
-## 6. Security, Compliance & Data Governance
+## 4. End-to-End Execution Sequence
 
-### 6.1 Cryptographic Integrity & Anti-Replay
-1. **Webhook Signatures:** Razorpay webhooks validate `X-Razorpay-Signature` via HMAC-SHA256 using the stored merchant webhook secret.
-2. **x402 Challenge Tokens:** Nonce-based, signed JWTs with strict 120-second TTL to eliminate replay attacks.
-3. **Idempotency Keys:** All outbound Razorpay and Shopify API calls attach `X-Idempotency-Key: uuidv5(session_id + state)` ensuring zero duplicate charges.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User (WhatsApp)
+    participant BA as Buyer Agent
+    participant SA as Seller Agent
+    participant DB as Postgres + Redis
+    participant ZF as ZapAI Facilitator
+    participant RZ as Razorpay Adapter
+    participant AL as Audit Ledger
 
-### 6.2 Data Localization & Regulatory Compliance
-- **RBI Compliance:** Card details are never stored directly; all transactions comply with RBI Tokenization guidelines using **Razorpay TokenHQ**.
-- **DPDP Act (2023) Compliance:** PII (WhatsApp phone numbers, customer delivery addresses) is encrypted at rest using AES-256 with key rotation via AWS KMS.
-- **Audit Immutability:** Audit trail records are stored in append-only tables with cryptographic checksum chaining.
+    U->>BA: "Find running shoes under ₹4,000"
+    BA->>SA: A2A OFFER (SKU-SHOE-001, ₹3,999)
+    SA->>BA: A2A COUNTER_OFFER (₹3,799 + free shipping)
+    BA->>SA: A2A ACCEPT (₹3,799)
+    SA->>DB: Atomic Lock Inventory (Redis TTL 120s)
+    SA-->>BA: HTTP 402 PAYMENT-REQUIRED (zapai-inr)
+    BA->>BA: Evaluate Mandate & Sign Authorization
+    BA->>ZF: PAYMENT-SIGNATURE
+    ZF->>ZF: verifyMandate (Zero-Trust Server Policy)
+    ZF->>AL: Log PAYMENT_AUTHORIZED (Hash Chained)
+    
+    alt Autonomous Rail Available
+        ZF->>RZ: Settle Order (Orders API)
+        RZ-->>ZF: Settlement Authoritative Confirmation
+    else Human Fallback Required
+        ZF->>RZ: Create Payment Link
+        RZ->>U: WhatsApp CTA Payment Link (Test Mode)
+        U->>RZ: Approves in Checkout
+        RZ->>ZF: Webhook payment.captured (HMAC Verified)
+    end
 
----
-
-## 7. High-Availability & Disaster Recovery SLAs
-
+    ZF->>DB: Inventory State -> PAID
+    ZF->>AL: Log PAYMENT_CAPTURED & ORDER_CREATED
+    ZF->>U: Order Confirmation + 5-Field Audit Proof
 ```
-┌───────────────────────────────────────┬───────────────────────────────┐
-│ Metric                                │ Production Target             │
-├───────────────────────────────────────┼───────────────────────────────┤
-│ API Gateway Availability              │ 99.99% Uptime                 │
-│ Payment Handshake Latency (x402)      │ < 1.2 seconds                 │
-│ Inventory Lock Acquisition Latency    │ < 15 milliseconds             │
-│ Webhook Processing Latency            │ < 250 milliseconds            │
-│ Instant Settlement Completion Time    │ < 15 seconds (24x7 IMPS/UPI)  │
-│ Recovery Time Objective (RTO)         │ < 60 seconds (Failover)       │
-│ Recovery Point Objective (RPO)        │ 0 (Zero financial data loss)  │
-└───────────────────────────────────────┴───────────────────────────────┘
-```
-
----
-
-## 8. Deployment Topology
-
-```
-                         Internet
-                            │
-               [Cloudflare Enterprise DDoS/WAF]
-                            │
-               [AWS Application Load Balancer]
-                            │
-         ┌──────────────────┴──────────────────┐
-         │                                     │
-   [EKS Cluster - AZ 1]               [EKS Cluster - AZ 2]
-   ├── Gateway Pods                   ├── Gateway Pods
-   ├── A2A Negotiation Engine         ├── A2A Negotiation Engine
-   ├── Razorpay State Machine         ├── Razorpay State Machine
-   └── Shopify Webhook Workers        └── Shopify Webhook Workers
-         │                                     │
-         └──────────────────┬──────────────────┘
-                            │
-     ┌──────────────────────┼──────────────────────┐
-     │                      │                      │
-[Redis Cluster]       [Amazon Aurora]      [TimescaleDB]
-(Redlock TTLs)       (PostgreSQL Multi-AZ)  (Append-Only Audit)
-```
-
-This production architecture specification serves as the foundational engineering standard for the long-term enterprise deployment of ZapAI.

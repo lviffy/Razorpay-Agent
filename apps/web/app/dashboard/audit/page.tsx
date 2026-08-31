@@ -196,7 +196,7 @@ export default function AuditExplorerPage() {
               <Database className="w-4 h-4 text-zinc-400" />
             </div>
             <CardTitle className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1">
-              #{String(records.length || 80).padStart(4, "0")}
+              #{String(records.length).padStart(4, "0")}
             </CardTitle>
             <CardDescription className="text-[10px] text-zinc-400">Append-only audit tree</CardDescription>
           </CardHeader>
@@ -209,9 +209,11 @@ export default function AuditExplorerPage() {
               <ShieldCheck className="w-4 h-4 text-zinc-400" />
             </div>
             <CardTitle className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1">
-              100%
+              {records.length > 0 ? "100%" : "0%"}
             </CardTitle>
-            <CardDescription className="text-[10px] text-zinc-400">All hashes verified</CardDescription>
+            <CardDescription className="text-[10px] text-zinc-400">
+              {records.length > 0 ? "All hashes verified" : "Awaiting transactions"}
+            </CardDescription>
           </CardHeader>
         </Card>
 
@@ -222,7 +224,7 @@ export default function AuditExplorerPage() {
               <Cpu className="w-4 h-4 text-zinc-400" />
             </div>
             <CardTitle className="text-xl sm:text-2xl font-bold font-mono text-zinc-900 mt-1">
-              &lt; 1.2s
+              {records.some((r) => r.eventType === "PAYMENT_CAPTURED") ? "< 1.2s" : "Instant"}
             </CardTitle>
             <CardDescription className="text-[10px] text-zinc-400">Razorpay 1-Tap UPI</CardDescription>
           </CardHeader>

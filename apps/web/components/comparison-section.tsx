@@ -8,23 +8,24 @@ import {
   Lock,
   Layers,
   Zap,
+  ShieldCheck,
 } from 'lucide-react'
 
 const PRIMITIVES = [
   {
-    primitive: '1. Structured Product Data',
+    primitive: '1. Structured Machine Catalogs',
     humanStore: 'Unstructured HTML, messy DOM selectors, buried attributes in image graphics.',
     agenticLayer: 'Machine-readable JSON schema with real-time variants, tags, and stock counts.',
     icon: Database,
   },
   {
-    primitive: '2. Real-Time Live Inventory',
-    humanStore: 'Periodic cache updates (hours stale). High risk of flash-sale double-selling.',
-    agenticLayer: 'Atomic Redis state machine (AVAILABLE → RESERVED → PAYMENT_PENDING → PAID).',
-    icon: Lock,
+    primitive: '2. Zero-Trust Spending Mandates',
+    humanStore: 'Full credit card credentials or unrestricted bank account access handed over.',
+    agenticLayer: 'Cryptographically signed tokens with hard budget caps, category constraints, and single-use nonces.',
+    icon: ShieldCheck,
   },
   {
-    primitive: '3. Autonomous Price Negotiation',
+    primitive: '3. Autonomous A2A Negotiation',
     humanStore: 'Static fixed prices. Shoppers walk away over ₹150 price friction.',
     agenticLayer: 'Dynamic A2A multi-turn counter-bidding bounded by merchant margin floors.',
     icon: Layers,
@@ -32,13 +33,13 @@ const PRIMITIVES = [
   {
     primitive: '4. Atomic Inventory Reservation',
     humanStore: 'No reservation primitive. Items sell out while the agent parses checkout.',
-    agenticLayer: '120s concurrency hold with automatic catalog release if unpaid.',
+    agenticLayer: '120s Redis concurrency hold (SET NX EX 120) with automatic catalog release if unpaid.',
     icon: Lock,
   },
   {
-    primitive: '5. Programmable Payment Rails',
+    primitive: '5. x402 V2 Protocol & Honest Fallback',
     humanStore: '5-step manual browser flow (OTP, redirects, CAPTCHA, manual app switches).',
-    agenticLayer: 'x402 protocol handshake + 1-Tap Razorpay UPI links with instant INR settlement.',
+    agenticLayer: 'x402 V2 challenge & response with ZapAI Facilitator, settling via Razorpay + Human Link Fallback.',
     icon: Zap,
   },
 ]
@@ -58,64 +59,57 @@ export default function ComparisonSection() {
           </h2>
           <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal">
             Shopping agents cannot click buttons, solve CAPTCHAs, or wait for static email recovery.
-            ZapAI provides the 5 machine-native primitives required for autonomous commerce.
+            ZapAI gives every online storefront the machine-readable primitives required for autonomous commerce.
           </p>
         </div>
 
-        {/* 5-Primitive Comparison Table */}
-        <div className="rounded-3xl overflow-hidden border border-black/[0.08] bg-white shadow-2xs">
-          {/* Table Header (Desktop) */}
-          <div className="hidden md:grid grid-cols-12 bg-surface-100/80 border-b border-black/[0.08] text-xs font-mono font-bold uppercase text-surface-700">
-            <div className="col-span-4 p-4 sm:p-5">Required Commerce Primitive</div>
-            <div className="col-span-4 p-4 sm:p-5 text-surface-600 bg-surface-100/50 flex items-center gap-2 border-l border-black/[0.06]">
-              <XCircle className="w-4 h-4 text-rose-500" />
-              <span>Traditional Web Storefronts</span>
-            </div>
-            <div className="col-span-4 p-4 sm:p-5 text-brand-700 bg-brand-50/40 flex items-center gap-2 border-l border-black/[0.06]">
-              <CheckCircle2 className="w-4 h-4 text-brand-600" />
-              <span>ZapAI Layer</span>
-            </div>
-          </div>
+        {/* 5 Primitives Matrix */}
+        <div className="space-y-4">
+          {PRIMITIVES.map((item, idx) => {
+            const Icon = item.icon
+            return (
+              <div
+                key={idx}
+                className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-5 sm:p-6 rounded-3xl bg-surface-50 border border-surface-200 hover:border-surface-300 transition-all"
+              >
+                {/* Primitive Title */}
+                <div className="lg:col-span-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-white border border-surface-200 flex items-center justify-center shrink-0 shadow-sm text-brand-600">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-surface-900 font-sans">{item.primitive}</h3>
+                    <span className="text-[11px] text-surface-500 font-mono">Autonomous Commerce Layer</span>
+                  </div>
+                </div>
 
-          {/* Table Rows */}
-          <div className="divide-y divide-black/[0.06]">
-            {PRIMITIVES.map((row, idx) => {
-              const IconComponent = row.icon
-              return (
-                <div
-                  key={idx}
-                  className="grid grid-cols-1 md:grid-cols-12 text-xs sm:text-sm items-stretch hover:bg-surface-50/50 transition-colors"
-                >
-                  {/* Feature Title */}
-                  <div className="md:col-span-4 p-4 sm:p-5 space-y-1 flex flex-col justify-center bg-surface-50/30 md:bg-transparent">
-                    <span className="font-bold text-surface-900 font-sans text-sm sm:text-base flex items-center gap-2">
-                      <IconComponent className="w-4 h-4 text-brand-600 shrink-0" />
-                      {row.primitive}
-                    </span>
+                {/* Legacy Web vs ZapAI */}
+                <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Legacy Store */}
+                  <div className="p-3.5 rounded-2xl bg-white border border-rose-100 flex items-start gap-2.5 text-xs text-surface-600">
+                    <XCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-rose-700 block text-[11px] uppercase tracking-wider">
+                        Legacy Web:
+                      </span>
+                      {item.humanStore}
+                    </div>
                   </div>
 
-                  {/* Traditional Side */}
-                  <div className="md:col-span-4 p-4 sm:p-5 text-surface-600 border-t md:border-t-0 md:border-l border-black/[0.06] leading-relaxed font-sans flex flex-col md:flex-row md:items-center">
-                    <span className="md:hidden text-[10px] font-mono font-bold text-surface-400 uppercase tracking-wider mb-1">
-                      Traditional Web:
-                    </span>
-                    <span>{row.humanStore}</span>
-                  </div>
-
-                  {/* ZapAI Side */}
-                  <div className="md:col-span-4 p-4 sm:p-5 text-surface-900 font-medium bg-brand-50/20 border-t md:border-t-0 md:border-l border-black/[0.06] leading-relaxed font-sans flex flex-col md:flex-row md:items-start gap-1 md:gap-2.5">
-                    <span className="md:hidden text-[10px] font-mono font-bold text-brand-600 uppercase tracking-wider mb-1">
-                      ZapAI:
-                    </span>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>{row.agenticLayer}</span>
+                  {/* ZapAI Layer */}
+                  <div className="p-3.5 rounded-2xl bg-brand-50/50 border border-brand-200 flex items-start gap-2.5 text-xs text-surface-800">
+                    <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-brand-700 block text-[11px] uppercase tracking-wider">
+                        ZapAI Primitive:
+                      </span>
+                      {item.agenticLayer}
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </section>

@@ -9,7 +9,8 @@ export type InventoryState =
   | "RESERVED"
   | "PAYMENT_PENDING"
   | "PAID"
-  | "SOLD";
+  | "SOLD"
+  | "EXPIRED";
 
 export type StoreProvider = "ZAPAI" | "AGENTBRIDGE" | "SHOPIFY";
 
@@ -17,8 +18,8 @@ export interface AgentProductSchema {
   variantId: string;
   title: string;
   sku: string;
-  listedPrice: number;
-  floorPrice: number;
+  listedPrice: number; // in paise (e.g. 399900 = ₹3,999)
+  floorPrice: number;  // in paise (e.g. 350000 = ₹3,500)
   inventoryAvailable: number;
   imageUrl?: string;
   attributes: Record<string, string>;
@@ -38,7 +39,7 @@ export interface Product {
   inventoryAvailable?: number;
   inventory?: number;
   inventoryReserved?: number;
-  reservationExpiresAt?: Date;
+  reservationExpiresAt?: Date | string;
   inventoryState?: InventoryState;
   agentSchema?: AgentProductSchema;
   imageUrl?: string;
@@ -156,23 +157,127 @@ export interface SignupCredentials {
   phone?: string;
 }
 
-// ── Mandates & Negotiation ───────────────────────────────────────────────────
+// ── Spending Mandates (Zero-Trust) ───────────────────────────────────────────
 
 export type MandateStatus = "ACTIVE" | "EXHAUSTED" | "EXPIRED" | "CANCELLED";
 
 export interface Mandate {
-  id: string;
-  mandateId: string;          // human-readable: mnd_xxx
-  buyerAgentId: string;
+  id?: string;
+  mandateId: string;
+  buyerAgentId?: string;
   spendingLimit: number;
-  spentAmount: number;
+  spentAmount?: number;
   currency: string;
-  purpose?: string;
-  expiresAt: Date;
+  purpose?: string | { category?: string; skuIds?: string[]; description?: string };
+  expiresAt: Date | string;
   status: MandateStatus;
   signature?: string;
-  createdAt: Date;
+  createdAt?: Date | string;
 }
+
+export interface SpendingMandate {
+  mandateId: string;
+  buyerId: string;
+  spendingLimit: number; // in paise
+  spentAmount?: number;
+  currency: "INR";
+  purpose: {
+    category?: string;
+    skuIds?: string[];
+    description?: string;
+  };
+  merchantAllowlist?: string[];
+  expiresAt: string; // ISO 8601 string
+  nonce: string;
+  signature: string;
+  createdAt?: string;
+}
+
+export interface SpendingMandateVerificationParams {
+  mandate: SpendingMandate;
+  merchantId: string;
+  skuId?: string;
+  category?: string;
+  amount: number; // in paise
+  currency: "INR";
+}
+
+export interface SpendingMandateVerificationResult {
+  valid: boolean;
+  error?: string;
+  code?:
+    | "INVALID_SIGNATURE"
+    | "EXPIRED"
+    | "NONCE_REUSED"
+    | "CURRENCY_MISMATCH"
+    | "EXCEEDS_SPENDING_LIMIT"
+    | "MERCHANT_NOT_ALLOWED"
+    | "SKU_NOT_ALLOWED"
+    | "CATEGORY_NOT_ALLOWED";
+}
+
+// ── Structured A2A Negotiation Protocol ──────────────────────────────────────
+
+export type A2AEventType =
+  | "OFFER"
+  | "COUNTER_OFFER"
+  | "ACCEPT"
+  | "REJECT";
+
+export interface A2ABundleItem {
+  skuId: string;
+  title: string;
+  price: number;
+}
+
+export interface A2AOffer {
+  type: "OFFER";
+  offerId: string;
+  conversationId: string;
+  buyerAgentId: string;
+  merchantId: string;
+  skuId: string;
+  quantity: number;
+  targetPrice: number; // in paise
+  currency: "INR";
+  expiresAt: string;
+}
+
+export interface A2ACounterOffer {
+  type: "COUNTER_OFFER";
+  offerId: string;
+  counterOfferId: string;
+  merchantId: string;
+  price: number; // in paise
+  discount: number; // in paise
+  currency: "INR";
+  shippingFree: boolean;
+  bundleItems?: A2ABundleItem[];
+  reasoning: string;
+  expiresAt: string;
+}
+
+export interface A2AAccept {
+  type: "ACCEPT";
+  offerId: string;
+  counterOfferId?: string;
+  merchantId: string;
+  skuId: string;
+  agreedPrice: number; // in paise
+  quantity: number;
+  currency: "INR";
+  timestamp: string;
+}
+
+export interface A2AReject {
+  type: "REJECT";
+  offerId: string;
+  merchantId: string;
+  reason: string;
+  timestamp: string;
+}
+
+export type A2AEvent = A2AOffer | A2ACounterOffer | A2AAccept | A2AReject;
 
 export type NegotiationStatus =
   | "ACTIVE"
@@ -221,6 +326,115 @@ export interface SellerOffer {
   sessionId: string;
 }
 
+// ── Inventory Reservation ───────────────────────────────────────────────────
+
+export interface InventoryReservation {
+  reservationId: string;
+  variantId: string;
+  storeId: string;
+  quantity: number;
+  status: "RESERVED" | "PAYMENT_PENDING" | "PAID" | "EXPIRED" | "RELEASED";
+  expiresAt: string;
+  createdAt: string;
+}
+
+// ── x402 V2 Protocol Specification (zapai-inr) ───────────────────────────────
+
+export const X402_HEADERS = {
+  PAYMENT_REQUIRED: "PAYMENT-REQUIRED",
+  PAYMENT_SIGNATURE: "PAYMENT-SIGNATURE",
+  PAYMENT_RESPONSE: "PAYMENT-RESPONSE",
+} as const;
+
+export interface X402PaymentRequirements {
+  scheme: "exact";
+  network: "zapai-inr";
+  amount: string; // amount in paise as string (e.g. "379900")
+  asset: "INR";
+  payTo: string;  // merchant identifier or address
+  resource: string; // e.g. "order/ORD-1042"
+  expiresAt: string;
+  nonce: string;
+}
+
+export interface X402PaymentAuthorization {
+  paymentId: string;
+  mandateId: string;
+  resource: string;
+  amount: string; // in paise
+  currency: "INR";
+  nonce: string;
+  timestamp: string;
+  signature: string;
+}
+
+export interface X402PaymentResponse {
+  success: boolean;
+  transactionId?: string;
+  paymentId?: string;
+  orderId?: string;
+  amount?: number;
+  settledAt?: string;
+  error?: string;
+}
+
+// Backward-compat challenge interface
+export interface X402Challenge {
+  version: "1.0" | "2.0";
+  scheme: "razorpay-inr" | "zapai-inr";
+  orderId: string;
+  amount: number; // in paise
+  expiry: number; // unix timestamp
+  challenge: string; // HMAC-signed payload
+}
+
+export interface X402Headers {
+  "PAYMENT-REQUIRED"?: string;
+  "PAYMENT-SIGNATURE"?: string;
+  "PAYMENT-RESPONSE"?: string;
+  "X-402-Version"?: string;
+  "X-402-Scheme"?: string;
+  "X-402-Order-ID"?: string;
+  "X-402-Amount"?: string;
+  "X-402-Expiry"?: string;
+  "X-402-Challenge"?: string;
+}
+
+// ── Payment Interfaces & Fallbacks ───────────────────────────────────────────
+
+export interface PaymentExecutionResult {
+  success: boolean;
+  settlementMode: "AUTONOMOUS_FACILITATOR" | "HUMAN_PAYMENT_LINK";
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  paymentUrl?: string; // provided when human fallback is triggered
+  status: "AUTHORIZED" | "CAPTURED" | "PENDING_HUMAN_APPROVAL" | "FAILED";
+  error?: string;
+}
+
+export interface PaymentService {
+  createOrder(params: {
+    amount: number;
+    currency: "INR";
+    receipt: string;
+    notes?: Record<string, string>;
+  }): Promise<{ orderId: string; amount: number; currency: string }>;
+
+  createPaymentLink(params: {
+    amount: number;
+    currency: "INR";
+    description: string;
+    customer: { name: string; contact: string; email?: string };
+    notes?: Record<string, string>;
+  }): Promise<{ paymentLinkId: string; paymentUrl: string }>;
+
+  verifyWebhookSignature(params: {
+    rawBody: string | Buffer;
+    signature: string;
+    secret: string;
+  }): boolean;
+}
+
 // ── Orders & Payments ────────────────────────────────────────────────────────
 
 export type PaymentStatus =
@@ -229,6 +443,8 @@ export type PaymentStatus =
   | "CAPTURED"
   | "FAILED"
   | "REFUNDED"
+  | "PAID"
+  | "PENDING_HUMAN_APPROVAL"
   | "paid"
   | "pending"
   | "failed"
@@ -260,27 +476,31 @@ export interface Order {
   updatedAt?: Date | string;
 }
 
-// ── x402 Protocol ────────────────────────────────────────────────────────────
+// ── Audit Ledger (Tamper-Evident Hash Chain) ─────────────────────────────────
 
-export interface X402Challenge {
-  version: "1.0";
-  scheme: "razorpay-inr";
-  orderId: string;
-  amount: number;             // in paise
-  expiry: number;             // unix timestamp
-  challenge: string;          // HMAC-signed payload
+export interface AuditLedgerEntry {
+  sequenceId?: number;
+  eventId: string;
+  transactionId: string;
+  eventType:
+    | "NEGOTIATION_STARTED"
+    | "OFFER_CREATED"
+    | "COUNTER_OFFER"
+    | "DEAL_ACCEPTED"
+    | "INVENTORY_RESERVED"
+    | "PAYMENT_REQUIRED"
+    | "PAYMENT_AUTHORIZED"
+    | "PAYMENT_CAPTURED"
+    | "PAYMENT_FAILED"
+    | "HUMAN_FALLBACK_TRIGGERED"
+    | "ORDER_CREATED";
+  actor: "BUYER_AGENT" | "SELLER_AGENT" | "ZAPAI_FACILITATOR" | "RAZORPAY_ADAPTER" | "USER";
+  payload: Record<string, unknown>;
+  payloadHash: string;
+  previousHash: string;
+  currentHash: string;
+  timestamp: string;
 }
-
-export interface X402Headers {
-  "X-402-Version": string;
-  "X-402-Scheme": string;
-  "X-402-Order-ID": string;
-  "X-402-Amount": string;
-  "X-402-Expiry": string;
-  "X-402-Challenge": string;
-}
-
-// ── Audit & Events ───────────────────────────────────────────────────────────
 
 export interface AuditIds {
   whatsappMessageId?: string;
@@ -340,6 +560,9 @@ export interface RazorpayWebhookPayload {
     payment?: {
       entity: RazorpayPaymentEntity;
     };
+    order?: {
+      entity: Record<string, any>;
+    };
   };
 }
 
@@ -359,6 +582,7 @@ export interface RazorpayPaymentEntity {
     product_id?: string;
     x402_tx_hash?: string;
     session_id?: string;
+    mandate_id?: string;
     [key: string]: string | undefined;
   };
 }

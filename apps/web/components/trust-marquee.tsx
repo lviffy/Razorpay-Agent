@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { InfiniteSlider } from './ui/infinite-slider'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, ShieldCheck, Zap, Lock, Database, KeyRound, Banknote } from 'lucide-react'
 import {
   RazorpayIcon,
   WhatsAppIcon,
@@ -16,58 +16,58 @@ import {
 
 const ECOSYSTEM_PARTNERS = [
   {
+    name: 'x402 V2 Protocol',
+    category: 'M2M Payment Spec',
+    badge: 'PAYMENT-REQ',
+    color: '#0052ff',
+    icon: <Zap className="w-5 h-5 text-brand-600" />,
+  },
+  {
+    name: 'ZapAI Facilitator',
+    category: 'Protocol Coordinator',
+    badge: 'zapai-inr',
+    color: '#6366f1',
+    icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />,
+  },
+  {
+    name: 'Spending Mandates',
+    category: 'Zero-Trust Tokens',
+    badge: 'AP2 Standard',
+    color: '#10b981',
+    icon: <KeyRound className="w-5 h-5 text-emerald-600" />,
+  },
+  {
     name: 'Razorpay',
-    category: 'Payment Rails',
-    badge: 'Official Integration',
+    category: 'Financial Settlement',
+    badge: 'Orders API',
     color: '#0052ff',
     icon: <RazorpayIcon className="w-5 h-5 text-[#0052ff]" />,
   },
   {
+    name: 'Redis Concurrency',
+    category: 'Atomic Lock',
+    badge: 'TTL 120s',
+    color: '#ef4444',
+    icon: <Lock className="w-5 h-5 text-rose-600" />,
+  },
+  {
+    name: 'Audit Ledger',
+    category: 'SHA-256 Chained',
+    badge: 'Tamper-Proof',
+    color: '#8b5cf6',
+    icon: <Database className="w-5 h-5 text-purple-600" />,
+  },
+  {
     name: 'WhatsApp Cloud API',
     category: 'Meta Verified',
-    badge: 'Enterprise BSP',
+    badge: 'Async Worker',
     color: '#25D366',
     icon: <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />,
   },
   {
-    name: 'Google Pay',
-    category: '1-Tap UPI',
-    badge: 'Instant Intent',
-    color: '#4285F4',
-    icon: <GooglePayIcon className="w-5 h-5 text-[#4285F4]" />,
-  },
-  {
-    name: 'PhonePe',
-    category: 'UPI Autopay',
-    badge: 'Zero Dropoff',
-    color: '#5f259f',
-    icon: <PhonePeIcon className="w-5 h-5 text-[#5f259f]" />,
-  },
-  {
-    name: 'Shopify Sync',
-    category: 'Catalog Engine',
-    badge: 'OAuth 2.0',
-    color: '#95BF47',
-    icon: <ShopifyIcon className="w-5 h-5 text-[#95BF47]" />,
-  },
-  {
-    name: 'CRED UPI',
-    category: 'High-Ticket Pay',
-    badge: 'Premium D2C',
-    color: '#000000',
-    icon: <CredIcon className="w-5 h-5" />,
-  },
-  {
-    name: 'Paytm UPI',
-    category: 'Instant Settle',
-    badge: 'Bank Switch',
-    color: '#00b9f5',
-    icon: <PaytmIcon className="w-5 h-5 text-[#00b9f5]" />,
-  },
-  {
-    name: 'HDFC & ICICI',
-    category: 'Direct Settle',
-    badge: 'T+0 INR',
+    name: 'Bank Settlement',
+    category: 'Instant INR',
+    badge: 'T+0 Direct',
     color: '#004c8f',
     icon: <BankSettlementIcon className="w-5 h-5 text-[#004c8f]" />,
   },
@@ -80,13 +80,13 @@ export function TrustMarquee() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span className="font-semibold text-surface-800 uppercase tracking-wider text-[11px] font-mono">
-            Payment &amp; Cloud Messaging Infrastructure
+            x402 V2 • Zero-Trust Mandates • Razorpay Settlement Stack
           </span>
         </div>
         <div className="flex items-center gap-4 text-[11px]">
           <span className="flex items-center gap-1 text-emerald-700 font-semibold">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            PCI-DSS Compliant
+            Deterministic Policy Engine
           </span>
           <span>•</span>
           <span className="text-surface-600 font-medium">HMAC SHA-256 Verified Webhooks</span>
@@ -106,7 +106,7 @@ export function TrustMarquee() {
           {ECOSYSTEM_PARTNERS.map((partner, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 px-4 py-2.5 bg-surface-50 rounded-2xl border border-black/[0.06] hover:border-brand-500/40 transition-all duration-200 min-w-[200px]"
+              className="flex items-center gap-3 px-4 py-2.5 bg-surface-50 rounded-2xl border border-black/[0.06] hover:border-brand-500/40 transition-all duration-200 min-w-[210px]"
             >
               <div className="shrink-0">{partner.icon}</div>
               <div className="flex flex-col">

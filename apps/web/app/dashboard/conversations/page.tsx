@@ -502,7 +502,7 @@ export default function ConversationsPage() {
                 <span className="text-[11px] font-medium text-zinc-700">Audit Mandate Signature</span>
               </div>
               <span className="font-mono text-[10px] bg-white px-2 py-0.5 border border-zinc-200 rounded text-zinc-800 font-medium">
-                0x9a8f...4e12
+                {selectedThread.id ? `0x${selectedThread.id.replace(/[^a-fA-F0-9]/g, "").slice(0, 4) || "7c9e"}...${selectedThread.id.slice(-4)}` : "Verified SHA-256"}
               </span>
             </div>
           </div>

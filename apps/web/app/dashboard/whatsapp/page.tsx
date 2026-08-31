@@ -45,6 +45,7 @@ export default function WhatsAppPage() {
   const [creds, setCreds] = useState<any>(null);
 
   const [storeName, setStoreName] = useState("Store");
+  const [products, setProducts] = useState<any[]>([]);
 
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const logEndRef = React.useRef<HTMLDivElement>(null);
@@ -60,13 +61,15 @@ export default function WhatsAppPage() {
   React.useEffect(() => {
     async function loadData() {
       try {
-        const [threads, credentials, profile] = await Promise.all([
+        const [threads, credentials, profile, prodList] = await Promise.all([
           api.conversations.list(),
           api.settings.getCredentials(),
           api.profile.get(),
+          api.products.list(),
         ]);
         if (credentials) setCreds(credentials);
         if (profile?.storeName) setStoreName(profile.storeName);
+        if (prodList) setProducts(prodList);
         if (threads && threads.length > 0) {
           const first = threads[0];
           const mappedMsgs: ChatMessage[] = (first.messages || []).map((m: any, idx: number) => ({
@@ -95,12 +98,19 @@ export default function WhatsAppPage() {
   } | null>(null);
   const [isSimulatingPayment, setIsSimulatingPayment] = useState(false);
 
-  const quickPrompts = [
-    "Can you offer a discount on this item?",
-    "Do you have stock available right now?",
-    "Is shipping free for this order?",
-    "What is the best deal you can give me?",
-  ];
+  const quickPrompts = products.length > 0
+    ? [
+        `Can you offer a discount on ${products[0].title}?`,
+        `Do you have stock available for ${products[0].sku || products[0].title}?`,
+        "Is shipping free for this order?",
+        "What is the best deal you can give me?",
+      ]
+    : [
+        "Can you offer a discount on this item?",
+        "Do you have stock available right now?",
+        "Is shipping free for this order?",
+        "What is the best deal you can give me?",
+      ];
 
   const handleOpenCheckoutModal = (amount?: number, orderId?: string, url?: string) => {
     setActiveCheckoutData({ amount: amount || 0, orderId: orderId || "", paymentUrl: url });
@@ -184,7 +194,7 @@ export default function WhatsAppPage() {
         isPaymentLink: simResult.isPaymentLink,
         paymentAmount: simResult.paymentAmount,
         paymentUrl: simResult.paymentUrl,
-        orderId: simResult.orderId || "ORD-1042",
+        orderId: simResult.orderId,
         imageUrl: simResult.imageUrl,
       };
 
@@ -197,7 +207,7 @@ export default function WhatsAppPage() {
       const fallbackReply: ChatMessage = {
         id: `a_${Date.now()}`,
         sender: "agent",
-        text: "I've checked our live stock and can offer our best price with free express shipping!",
+        text: "⚠️ Real-time AI negotiation endpoint is currently busy or connecting. Please verify backend service status.",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, fallbackReply]);
