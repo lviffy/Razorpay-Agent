@@ -151,7 +151,7 @@ export default function FlowSection() {
                   03 / Concurrency Hold
                 </span>
                 <span className="text-[11px] font-mono text-slate-300 bg-white/5 border border-white/10 px-2.5 py-0.5 rounded-full">
-                  15m Auto-Release
+                  120s Auto-Release
                 </span>
               </div>
 
@@ -160,7 +160,7 @@ export default function FlowSection() {
               </h3>
 
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
-                When checkout begins, 1 unit is locked for 15 minutes. If unpaid, stock automatically returns to the live catalog to prevent double-selling.
+                When checkout begins, 1 unit is locked for 120 seconds in Redis. If unpaid, stock automatically returns to the live catalog to prevent double-selling.
               </p>
             </div>
 
@@ -171,7 +171,7 @@ export default function FlowSection() {
                   <Lock className="w-3.5 h-3.5 text-slate-400" />
                   1 Unit Reserved (SKU: NK-PEG-40)
                 </span>
-                <span className="text-slate-300 font-bold">14:48 Remaining</span>
+                <span className="text-slate-300 font-bold">118s Remaining</span>
               </div>
 
               <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">

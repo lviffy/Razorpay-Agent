@@ -81,50 +81,32 @@ When an autonomous AI Shopping Agent attempts to fulfill a user's purchase inten
 
 ---
 
-## 4. The 6 Major Modules
+## 4. Turborepo Monorepo & System Modules
 
-To ensure high cohesion, zero circular dependencies, and complete decoupling of the protocol from payment rails, the architecture is divided into 6 major modules:
+To ensure high cohesion, zero circular dependencies, and complete decoupling of the protocol from payment rails, the system is organized as a Turborepo monorepo:
 
 ```
-src/
-├── agents/            # Buyer & Seller AI agent orchestration and tool bindings
-│   ├── buyer.ts
-│   ├── seller.ts
-│   └── tools.ts
-├── commerce/          # Discovery, structured negotiation, dynamic offers, inventory
-│   ├── discovery.ts
-│   ├── negotiation.ts
-│   ├── offers.ts
-│   └── inventory.ts
-├── mandate/           # Cryptographic spending mandate generation & policy evaluation
-│   ├── types.ts
-│   ├── create.ts
-│   ├── verify.ts
-│   └── policy.ts
-├── x402/              # x402 V2 protocol specification, client, server & facilitator
-│   ├── types.ts
-│   ├── server.ts
-│   ├── client.ts
-│   ├── facilitator.ts
-│   ├── verifier.ts
-│   ├── settlement.ts
-│   └── headers.ts
-├── payments/          # Payment gateway abstraction layer and Razorpay implementation
-│   ├── payment-service.ts
-│   └── razorpay/
-│       ├── adapter.ts
-│       ├── orders.ts
-│       ├── payment-links.ts
-│       └── webhooks.ts
-├── orders/            # Order lifecycle and state machine
-│   ├── state-machine.ts
-│   └── service.ts
-├── audit/             # Tamper-evident hash-chained audit ledger
-│   ├── events.ts
-│   └── hash-chain.ts
-└── whatsapp/          # WhatsApp Cloud API async worker & webhook ingress
-    ├── webhook.ts
-    └── messages.ts
+Razorpay-Agent/
+├── apps/
+│   ├── api/                    # Express + Bun API Server
+│   │   └── src/
+│   │       ├── audit/          # RFC 8785 Canonical JSON & SHA-256 hash-chain engine
+│   │       ├── commerce/       # Discovery, structured negotiation & 120s TTL inventory locking
+│   │       ├── mandate/        # Cryptographic spending mandate signing & deterministic policy
+│   │       ├── x402/           # x402 V2 protocol, facilitator coordinator, headers & verifier
+│   │       ├── payments/       # Gateway abstraction & Razorpay 5-service financial suite
+│   │       │   └── razorpay/   # AutoPay, Offers, Route, Refunds, Disputes, Orders, Webhooks
+│   │       ├── orders/         # Order state machine & lifecycle persistence
+│   │       ├── integrations/   # LLM (Groq/Gemini), Razorpay, Redis, Shopify, WhatsApp
+│   │       ├── modules/        # Modular routers (agent, checkout, growth-ai, dashboard, etc.)
+│   │       ├── services/       # Core business services & conversation memory
+│   │       └── workers/        # Async queue workers
+│   └── web/                    # Next.js 15 App Router Frontend (Dashboard & Landing UI)
+│       ├── app/                # App router pages (dashboard, analytics, audit, products, etc.)
+│       └── components/         # Interactive UI components, visualizers, playgrounds
+└── packages/
+    ├── database/               # Neon PostgreSQL client, schemas, migrations, seeders
+    └── types/                  # Shared TypeScript domain models and A2A event contracts
 ```
 
 ---
@@ -224,14 +206,16 @@ $$H_n = \text{SHA256}(H_{n-1} : \text{eventType} : \text{actor} : \text{payloadH
 
 ---
 
-## 6. Razorpay Integration & Webhook Handling
+## 6. Razorpay Financial Infrastructure & 5 Core Services
 
-1. **Order Creation:** Uses Razorpay Orders API (`POST /v1/orders`) with idempotency key `receipt: {x402_payment_id}`.
-2. **Webhook Verification:** Raw byte body verified using HMAC-SHA256 (`X-Razorpay-Signature`).
-3. **Idempotency Defense:** `x-razorpay-event-id` stored in `processed_webhook_events` table before processing any state mutation.
-4. **Out-of-Order Resilient States:**
-   * `PAYMENT_PENDING` $\rightarrow$ handles `payment.authorized`, `payment.captured`, and `payment.failed` idempotently.
-5. **Separation of Concerns:** Payment capture (`payment.captured`) is strictly distinguished from bank settlement reconciliation.
+ZapAI integrates deeply with Razorpay across 5 distinct financial modules:
+
+1. **UPI AutoPay & e-Mandates (`autopay.ts`):** Zero-touch autonomous tokenized debits up to RBI ₹15,000 limit (`RBI_SUB_MANDATE_MAX_PAISE = 1500000`) without secondary OTP popups.
+2. **Dynamic Offers Engine (`offers.ts`):** Querying Razorpay Offers API to inject live bank cashbacks & card discounts into A2A counter-offers.
+3. **Razorpay Route (`route.ts`):** Multi-vendor bundle order split transfers (Shoes + Socks) with automated platform take-rate deduction.
+4. **Programmatic Instant Refunds (`refunds.ts`):** Sub-second algorithmic refunds (`speed: "instant" | "optimum"`) when inventory drops or fulfillment constraints fail.
+5. **Cryptographic Dispute Evidence Chaining (`disputes.ts`):** Generating tamper-evident SHA-256 dispute proof bundles for automated chargeback defense.
+6. **Orders API & Webhook Ingress (`orders.ts` & `webhooks.ts`):** Idempotent order creation with receipt key `receipt: {x402_tx_hash}`, raw-byte HMAC-SHA256 signature verification, and deduplication via `processed_webhook_events`.
 
 ---
 

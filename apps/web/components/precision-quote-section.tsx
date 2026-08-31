@@ -29,7 +29,7 @@ export default function PrecisionQuoteSection() {
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Zero Margin Hallucinations
             </span>
             <span className="flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" /> 15-Minute Atomic Stock Locks
+              <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" /> 120s Atomic Stock Locks
             </span>
             <span className="flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-brand-600 shrink-0" /> Official Razorpay Settlement Rails

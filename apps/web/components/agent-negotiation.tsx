@@ -166,8 +166,8 @@ export default function AgentNegotiationSection() {
               <span className="text-brand-600">Negotiation in Action.</span>
             </h2>
             <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
-              Not a scripted chatbot. Watch how a Buyer Agent searches multiple stores in parallel,
-              negotiates price against the Seller Agent&apos;s margin rules, and executes an atomic settlement.
+              Not a scripted chatbot. Watch how a Buyer Agent discovers products across stores,
+              negotiates pricing directly with the Seller Agent, and executes an atomic settlement.
             </p>
           </div>
 

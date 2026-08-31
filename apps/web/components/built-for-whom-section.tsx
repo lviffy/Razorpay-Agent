@@ -119,7 +119,7 @@ function UnifiedCatalogCard() {
       <div className="p-2.5 bg-brand-50 rounded-xl border border-brand-200 text-[10.5px] font-mono text-brand-900 flex items-center justify-between">
         <span className="flex items-center gap-1.5 font-bold">
           <Lock className="w-3 h-3 text-brand-600" />
-          15-Min Concurrency Lock
+          120s Concurrency Lock
         </span>
         <span className="text-brand-700 font-semibold">Zero Double-Selling</span>
       </div>
@@ -187,11 +187,11 @@ const targetSegments = [
     title: 'Built for High-Volume Shopify Merchants',
     subtitle: 'Unified Catalog & Automated Stock Protection',
     description:
-      'Sync 100+ Shopify SKUs or manage a native catalog with zero technical overhead. Automated 15-minute unit locking ensures no inventory conflicts during flash drops.',
+      'Sync 100+ Shopify SKUs or manage a native catalog with zero technical overhead. Automated 120-second unit locking ensures no inventory conflicts during flash drops.',
     bullets: [
       'One-Click Shopify OAuth & Real-Time Variant Sync',
       'Granular Margin Floor Guardrails per SKU',
-      'Autonomous 15-Minute Concurrency Reservation Locks',
+      'Autonomous 120-Second Concurrency Reservation Locks',
     ],
     illustration: UnifiedCatalogCard,
   },

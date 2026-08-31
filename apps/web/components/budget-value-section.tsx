@@ -37,13 +37,13 @@ export default function BudgetValueSection() {
     'item-3': {
       title: 'Autonomous Inventory Locking',
       tag: 'CONCURRENCY CONTROL',
-      metric: '15 Min Hold',
+      metric: '120s TTL Lock',
       submetric: 'Auto-Release Timer',
       status: '1 Unit Reserved for WhatsApp Shopper',
-      code: `await inventory.lockUnit({
+      code: `await inventory.reserveUnit({
   sku: "NK-PEG-40",
   quantity: 1,
-  durationMinutes: 15,
+  ttlSeconds: 120,
 });`,
     },
     'item-4': {
@@ -121,7 +121,7 @@ emit("order.fulfilled", { orderId: "AB-1092" });`,
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="text-surface-600 text-xs sm:text-sm leading-relaxed pb-4 pl-11">
-                  Temporarily reserves stock for 15 minutes when a payment link is issued. If checkout
+                  Temporarily reserves stock for 120 seconds (TTL lock) when a deal is accepted. If checkout
                   is not completed, units automatically release back to available stock.
                 </AccordionContent>
               </AccordionItem>

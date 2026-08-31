@@ -56,21 +56,32 @@ It implements an **x402 V2-compatible HTTP payment boundary** with a custom **`z
 
 ---
 
-## 2. 6-Module Component Architecture
+## 2. Turborepo Monorepo & Component Architecture
 
-The codebase is organized into decoupled domain modules:
+The codebase is organized as a high-performance Turborepo monorepo:
 
 ```
-src/
-├── agents/             # Buyer & Seller AI orchestration & tool calling
-├── commerce/           # Catalog discovery, structured negotiation & inventory
-├── mandate/            # Spending mandate creation, cryptographic signing & zero-trust policy
-├── x402/               # x402 V2 protocol handlers, headers, client, server & facilitator
-├── payments/           # Gateway abstraction & Razorpay implementation
-│   └── razorpay/       # Orders API, Payment Link fallback & Webhook handlers
-├── orders/             # Order state machine & persistence
-├── audit/              # SHA-256 hash-chained immutable audit ledger
-└── whatsapp/           # Async webhook queue & message dispatching
+Razorpay-Agent/
+├── apps/
+│   ├── api/                    # Express + Bun Backend Server
+│   │   └── src/
+│   │       ├── audit/          # RFC 8785 Canonical JSON & SHA-256 hash-chain engine
+│   │       ├── commerce/       # Multi-store discovery, negotiation, inventory locking
+│   │       ├── mandate/        # Spending mandate signing & deterministic policy
+│   │       ├── x402/           # x402 V2 protocol, facilitator coordinator & headers
+│   │       ├── payments/       # Gateway abstraction & Razorpay 5-service suite
+│   │       │   └── razorpay/   # AutoPay, Offers, Route, Refunds, Disputes, Orders, Webhooks
+│   │       ├── orders/         # Order state machine & lifecycle persistence
+│   │       ├── integrations/   # LLM (Groq/Gemini), Razorpay, Redis, Shopify, WhatsApp
+│   │       ├── modules/        # Modular domain routers (agent, checkout, growth-ai, etc.)
+│   │       ├── services/       # Core business services & conversation memory
+│   │       └── workers/        # Async queue workers
+│   └── web/                    # Next.js 15 App Router Frontend (Dashboard & Landing UI)
+│       ├── app/                # App router pages (dashboard, analytics, audit, products, etc.)
+│       └── components/         # Interactive UI components, visualizers, playgrounds
+└── packages/
+    ├── database/               # Neon PostgreSQL client, schemas, migrations, seeders
+    └── types/                  # Shared TypeScript domain models and A2A event contracts
 ```
 
 ---
@@ -224,28 +235,23 @@ Header: `PAYMENT-SIGNATURE: <base64-json>`
 
 ---
 
-### 3.5 Razorpay Integration & Webhook Handling (`src/payments/razorpay/`)
+### 3.5 Razorpay Financial & Settlement Architecture (`apps/api/src/payments/razorpay/`)
 
-#### Orders API & Receipt Idempotency:
-* `POST /v1/orders` with payload:
-  ```json
-  {
-    "amount": 379900,
-    "currency": "INR",
-    "receipt": "zap_pay_1029",
-    "notes": {
-      "mandateId": "mandate_8819",
-      "orderId": "ORD-1042",
-      "x402Network": "zapai-inr"
-    }
-  }
-  ```
+ZapAI integrates deeply with Razorpay across 5 distinct financial modules:
 
-#### Webhook Ingress & Idempotency:
-* Endpoint: `POST /webhooks/razorpay`
-* Header Verification: `X-Razorpay-Signature` calculated against **raw byte body**.
-* Deduplication: `x-razorpay-event-id` checked against `processed_webhook_events` table before applying state updates.
-* Resilient Transitions: Handles out-of-order events (`payment.authorized` $\to$ `payment.captured` $\to$ `payment.failed`).
+1. **UPI AutoPay & e-Mandates (`autopay.ts`):**
+   * Pre-authorized token debits within the RBI ₹15,000 contactless limit (`RBI_SUB_MANDATE_MAX_PAISE = 1500000`) for zero-friction autonomous purchases without secondary OTP popups.
+2. **Dynamic Offers Engine (`offers.ts`):**
+   * Real-time querying of active bank cashbacks, card discounts, and UPI incentives during A2A bargaining to inject verified discounts directly into counter-offers.
+3. **Razorpay Route Multi-Vendor Splits (`route.ts`):**
+   * Multi-item cross-store basket purchases (e.g. Shoes + Socks) with automated platform take-rate deduction and sub-merchant payout routing.
+4. **Programmatic Instant Refunds (`refunds.ts`):**
+   * Algorithmic refunds (`speed: "instant" | "optimum"`) triggered automatically when inventory drops or fulfillment constraints fail.
+5. **Cryptographic Dispute Evidence Chaining (`disputes.ts`):**
+   * Compiles verified SHA-256 audit bundles directly into evidence digests for chargeback defense (`submitRazorpayDisputeEvidence`).
+6. **Orders API & Webhook Ingress (`orders.ts` & `webhooks.ts`):**
+   * Idempotent order creation with receipt key `receipt: {x402_tx_hash}`.
+   * HMAC-SHA256 verification against raw byte body (`X-Razorpay-Signature`) and deduplication via `processed_webhook_events`.
 
 ---
 
