@@ -240,8 +240,56 @@ export default function ProductsPage() {
             <tbody className="divide-y divide-zinc-100">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-zinc-400">
-                    No products matched your search or filters.
+                  <td colSpan={8} className="py-12 px-4 text-center">
+                    <div className="max-w-md mx-auto space-y-4">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center shadow-2xs">
+                        <Package className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-900">
+                          {searchQuery || filter !== "ALL"
+                            ? "No matching products found"
+                            : "Your product catalog is empty"}
+                        </h4>
+                        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                          {searchQuery || filter !== "ALL"
+                            ? "Try adjusting your search terms or filter selection."
+                            : "Add products with protected floor prices so your AI Seller Agent can autonomously negotiate and close deals on WhatsApp."}
+                        </p>
+                      </div>
+
+                      {!searchQuery && filter === "ALL" && (
+                        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setModalOpen(true)}
+                            className="h-8 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Product</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCsvModalOpen(true)}
+                            className="h-8 text-xs font-medium gap-1.5 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-zinc-500" />
+                            <span>Import CSV</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleResyncShopify}
+                            disabled={syncingShopify}
+                            className="h-8 text-xs font-medium gap-1.5 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${syncingShopify ? "animate-spin text-emerald-600" : "text-zinc-500"}`} />
+                            <span>Sync Shopify</span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

@@ -131,11 +131,17 @@ You MUST call the selectProduct function with your choice.`;
       );
       if (!selected) return this.fallbackMatch(products, rules, query);
 
+      // A buyer has "negotiated" only if they explicitly sent a target price below listed.
+      // Simple purchase intent ("I need 2 X") must never receive an unprompted discount.
+      const listedPrice = selected.listedPrice || selected.price || 999;
+      const buyerNegotiated = query.targetPrice !== undefined && query.targetPrice < listedPrice;
+
       const validatedPrice = this.applyPricingRules(
-        selected.listedPrice || selected.price || 999,
+        listedPrice,
         selected.floorPrice || selected.minPrice || 800,
         args.offeredPrice,
-        rules
+        rules,
+        buyerNegotiated
       );
 
       const freeShipping = Boolean(
@@ -148,14 +154,16 @@ You MUST call the selectProduct function with your choice.`;
           variantId: selected.shopifyVariantId || selected.id,
           title: selected.title,
           sku: selected.sku,
-          listedPrice: selected.listedPrice || selected.price || 999,
+          listedPrice,
           floorPrice: selected.floorPrice || selected.minPrice || 800,
           inventoryAvailable: selected.inventoryAvailable || 10,
           attributes: {},
         },
         offeredPrice: validatedPrice,
         shippingFree: freeShipping,
-        reasoningTrace: args.reasoningTrace,
+        reasoningTrace: buyerNegotiated
+          ? args.reasoningTrace
+          : `Offered ${selected.title} at standard listed price ₹${validatedPrice}.`,
         sessionId: query.sessionId,
       };
     } catch (err) {
@@ -232,8 +240,14 @@ You MUST call the selectProduct function with your choice.`;
     listedPrice: number,
     floorPrice: number,
     suggestedPrice: number,
-    rules: NegotiationRules
+    rules: NegotiationRules,
+    buyerNegotiated: boolean = false
   ): number {
+    // If the buyer did NOT explicitly negotiate a price, always charge the
+    // full listed price. Never apply an unprompted discount.
+    if (!buyerNegotiated) {
+      return Math.round(listedPrice);
+    }
     const maxDiscountPrice = Math.round(
       listedPrice * (1 - (rules.maxDiscountPercentage || 10) / 100)
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { Order } from "@/lib/types";
 import { formatINR, formatDate } from "@/lib/utils";
@@ -14,6 +15,9 @@ import {
   Check,
   Copy,
   Edit2,
+  Zap,
+  Package,
+  ArrowRight,
 } from "lucide-react";
 import { EditOrderModal } from "@/components/orders/edit-order-modal";
 
@@ -156,8 +160,38 @@ export default function OrdersPage() {
             <tbody className="divide-y divide-zinc-200 text-zinc-700">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-zinc-400">
-                    No orders match your search query.
+                  <td colSpan={8} className="text-center py-12 px-4">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center shadow-2xs">
+                        <ShoppingBag className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-900">
+                          {search ? "No matching orders found" : "No autonomous orders recorded yet"}
+                        </h4>
+                        <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                          {search
+                            ? "Try clearing your search query or searching by a different customer name or payment ID."
+                            : "When buyer agents negotiate with your AI Seller on WhatsApp, confirmed deals and Razorpay UPI settlements will appear here in real-time."}
+                        </p>
+                      </div>
+                      {!search && (
+                        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                          <Link href="/dashboard/whatsapp">
+                            <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                              <Zap className="w-3.5 h-3.5" />
+                              <span>Simulate WhatsApp Order</span>
+                            </Button>
+                          </Link>
+                          <Link href="/dashboard/products">
+                            <Button size="sm" variant="outline" className="h-8 text-xs font-medium gap-1.5 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs">
+                              <Package className="w-3.5 h-3.5 text-zinc-500" />
+                              <span>Manage Product Catalog</span>
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (

@@ -271,6 +271,77 @@ export default function GeneralSettingsPage() {
         </div>
       </div>
 
+      {/* Real-time Gateway & Connectivity Status Banner */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Razorpay Gateway Status */}
+        <Card className="p-3.5 border-zinc-200 shadow-2xs flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Razorpay Rails</span>
+            <p className="text-xs font-semibold text-zinc-900">
+              {creds.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                ? "Live Sandbox Mode"
+                : "Simulated Mock Rail"}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-mono ${
+              creds.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-amber-50 text-amber-800 border-amber-200"
+            }`}
+          >
+            {creds.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+              ? "● Active"
+              : "● Offline Fallback"}
+          </Badge>
+        </Card>
+
+        {/* WhatsApp Meta API Status */}
+        <Card className="p-3.5 border-zinc-200 shadow-2xs flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">WhatsApp Ingress</span>
+            <p className="text-xs font-semibold text-zinc-900">
+              {creds.whatsappPhoneNumberId
+                ? "Meta Cloud API"
+                : "Inbound Simulator"}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-mono ${
+              creds.whatsappPhoneNumberId
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-blue-50 text-blue-700 border-blue-200"
+            }`}
+          >
+            {creds.whatsappPhoneNumberId ? "● Connected" : "● Web Tester Ready"}
+          </Badge>
+        </Card>
+
+        {/* Catalog Source Status */}
+        <Card className="p-3.5 border-zinc-200 shadow-2xs flex items-center justify-between">
+          <div className="space-y-0.5">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Catalog Engine</span>
+            <p className="text-xs font-semibold text-zinc-900">
+              {shopifyStatus?.connected
+                ? `Shopify (${shopifyStatus.shopDomain || "Synced"})`
+                : "ZapAI Native Catalog"}
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className={`text-[10px] font-mono ${
+              shopifyStatus?.connected
+                ? "bg-purple-50 text-purple-700 border-purple-200"
+                : "bg-zinc-100 text-zinc-700 border-zinc-200"
+            }`}
+          >
+            {shopifyStatus?.connected ? "● Live Sync" : "● Native Postgres"}
+          </Badge>
+        </Card>
+      </div>
+
       <form onSubmit={handleSave} className="space-y-6">
         {/* Store Profile */}
         <Card className="border-zinc-200 shadow-xs">

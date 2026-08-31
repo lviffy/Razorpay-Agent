@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { ConversationThread } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
@@ -311,7 +312,7 @@ export default function ConversationsPage() {
                 <div className="p-6 text-center text-xs text-zinc-400">No conversations found.</div>
               ) : (
                 filteredThreads.map((t) => {
-                  const isSelected = t.id === selectedThread.id;
+                  const isSelected = Boolean(selectedThread && t.id === selectedThread.id);
                   const displayName = getDisplayName(t);
 
                   return (
@@ -362,94 +363,118 @@ export default function ConversationsPage() {
               mobileTab !== "chat" ? "hidden lg:flex" : "flex"
             }`}
           >
-            {/* Top Info Header */}
-            <div className="p-3.5 border-b border-zinc-100 bg-white flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs">
-                  <User className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold font-mono text-zinc-900 leading-none">
-                    {getDisplayName(selectedThread)}
-                  </p>
-                  <p className="text-[10px] text-zinc-400 font-mono mt-1">
-                    {formatPhoneNumber(selectedThread.customerPhone)}
-                  </p>
+            {!selectedThread ? (
+              <div className="flex-1 flex items-center justify-center p-8 text-center bg-white">
+                <div className="max-w-sm space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center shadow-2xs">
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-900">No active conversations</h4>
+                    <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                      When buyers message your WhatsApp Business account, live transcripts and autonomous negotiations will stream here.
+                    </p>
+                  </div>
+                  <Link href="/dashboard/whatsapp" className="inline-block pt-1">
+                    <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Launch WhatsApp Simulator</span>
+                    </Button>
+                  </Link>
                 </div>
               </div>
-
-              <Badge variant="outline" className="text-[10px] font-mono font-medium bg-zinc-50 text-zinc-700 border-zinc-200">
-                WhatsApp Live
-              </Badge>
-            </div>
-
-            {/* Messages Feed - Scrollable Viewport */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
-              {selectedThread.messages.map((m) => {
-                const isUser = m.sender === "customer";
-                const isSystem = m.sender === "system";
-
-                if (isSystem) {
-                  return (
-                    <div
-                      key={m.id}
-                      className="p-3 bg-white border border-zinc-200 rounded-lg text-center text-xs text-zinc-800 font-medium space-y-1 shadow-2xs"
-                    >
-                      <div className="flex items-center justify-center gap-1.5 text-zinc-900 font-bold">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        <span>Razorpay Settlement Verified</span>
-                      </div>
-                      <p className="text-[11px] text-zinc-600">{m.content}</p>
+            ) : (
+              <>
+                {/* Top Info Header */}
+                <div className="p-3.5 border-b border-zinc-100 bg-white flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-xs">
+                      <User className="w-4 h-4" />
                     </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={m.id}
-                    className={`flex flex-col text-xs max-w-[85%] ${
-                      isUser ? "mr-auto items-start" : "ml-auto items-end"
-                    }`}
-                  >
-                    <div
-                      className={`p-3.5 rounded-2xl leading-relaxed shadow-2xs border ${
-                        isUser
-                          ? "bg-white text-zinc-900 border-zinc-200/80 rounded-tl-xs"
-                          : "bg-zinc-50 text-zinc-900 border-zinc-200/80 rounded-tr-xs"
-                      }`}
-                    >
-                      {m.mediaUrl && (
-                        <div className="mb-2 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100">
-                          <img
-                            src={m.mediaUrl}
-                            alt="Product preview"
-                            className="max-h-44 w-full object-cover rounded-lg transition-transform hover:scale-105 duration-200 cursor-pointer"
-                            onClick={() => window.open(m.mediaUrl, "_blank")}
-                          />
-                        </div>
-                      )}
-                      <FormattedMessageContent text={m.content} />
-                    </div>
-
-                    <div className="flex items-center gap-1 mt-1 px-1 text-[10px] text-zinc-400 font-mono">
-                      <span>{m.timestamp}</span>
-                      {!isUser && <CheckCheck className="w-3 h-3 text-blue-500" />}
+                    <div>
+                      <p className="text-xs font-bold font-mono text-zinc-900 leading-none">
+                        {getDisplayName(selectedThread)}
+                      </p>
+                      <p className="text-[10px] text-zinc-400 font-mono mt-1">
+                        {formatPhoneNumber(selectedThread.customerPhone)}
+                      </p>
                     </div>
                   </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
 
-            {/* Read-only Agent Status Footer */}
-            <div className="p-3 bg-white border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500 shrink-0">
-              <span className="text-[11px] text-zinc-600 font-medium">
-                AI Seller Agent is handling negotiations autonomously.
-              </span>
-              <Button variant="outline" size="sm" className="text-[11px] h-7 px-2.5 text-zinc-700 hover:bg-zinc-50 border-zinc-200">
-                Take Over
-              </Button>
-            </div>
+                  <Badge variant="outline" className="text-[10px] font-mono font-medium bg-zinc-50 text-zinc-700 border-zinc-200">
+                    WhatsApp Live
+                  </Badge>
+                </div>
+
+                {/* Messages Feed - Scrollable Viewport */}
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+                  {(selectedThread.messages || []).map((m) => {
+                    const isUser = m.sender === "customer";
+                    const isSystem = m.sender === "system";
+
+                    if (isSystem) {
+                      return (
+                        <div
+                          key={m.id}
+                          className="p-3 bg-white border border-zinc-200 rounded-lg text-center text-xs text-zinc-800 font-medium space-y-1 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-center gap-1.5 text-zinc-900 font-bold">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Razorpay Settlement Verified</span>
+                          </div>
+                          <p className="text-[11px] text-zinc-600">{m.content}</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={m.id}
+                        className={`flex flex-col text-xs max-w-[85%] ${
+                          isUser ? "mr-auto items-start" : "ml-auto items-end"
+                        }`}
+                      >
+                        <div
+                          className={`p-3.5 rounded-2xl leading-relaxed shadow-2xs border ${
+                            isUser
+                              ? "bg-white text-zinc-900 border-zinc-200/80 rounded-tl-xs"
+                              : "bg-zinc-50 text-zinc-900 border-zinc-200/80 rounded-tr-xs"
+                          }`}
+                        >
+                          {m.mediaUrl && (
+                            <div className="mb-2 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-100">
+                              <img
+                                src={m.mediaUrl}
+                                alt="Product preview"
+                                className="max-h-44 w-full object-cover rounded-lg transition-transform hover:scale-105 duration-200 cursor-pointer"
+                                onClick={() => window.open(m.mediaUrl, "_blank")}
+                              />
+                            </div>
+                          )}
+                          <FormattedMessageContent text={m.content} />
+                        </div>
+
+                        <div className="flex items-center gap-1 mt-1 px-1 text-[10px] text-zinc-400 font-mono">
+                          <span>{m.timestamp}</span>
+                          {!isUser && <CheckCheck className="w-3 h-3 text-blue-500" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Read-only Agent Status Footer */}
+                <div className="p-3 bg-white border-t border-zinc-100 flex items-center justify-between text-xs text-zinc-500 shrink-0">
+                  <span className="text-[11px] text-zinc-600 font-medium">
+                    AI Seller Agent is handling negotiations autonomously.
+                  </span>
+                  <Button variant="outline" size="sm" className="text-[11px] h-7 px-2.5 text-zinc-700 hover:bg-zinc-50 border-zinc-200">
+                    Take Over
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Pane 3: AI Reasoning Trace Engine (4 cols) */}
@@ -458,53 +483,67 @@ export default function ConversationsPage() {
               mobileTab !== "trace" ? "hidden lg:flex" : "flex"
             }`}
           >
-            <div className="p-3.5 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between shrink-0">
-              <span className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
-                AI Reasoning Trace
-              </span>
-              <span className="text-[10px] font-mono text-zinc-600 font-medium bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
-                {selectedThread.traces.length} Steps
-              </span>
-            </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-              {selectedThread.traces.map((tr, index) => (
-                <div key={tr.id} className="relative pl-5 pb-2">
-                  {/* Vertical connecting line */}
-                  {index < selectedThread.traces.length - 1 && (
-                    <div className="absolute left-1.5 top-2.5 bottom-0 w-px bg-zinc-200" />
-                  )}
-                  {/* Dot */}
-                  <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-zinc-900 flex items-center justify-center" />
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-900">{tr.title}</span>
-                      {tr.durationMs && (
-                        <span className="text-[10px] font-mono text-zinc-400">
-                          {tr.durationMs}ms
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-[11px] text-zinc-700 leading-relaxed bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 font-mono">
-                      {tr.detail}
-                    </div>
-                    <span className="text-[10px] text-zinc-400 font-mono block">{tr.timestamp}</span>
-                  </div>
+            {!selectedThread ? (
+              <div className="flex-1 flex items-center justify-center p-8 text-center bg-zinc-50/50">
+                <div className="max-w-xs space-y-2 text-center text-xs text-zinc-400">
+                  <ShieldCheck className="w-8 h-8 mx-auto text-zinc-300" />
+                  <p className="font-semibold text-zinc-700">AI Reasoning Trace</p>
+                  <p className="text-[11px] text-zinc-500">
+                    Step-by-step reasoning, margin floor checks, and mandate signatures will appear here during live interactions.
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            {/* Trace Summary Footer */}
-            <div className="p-3 bg-zinc-50/60 border-t border-zinc-100 text-xs text-zinc-600 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
-                <span className="text-[11px] font-medium text-zinc-700">Audit Mandate Signature</span>
               </div>
-              <span className="font-mono text-[10px] bg-white px-2 py-0.5 border border-zinc-200 rounded text-zinc-800 font-medium">
-                {selectedThread.id ? `0x${selectedThread.id.replace(/[^a-fA-F0-9]/g, "").slice(0, 4) || "7c9e"}...${selectedThread.id.slice(-4)}` : "Verified SHA-256"}
-              </span>
-            </div>
+            ) : (
+              <>
+                <div className="p-3.5 border-b border-zinc-100 bg-zinc-50/50 flex items-center justify-between shrink-0">
+                  <span className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
+                    AI Reasoning Trace
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-600 font-medium bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                    {(selectedThread.traces || []).length} Steps
+                  </span>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+                  {(selectedThread.traces || []).map((tr, index) => (
+                    <div key={tr.id} className="relative pl-5 pb-2">
+                      {/* Vertical connecting line */}
+                      {index < (selectedThread.traces || []).length - 1 && (
+                        <div className="absolute left-1.5 top-2.5 bottom-0 w-px bg-zinc-200" />
+                      )}
+                      {/* Dot */}
+                      <div className="absolute left-0 top-1 w-3 h-3 rounded-full bg-zinc-900 flex items-center justify-center" />
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-zinc-900">{tr.title}</span>
+                          {tr.durationMs && (
+                            <span className="text-[10px] font-mono text-zinc-400">
+                              {tr.durationMs}ms
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-700 leading-relaxed bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 font-mono">
+                          {tr.detail}
+                        </div>
+                        <span className="text-[10px] text-zinc-400 font-mono block">{tr.timestamp}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Trace Summary Footer */}
+                <div className="p-3 bg-zinc-50/60 border-t border-zinc-100 text-xs text-zinc-600 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-zinc-600" />
+                    <span className="text-[11px] font-medium text-zinc-700">Audit Mandate Signature</span>
+                  </div>
+                  <span className="font-mono text-[10px] bg-white px-2 py-0.5 border border-zinc-200 rounded text-zinc-800 font-medium">
+                    {selectedThread.id ? `0x${selectedThread.id.replace(/[^a-fA-F0-9]/g, "").slice(0, 4) || "7c9e"}...${selectedThread.id.slice(-4)}` : "Verified SHA-256"}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </Card>
       )}

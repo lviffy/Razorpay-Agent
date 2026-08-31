@@ -36,10 +36,9 @@ import {
 const navLinks = [
   { label: 'Primitives', href: '#why-agentic' },
   { label: 'A2A Negotiation', href: '#negotiation' },
-  { label: 'Margin Engine', href: '#margin-protection' },
   { label: 'x402 & Rails', href: '#payment-flow' },
   { label: 'Razorpay Suite', href: '#razorpay-services' },
-  { label: 'Audit Trail', href: '#audit-trail' },
+  { label: 'Audit', href: '#audit' },
   { label: 'Integrations', href: '#integrations' },
 ]
 
@@ -116,20 +115,20 @@ export function HeroHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 sm:px-6 pt-3 sm:pt-4 transition-all duration-300 pointer-events-none">
       <div
         className={cn(
-          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full apple-glass border border-black/[0.08] py-3',
+          'w-full max-w-[1240px] transition-all duration-300 pointer-events-auto rounded-full border border-black/[0.08] py-3 bg-white',
           scrolled
-            ? 'max-w-5xl px-4 sm:px-6 bg-white/95 backdrop-blur-md border-black/[0.12]'
-            : 'px-5 sm:px-7 bg-white/80 backdrop-blur-sm'
+            ? 'max-w-5xl px-4 sm:px-6 border-black/[0.12] shadow-md'
+            : 'px-5 sm:px-7 shadow-sm'
         )}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 min-w-0">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Logo size="sm" />
           </div>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 bg-surface-100/90 p-1 rounded-full border border-black/[0.05]">
+          {/* Desktop Navigation Links — only at lg+ where there's room */}
+          <nav className="hidden lg:flex items-center gap-0.5 bg-surface-100/90 p-1 rounded-full border border-black/[0.05] shrink-0 mx-3">
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -142,7 +141,7 @@ export function HeroHeader() {
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {isLoggedIn ? (
               <>
                 {/* User Dropdown Trigger */}
@@ -286,10 +285,10 @@ export function HeroHeader() {
               </Link>
             )}
 
-            {/* Mobile Hamburger Button */}
+            {/* Mobile Hamburger Button — visible below lg */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-surface-700 hover:text-brand-900 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors cursor-pointer"
+              className="lg:hidden p-2 text-surface-700 hover:text-brand-900 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full hover:bg-black/[0.04] transition-colors cursor-pointer"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >

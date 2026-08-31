@@ -127,8 +127,12 @@ export default function AnalyticsPage() {
 
           <CardContent className="p-6 pt-0 space-y-4">
             {channels.length === 0 ? (
-              <div className="text-center py-8 text-xs text-zinc-400">
-                No channel orders recorded yet. As orders are captured, channel splits will display here.
+              <div className="p-8 text-center space-y-2 border border-dashed border-zinc-200 rounded-lg">
+                <ShoppingBag className="w-6 h-6 text-zinc-400 mx-auto" />
+                <p className="text-xs font-semibold text-zinc-700">Awaiting Multi-Channel Orders</p>
+                <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+                  Channel revenue splits between ZapAI Native catalog and connected Shopify stores will graph here automatically upon autonomous order settlement.
+                </p>
               </div>
             ) : (
               <div className="space-y-4">

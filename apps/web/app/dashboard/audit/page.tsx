@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ import {
   ArrowRight,
   Database,
   Cpu,
+  Zap,
 } from "lucide-react";
 
 interface AuditRecord {
@@ -259,47 +261,56 @@ export default function AuditExplorerPage() {
         </CardHeader>
 
         <CardContent className="p-4">
-          <div className="overflow-x-auto pb-1">
-            <div className="flex items-center gap-2.5 min-w-max">
-              {records.slice(0, 6).map((r, i) => {
-                const isSelected = active?.id === r.id;
-
-                return (
-                  <React.Fragment key={`${r.id || "rec"}_${i}`}>
-                    <button
-                      onClick={() => setSelectedRecord(r)}
-                      className={`p-3 rounded-lg border text-left transition-all w-48 flex flex-col justify-between ${
-                        isSelected
-                          ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900"
-                          : "border-zinc-200/80 bg-white hover:border-zinc-300 hover:bg-zinc-50/50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
-                        <span className="font-bold text-zinc-900">
-                          Block #{String(records.length - i).padStart(4, "0")}
-                        </span>
-                        <span className="text-zinc-400">{i === 0 ? "Latest" : `${i}b ago`}</span>
-                      </div>
-
-                      <div className="my-1.5">
-                        <Badge variant="secondary" className="text-[9px] font-mono font-medium px-1.5 py-0">
-                          {r.eventType.replace(/_/g, " ")}
-                        </Badge>
-                      </div>
-
-                      <div className="text-[9px] font-mono text-zinc-400 truncate">
-                        {r.checksum ? `${r.checksum.slice(0, 12)}...` : "0x00000000"}
-                      </div>
-                    </button>
-
-                    {i < Math.min(records.length - 1, 5) && (
-                      <span className="text-zinc-300 text-xs select-none">→</span>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+          {records.length === 0 ? (
+            <div className="text-center py-6 px-4 space-y-2">
+              <p className="text-xs font-semibold text-zinc-800">Awaiting Cryptographic Transaction Blocks</p>
+              <p className="text-[11px] text-zinc-500 max-w-md mx-auto">
+                Every buyer inquiry, inventory hold, and Razorpay UPI settlement is hashed with SHA-256 and chained to the immutable audit ledger.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="overflow-x-auto pb-1">
+              <div className="flex items-center gap-2.5 min-w-max">
+                {records.slice(0, 6).map((r, i) => {
+                  const isSelected = active?.id === r.id;
+
+                  return (
+                    <React.Fragment key={`${r.id || "rec"}_${i}`}>
+                      <button
+                        onClick={() => setSelectedRecord(r)}
+                        className={`p-3 rounded-lg border text-left transition-all w-48 flex flex-col justify-between ${
+                          isSelected
+                            ? "border-zinc-900 bg-zinc-50 ring-1 ring-zinc-900"
+                            : "border-zinc-200/80 bg-white hover:border-zinc-300 hover:bg-zinc-50/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                          <span className="font-bold text-zinc-900">
+                            Block #{String(records.length - i).padStart(4, "0")}
+                          </span>
+                          <span className="text-zinc-400">{i === 0 ? "Latest" : `${i}b ago`}</span>
+                        </div>
+
+                        <div className="my-1.5">
+                          <Badge variant="secondary" className="text-[9px] font-mono font-medium px-1.5 py-0">
+                            {r.eventType.replace(/_/g, " ")}
+                          </Badge>
+                        </div>
+
+                        <div className="text-[9px] font-mono text-zinc-400 truncate">
+                          {r.checksum ? `${r.checksum.slice(0, 12)}...` : "0x00000000"}
+                        </div>
+                      </button>
+
+                      {i < Math.min(records.length - 1, 5) && (
+                        <span className="text-zinc-300 text-xs select-none">→</span>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -308,35 +319,47 @@ export default function AuditExplorerPage() {
         <div className="relative w-full sm:w-80">
           <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
           <Input
+            placeholder="Search hash, x402 tx, order ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by Tx, Payment ID, Order Ref..."
-            className="pl-8 text-xs h-8 bg-white font-mono"
+            className="pl-9 h-8 text-xs font-mono bg-white"
           />
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto overflow-x-auto w-full sm:w-auto">
-          <Tabs value={filterType} onValueChange={setFilterType} className="w-auto">
-            <TabsList className="h-8 p-1">
-              <TabsTrigger value="ALL" className="text-xs px-2.5 py-1 font-mono">ALL</TabsTrigger>
-              <TabsTrigger value="PAYMENT" className="text-xs px-2.5 py-1 font-mono">PAYMENT</TabsTrigger>
-              <TabsTrigger value="INVENTORY" className="text-xs px-2.5 py-1 font-mono">INVENTORY</TabsTrigger>
-              <TabsTrigger value="NEGOTIATION" className="text-xs px-2.5 py-1 font-mono">NEGOTIATION</TabsTrigger>
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <Tabs value={filterType} onValueChange={setFilterType}>
+            <TabsList className="h-8">
+              <TabsTrigger value="ALL" className="text-[11px] px-2.5 py-1">All</TabsTrigger>
+              <TabsTrigger value="PAYMENT" className="text-[11px] px-2.5 py-1">Payments</TabsTrigger>
+              <TabsTrigger value="INVENTORY" className="text-[11px] px-2.5 py-1">Inventory</TabsTrigger>
+              <TabsTrigger value="NEGOTIATION" className="text-[11px] px-2.5 py-1">Deals</TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setViewMode(viewMode === "split" ? "table" : "split")}
-            className="h-8 text-xs font-mono"
-          >
-            {viewMode === "split" ? "Full Table View" : "Split Inspector"}
-          </Button>
+          <div className="flex items-center bg-zinc-100 p-0.5 rounded-lg border border-zinc-200">
+            <button
+              onClick={() => setViewMode("split")}
+              className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "split" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-900"
+              }`}
+              title="Split View"
+            >
+              <Layers className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === "table" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-900"
+              }`}
+              title="Table View"
+            >
+              <Box className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── Conditional Views: Split Inspector OR Full Table ─────────────── */}
+      {/* Main Ledger Content: Split or Table View */}
       {viewMode === "table" ? (
         <Card className="shadow-2xs overflow-hidden">
           <Table>
@@ -353,8 +376,30 @@ export default function AuditExplorerPage() {
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-zinc-400">
-                    No ledger records match the search criteria.
+                  <TableCell colSpan={6} className="text-center py-12 px-4">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center">
+                        <Database className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-zinc-900">
+                          {searchTerm ? "No matching audit records" : "No cryptographic ledger entries yet"}
+                        </h4>
+                        <p className="text-xs text-zinc-500 mt-1">
+                          {searchTerm
+                            ? "Try refining your search terms or clearing the filter."
+                            : "Simulate a live WhatsApp negotiation to generate your store's first verified SHA-256 block."}
+                        </p>
+                      </div>
+                      {!searchTerm && (
+                        <Link href="/dashboard/whatsapp" className="inline-block pt-1">
+                          <Button size="sm" className="h-8 text-xs font-semibold gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs">
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>Simulate Event in WhatsApp</span>
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -413,8 +458,24 @@ export default function AuditExplorerPage() {
 
             <ScrollArea className="flex-1 divide-y divide-zinc-100">
               {filtered.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">
-                  No ledger records match the search criteria.
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center">
+                    <Hash className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs font-semibold text-zinc-800">
+                    {searchTerm ? "No records match search" : "No ledger records yet"}
+                  </p>
+                  <p className="text-[11px] text-zinc-500 max-w-xs mx-auto">
+                    {searchTerm ? "Clear the search term to view all records." : "Live events will stream here automatically."}
+                  </p>
+                  {!searchTerm && (
+                    <Link href="/dashboard/whatsapp" className="inline-block pt-1">
+                      <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium gap-1.5 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs">
+                        <Zap className="w-3 h-3 text-blue-600" />
+                        <span>Simulate Event</span>
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               ) : (
                 filtered.map((item, idx) => {

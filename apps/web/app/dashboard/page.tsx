@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Sliders,
   ArrowRight,
+  Activity,
 } from "lucide-react";
 
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
@@ -380,8 +381,22 @@ export default function DashboardOverviewPage() {
 
             <Card className="border-zinc-200 divide-y divide-zinc-100 shadow-xs overflow-hidden">
               {filteredActivity.length === 0 ? (
-                <div className="p-8 text-center text-xs text-zinc-400">
-                  No activity matching this filter.
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-800">No telemetry events yet</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5 max-w-sm mx-auto">
+                      Events will stream here automatically when AI negotiates with buyers or captures Razorpay payments.
+                    </p>
+                  </div>
+                  <Link href="/dashboard/whatsapp" className="inline-block pt-1">
+                    <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium gap-1.5 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs">
+                      <Zap className="w-3 h-3 text-blue-600" />
+                      <span>Simulate WhatsApp Lead</span>
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 filteredActivity.map((item) => {
@@ -452,8 +467,22 @@ export default function DashboardOverviewPage() {
 
             <Card className="border-zinc-200 divide-y divide-zinc-100 shadow-xs overflow-hidden">
               {(analytics.topSellingProducts || []).length === 0 ? (
-                <div className="p-6 text-center text-xs text-zinc-400">
-                  No product sales recorded yet.
+                <div className="p-6 text-center space-y-3">
+                  <div className="w-9 h-9 rounded-xl bg-zinc-100 text-zinc-500 mx-auto flex items-center justify-center">
+                    <ShoppingBag className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-zinc-800">No converted product sales yet</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                      Ensure your catalog is active so AI Seller can close deals.
+                    </p>
+                  </div>
+                  <Link href="/dashboard/products" className="inline-block pt-0.5">
+                    <Button size="sm" variant="outline" className="h-7 text-[11px] font-medium gap-1 bg-white text-zinc-700 hover:bg-zinc-50 border-zinc-200 shadow-2xs">
+                      <span>Manage Products Catalog</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 (analytics.topSellingProducts || []).map((prod, i) => (

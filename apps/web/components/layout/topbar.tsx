@@ -56,7 +56,7 @@ import {
 import { ProfileDialog } from "@/components/layout/profile-dialog";
 import { GrowthAICopilotDrawer } from "@/components/growth-ai/growth-ai-copilot-drawer";
 import { api, defaultMerchantProfile } from "@/lib/api/client";
-import { MerchantProfile } from "@/lib/types";
+import { MerchantProfile, StoreCredentials } from "@/lib/types";
 import { useStore } from "@/lib/context/store-context";
 import { useAuth } from "@/lib/context/auth-context";
 
@@ -65,6 +65,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { currentStore, stores, switchStore } = useStore();
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<MerchantProfile>(defaultMerchantProfile);
+  const [creds, setCreds] = useState<StoreCredentials | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
@@ -90,10 +91,13 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
     .toUpperCase()
     .slice(0, 2) || "M";
 
-  // Load profile state & live notifications
+  // Load profile state & live notifications & credentials
   useEffect(() => {
     api.profile.get().then((p) => {
       if (p) setProfile(p);
+    });
+    api.settings.getCredentials().then((c) => {
+      if (c) setCreds(c);
     });
     api.analytics.getNotifications().then((notifs) => {
       if (notifs) {
@@ -220,6 +224,34 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-zinc-600 font-medium text-[11px]">AI Seller: Online</span>
           </div>
+
+          {/* Gateway Sandbox vs Simulated Indicator Pill */}
+          <Link
+            href="/dashboard/settings"
+            title={
+              creds?.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                ? "Razorpay Live Sandbox active. Autonomous payments settle to Razorpay test rail."
+                : "Running in Autonomous Simulated Mode (Offline fallback). Click to connect Razorpay keys in Settings."
+            }
+            className={`hidden xl:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium transition-all ${
+              creds?.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                : "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                creds?.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                  ? "bg-emerald-500 animate-pulse"
+                  : "bg-amber-500"
+              }`}
+            />
+            <span>
+              {creds?.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
+                ? "Razorpay Sandbox"
+                : "Simulated Mode"}
+            </span>
+          </Link>
         </div>
 
         {/* Center: Quick Search Simulator with Keyboard Shortcut */}
