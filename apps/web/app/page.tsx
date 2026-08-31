@@ -4,6 +4,7 @@ import TrustMarquee from "@/components/trust-marquee";
 import AgentNegotiationSection from "@/components/agent-negotiation";
 import MarginPlayground from "@/components/margin-playground";
 import PaymentFlowSection from "@/components/payment-flow";
+import RazorpayServicesSection from "@/components/razorpay-services-section";
 import AuditTrailSection from "@/components/audit-trail";
 import ComparisonSection from "@/components/comparison-section";
 import IntegrationSection from "@/components/integration-section";
@@ -30,6 +31,9 @@ export default function Home() {
 
       {/* 4. RAZORPAY PAYMENT FLOW: How x402 Meets Razorpay (Programmable Handshake to Real INR) */}
       <PaymentFlowSection />
+
+      {/* 4b. RAZORPAY DEEP SERVICES SUITE: AutoPay, Offers Engine, Route Splits, Instant Refunds & Dispute Evidence */}
+      <RazorpayServicesSection />
 
       {/* 5. AUDIT TRAIL: Every agent action leaves a trail (5-Field Linked Chain) */}
       <AuditTrailSection />

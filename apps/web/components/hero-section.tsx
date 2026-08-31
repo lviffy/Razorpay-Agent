@@ -48,7 +48,7 @@ const scenarios: Scenario[] = [
     id: 'a2a-negotiate',
     label: 'Multi-Store Negotiation',
     buyerPrompt: 'Find Nike Pegasus 40 UK 9 under ₹4,000. Negotiate best deal and reserve.',
-    sellerAgentResponse: 'I can’t do ₹3,700, but I’ve reserved 1 unit of Nike Pegasus 40 (UK 9) for ₹3,799 with Free Express Shipping! 🚀 Deal?',
+    sellerAgentResponse: 'I can’t do ₹3,700, but I’ve reserved 1 unit of Nike Pegasus 40 (UK 9) for ₹3,799 with Free Express Shipping. Deal?',
     agreedPrice: 3799,
     listPrice: 4299,
     floorPrice: 3600,
@@ -62,7 +62,7 @@ const scenarios: Scenario[] = [
     id: 'margin-guard',
     label: 'Margin Floor Guardrail',
     buyerPrompt: 'Can you sell Garmin Forerunner 265 for ₹39,000? Ready to pay right now.',
-    sellerAgentResponse: 'Offer ₹39,000 is below our hard floor. Best I can lock right now is ₹44,200 with 1-Year Extended Pro Warranty! 🔥',
+    sellerAgentResponse: 'Offer ₹39,000 is below our hard floor. Best I can lock right now is ₹44,200 with 1-Year Extended Pro Warranty.',
     agreedPrice: 44200,
     listPrice: 46990,
     floorPrice: 43500,
@@ -308,35 +308,35 @@ export default function HeroSection() {
                       </p>
 
                       {/* Razorpay 1-Tap Checkout Card Embedded inside WhatsApp */}
-                      <div className="p-3.5 rounded-xl bg-[#0c2340] text-white space-y-3 border border-blue-900/60 shadow-xs">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                      <div className="p-3.5 rounded-xl bg-white text-surface-900 space-y-3 border border-black/[0.08] shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-black/[0.06] pb-2">
                           <div className="flex items-center gap-2">
                             <div className="w-6 h-6 rounded-md bg-[#0052ff] flex items-center justify-center font-bold text-xs text-white">
                               R
                             </div>
                             <div>
-                              <span className="font-bold text-xs text-white block">Razorpay Checkout</span>
-                              <span className="text-[9.5px] text-blue-200/80 font-mono">rzp.io/i/plink_zapai</span>
+                              <span className="font-bold text-xs text-surface-900 block">Razorpay Checkout</span>
+                              <span className="text-[9.5px] text-surface-500 font-mono">rzp.io/i/plink_zapai</span>
                             </div>
                           </div>
-                          <span className="text-[9px] font-mono bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-[9px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
                             1-TAP UPI
                           </span>
                         </div>
 
                         <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2.5 xs:gap-3">
                           <div className="min-w-0 flex-1">
-                            <p className="text-slate-300 text-[11px] font-medium truncate">Nike Air Zoom Pegasus 40</p>
+                            <p className="text-surface-700 text-[11px] font-medium truncate">Nike Air Zoom Pegasus 40</p>
                             <div className="flex items-baseline gap-2 mt-0.5">
-                              <p className="font-mono text-lg font-extrabold text-white">
+                              <p className="font-mono text-lg font-extrabold text-surface-900">
                                 ₹{activeScenario.agreedPrice.toLocaleString('en-IN')}
                               </p>
-                              <span className="text-xs font-normal text-slate-400 line-through">
+                              <span className="text-xs font-normal text-surface-400 line-through">
                                 ₹{activeScenario.listPrice.toLocaleString('en-IN')}
                               </span>
                             </div>
-                            <span className="text-[10px] text-emerald-400 font-mono block truncate">
-                              ✓ {activeScenario.sweetener}
+                            <span className="text-[10px] text-emerald-700 font-mono font-medium block truncate">
+                              {activeScenario.sweetener}
                             </span>
                           </div>
 
@@ -346,7 +346,7 @@ export default function HeroSection() {
                             className={cn(
                               'w-full xs:w-auto px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
                               paid
-                                ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                 : 'bg-[#0052ff] hover:bg-[#0045d8] text-white'
                             )}
                           >
@@ -370,9 +370,9 @@ export default function HeroSection() {
                         </div>
 
                         {/* Supported Apps Bar */}
-                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-300">
+                        <div className="pt-2 border-t border-black/[0.06] flex items-center justify-between text-[10px] font-mono text-surface-500">
                           <span>Supported UPI:</span>
-                          <span className="text-blue-200">
+                          <span className="text-brand-700 font-medium">
                             {activeScenario.upiApps.join(' • ')}
                           </span>
                         </div>

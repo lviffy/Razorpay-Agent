@@ -212,19 +212,26 @@ ZapAI adheres to modern x402 V2 standards:
 }
 ```
 
-### 5.5 Tamper-Evident Hash-Chained Audit Ledger
-Every single state transition, reasoning step, negotiation event, mandate verification, and money movement is immutably linked via a SHA-256 cryptographic hash chain:
-$$H_n = \text{SHA256}(H_{n-1} \parallel \text{Payload}_n \parallel \text{Timestamp}_n)$$
+### 5.5 Tamper-Evident Hash-Chained Audit Ledger & Signed Checkpoints
+Every single state transition, reasoning step, negotiation turn, mandate verification, and payment capture is linked in an append-only, tamper-evident cryptographic hash chain:
+
+$$H_n = \text{SHA256}(H_{n-1} : \text{eventType} : \text{actor} : \text{payloadHash} : \text{timestamp})$$
+
+* **RFC 8785 Canonical JSON:** $\text{payloadHash} = \text{SHA256}(\text{canonicalize\_rfc8785}(\text{payload}))$ guarantees deterministic key ordering across all platforms.
+* **External Trust Anchor:** Chain head $H_8$ is signed via Ed25519 (`zapai-root-anchor-v1`) to prevent whole-database rewrite attacks.
+* **Concurrency Protection:** PostgreSQL `SELECT event_checksum ... FOR UPDATE` locks inside transactions prevent race conditions during concurrent event insertion.
+* **Self-Contained Audit Receipts:** Exportable `zapai-audit-receipt.json` with embedded genesis hash, checkpoints, and offline verification commands.
 
 ---
 
 ## 6. Razorpay Integration & Webhook Handling
 
 1. **Order Creation:** Uses Razorpay Orders API (`POST /v1/orders`) with idempotency key `receipt: {x402_payment_id}`.
-2. **Webhook Verification:** Raw body verified using HMAC-SHA256 (`X-Razorpay-Signature`).
+2. **Webhook Verification:** Raw byte body verified using HMAC-SHA256 (`X-Razorpay-Signature`).
 3. **Idempotency Defense:** `x-razorpay-event-id` stored in `processed_webhook_events` table before processing any state mutation.
 4. **Out-of-Order Resilient States:**
    * `PAYMENT_PENDING` $\rightarrow$ handles `payment.authorized`, `payment.captured`, and `payment.failed` idempotently.
+5. **Separation of Concerns:** Payment capture (`payment.captured`) is strictly distinguished from bank settlement reconciliation.
 
 ---
 
@@ -236,15 +243,20 @@ To provide total clarity to judges, every transaction step displays an explicit 
 * 🟡 **HUMAN APPROVAL** (When falling back to Razorpay Payment Link)
 * 🔴 **FAILED / REJECTED** (Budget exceeded, lock conflict, or signature invalid)
 
-### The Demo Steps
-1. **WhatsApp Inbound Intent:** User: *"Find me the best running shoes under ₹4,000."*
-2. **Parallel Discovery:** Buyer Agent queries mock stores (**RunFast Sports** and **SpeedGear**) simultaneously.
-3. **Structured Negotiation:** Buyer Agent negotiates ₹3,999 down to ₹3,799 + free shipping with RunFast Seller Agent.
-4. **Lock & x402 Challenge:** RunFast Seller Agent atomically locks inventory (120s TTL) and returns HTTP 402.
-5. **Mandate Verification & Signing:** Buyer Agent verifies mandate budget (₹3,799 $\le$ ₹4,000) and produces `PAYMENT-SIGNATURE`.
-6. **Facilitator Execution:** ZapAI Facilitator validates cryptographic proof and executes settlement.
-7. **Fallback Showcase:** If autonomous rail is bypassed, seamlessly creates a Razorpay Payment Link.
-8. **Audit Trail Verification:** Live visualizer proves 100% cryptographic continuity across all 9 event nodes.
+### The 8-Stage Demo Steps
+1. **WhatsApp Inbound Intent:** User: *"Find me the best running shoes under ₹4,000."* (`INTENT_RECEIVED`)
+2. **Mandate Creation & Signing:** Buyer Agent creates a cryptographically signed spending mandate with nonce and bounds. (`MANDATE_CREATED`)
+3. **Structured Negotiation:** Buyer Agent negotiates ₹3,999 down to ₹3,799 + free shipping with RunFast Seller Agent. (`DEAL_ACCEPTED`)
+4. **Lock & Reservation:** RunFast Seller Agent atomically locks inventory (120s TTL in Redis + Postgres row lock). (`INVENTORY_RESERVED`)
+5. **x402 V2 Challenge:** RunFast Seller Agent issues machine-readable HTTP 402 challenge (`zapai-inr`). (`PAYMENT_REQUIRED`)
+6. **Mandate Verification & Authorization:** Buyer Agent signs `PAYMENT-SIGNATURE`; ZapAI Facilitator verifies zero-trust rules. (`PAYMENT_AUTHORIZED`)
+7. **Razorpay Payment Capture:** Razorpay webhook confirms payment capture with raw-byte HMAC-SHA256 verification. (`PAYMENT_CAPTURED`)
+8. **Order Commit & Anchor:** Order status flips to `COMMITTED`, inventory to `PAID`, signed checkpoint anchored, and receipt dispatched. (`ORDER_CREATED`)
+
+### Interactive Visual Verification Engine
+* **Verify Integrity**: Live WebCrypto client-side SHA-256 validation across all 8 blocks in `<0.5ms`.
+* **Simulate Tampering**: Mutates Block #3 settled price (₹3,799 $\to$ ₹2,500) and displays immediate cryptographic link severance and red downstream cascade.
+* **Download Receipt**: Exports `zapai-audit-receipt.json` with Ed25519 signature and offline verification snippet.
 
 ---
 

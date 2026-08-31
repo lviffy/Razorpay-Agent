@@ -249,10 +249,16 @@ Header: `PAYMENT-SIGNATURE: <base64-json>`
 
 ---
 
-### 3.6 Tamper-Evident Hash-Chained Audit Ledger (`src/audit/`)
+### 3.6 Tamper-Evident Hash-Chained Audit Ledger & Signed Checkpoints (`src/audit/`)
 
-Every action forms an immutable cryptographic node:
+Every agent action and financial transition appends an entry to a deterministic, tamper-evident cryptographic chain:
 $$H_n = \text{SHA256}(H_{n-1} \parallel \text{eventType} \parallel \text{actor} \parallel \text{payloadHash} \parallel \text{timestamp})$$
+
+Where:
+* $\text{payloadHash} = \text{SHA256}(\text{canonicalize\_rfc8785}(\text{payload}))$ (deterministic key ordering).
+* $H_0 = \text{GENESIS\_HASH} = \text{"0000000000000000000000000000000000000000000000000000000000000000"}$.
+* **External Trust Anchor (Signed Checkpoint):** Chain head $H_n$ is signed with an independent key (`Ed25519` / `HMAC-SHA256`) to protect against retroactive whole-database rewrite attacks.
+* **Concurrency Protection:** Appends are serialized using PostgreSQL row locks (`SELECT event_checksum FROM audit_ledger ORDER BY id DESC LIMIT 1 FOR UPDATE`) inside atomic transactions.
 
 ```sql
 CREATE TABLE audit_ledger (
@@ -271,7 +277,7 @@ CREATE TABLE audit_ledger (
 
 ---
 
-## 4. End-to-End Execution Sequence
+## 4. End-to-End 8-Stage Execution Sequence
 
 ```mermaid
 sequenceDiagram
@@ -282,30 +288,41 @@ sequenceDiagram
     participant DB as Postgres + Redis
     participant ZF as ZapAI Facilitator
     participant RZ as Razorpay Adapter
-    participant AL as Audit Ledger
+    participant AL as Audit Ledger (Tamper-Evident)
 
-    U->>BA: "Find running shoes under ₹4,000"
+    U->>BA: 1. "Find running shoes under ₹4,000" [INTENT_RECEIVED]
+    BA->>AL: Append Block #1 (INTENT_RECEIVED)
+    BA->>BA: 2. Generate & Sign SpendingMandate [MANDATE_CREATED]
+    BA->>AL: Append Block #2 (MANDATE_CREATED)
+    
     BA->>SA: A2A OFFER (SKU-SHOE-001, ₹3,999)
     SA->>BA: A2A COUNTER_OFFER (₹3,799 + free shipping)
-    BA->>SA: A2A ACCEPT (₹3,799)
-    SA->>DB: Atomic Lock Inventory (Redis TTL 120s)
-    SA-->>BA: HTTP 402 PAYMENT-REQUIRED (zapai-inr)
-    BA->>BA: Evaluate Mandate & Sign Authorization
-    BA->>ZF: PAYMENT-SIGNATURE
-    ZF->>ZF: verifyMandate (Zero-Trust Server Policy)
-    ZF->>AL: Log PAYMENT_AUTHORIZED (Hash Chained)
+    BA->>SA: 3. A2A ACCEPT (₹3,799) [DEAL_ACCEPTED]
+    BA->>AL: Append Block #3 (DEAL_ACCEPTED)
     
-    alt Autonomous Rail Available
-        ZF->>RZ: Settle Order (Orders API)
-        RZ-->>ZF: Settlement Authoritative Confirmation
+    SA->>DB: 4. Atomic Lock Inventory (Redis TTL 120s) [INVENTORY_RESERVED]
+    SA->>AL: Append Block #4 (INVENTORY_RESERVED)
+    
+    SA-->>BA: 5. HTTP 402 PAYMENT-REQUIRED (zapai-inr) [PAYMENT_REQUIRED]
+    SA->>AL: Append Block #5 (PAYMENT_REQUIRED)
+    
+    BA->>BA: Evaluate Mandate & Sign PAYMENT-SIGNATURE
+    BA->>ZF: 6. PAYMENT-SIGNATURE [PAYMENT_AUTHORIZED]
+    ZF->>ZF: verifyPaymentAuthorization (Zero-Trust Server Policy)
+    ZF->>AL: Append Block #6 (PAYMENT_AUTHORIZED)
+    
+    alt Autonomous Settlement Rail
+        ZF->>RZ: Settle Order (Razorpay Orders API)
+        RZ-->>ZF: 7. Webhook payment.captured (HMAC-SHA256 Verified) [PAYMENT_CAPTURED]
     else Human Fallback Required
         ZF->>RZ: Create Payment Link
         RZ->>U: WhatsApp CTA Payment Link (Test Mode)
         U->>RZ: Approves in Checkout
-        RZ->>ZF: Webhook payment.captured (HMAC Verified)
+        RZ->>ZF: 7. Webhook payment.captured (HMAC-SHA256 Verified) [PAYMENT_CAPTURED]
     end
+    ZF->>AL: Append Block #7 (PAYMENT_CAPTURED)
 
-    ZF->>DB: Inventory State -> PAID
-    ZF->>AL: Log PAYMENT_CAPTURED & ORDER_CREATED
-    ZF->>U: Order Confirmation + 5-Field Audit Proof
+    ZF->>DB: 8. Inventory State -> PAID & Commit Order [ORDER_CREATED]
+    ZF->>AL: Append Block #8 (ORDER_CREATED + Sign Checkpoint Anchor)
+    ZF->>U: WhatsApp Order Confirmation + 5-Field Audit Receipt Proof
 ```

@@ -161,11 +161,11 @@ export default function AgentNegotiationSection() {
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-2xl space-y-3">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
-              Autonomous Agent-to-Agent <br />
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+              Autonomous Agent-to-Agent <br className="hidden sm:inline" />
               <span className="text-brand-600">Negotiation in Action.</span>
             </h2>
-            <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal">
+            <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
               Not a scripted chatbot. Watch how a Buyer Agent searches multiple stores in parallel,
               negotiates price against the Seller Agent&apos;s margin rules, and executes an atomic settlement.
             </p>
@@ -312,8 +312,9 @@ export default function AgentNegotiationSection() {
 
                   {item.perk && (
                     <div className="pl-7">
-                      <span className="text-[11px] font-mono text-emerald-700 font-bold bg-white border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                        ✓ {item.perk}
+                      <span className="text-[11px] font-mono text-emerald-700 font-bold bg-white border border-emerald-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>{item.perk}</span>
                       </span>
                     </div>
                   )}

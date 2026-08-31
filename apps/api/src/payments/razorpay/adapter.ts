@@ -1,7 +1,39 @@
 import type { PaymentService } from "../payment-service";
-import { createRazorpayOrder } from "./orders";
-import { createRazorpayPaymentLink } from "./payment-links";
+import { createRazorpayOrder, type CreateRazorpayOrderParams, type RazorpayOrderResult } from "./orders";
+import { createRazorpayPaymentLink, type CreatePaymentLinkParams, type PaymentLinkResult } from "./payment-links";
 import { verifyRazorpayWebhookSignature } from "./webhooks";
+import {
+  chargeMandateToken,
+  registerCustomerMandateToken,
+  type ChargeMandateTokenParams,
+  type TokenDebitResult,
+  type RegisterMandateTokenParams,
+  type MandateTokenResult,
+} from "./autopay";
+import {
+  fetchActiveRazorpayOffers,
+  calculateBestRazorpayDiscount,
+  type RazorpayOffer,
+  type BestOfferCalculationResult,
+} from "./offers";
+import {
+  createRazorpaySplitOrder,
+  calculateBundleTransfers,
+  type CreateSplitOrderParams,
+  type SplitOrderResult,
+  type SplitTransferItem,
+} from "./route";
+import {
+  processRazorpayRefund,
+  type ProcessRefundParams,
+  type RefundResult,
+} from "./refunds";
+import {
+  compileDisputeEvidence,
+  submitRazorpayDisputeEvidence,
+  type DisputeProofBundle,
+  type DisputeEvidenceResult,
+} from "./disputes";
 
 export class RazorpayPaymentAdapter implements PaymentService {
   async createOrder(params: {
@@ -54,6 +86,51 @@ export class RazorpayPaymentAdapter implements PaymentService {
       secret: params.secret,
     });
   }
+
+  // ── Extended Deep Razorpay Methods for Autonomous Commerce ───────────────
+
+  async registerMandateToken(params: RegisterMandateTokenParams): Promise<MandateTokenResult> {
+    return registerCustomerMandateToken(params);
+  }
+
+  async chargeMandateToken(params: ChargeMandateTokenParams): Promise<TokenDebitResult> {
+    return chargeMandateToken(params);
+  }
+
+  async fetchOffers(params?: { merchantId?: string; amountPaise?: number }): Promise<RazorpayOffer[]> {
+    return fetchActiveRazorpayOffers(params);
+  }
+
+  calculateBestDiscount(amountPaise: number, offers?: RazorpayOffer[]): BestOfferCalculationResult {
+    return calculateBestRazorpayDiscount(amountPaise, offers);
+  }
+
+  async createSplitOrder(params: CreateSplitOrderParams): Promise<SplitOrderResult> {
+    return createRazorpaySplitOrder(params);
+  }
+
+  calculateBundleTransfers(params: {
+    items: Array<{ merchantAccountId: string; itemPricePaise: number; skuId: string }>;
+    facilitatorCommissionPercent?: number;
+  }) {
+    return calculateBundleTransfers(params);
+  }
+
+  async processRefund(params: ProcessRefundParams): Promise<RefundResult> {
+    return processRazorpayRefund(params);
+  }
+
+  compileDisputeEvidence(params: Parameters<typeof compileDisputeEvidence>[0]): DisputeProofBundle {
+    return compileDisputeEvidence(params);
+  }
+
+  async submitDisputeEvidence(params: {
+    disputeId: string;
+    proofBundle: DisputeProofBundle;
+  }): Promise<DisputeEvidenceResult> {
+    return submitRazorpayDisputeEvidence(params);
+  }
 }
 
 export const defaultRazorpayAdapter = new RazorpayPaymentAdapter();
+

@@ -87,11 +87,11 @@ export default function PaymentFlowSection() {
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-2xl space-y-3">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
-              How x402 Meets Razorpay: <br />
-              <span className="text-brand-600">The Autonomous Protocol & Fallback Rails.</span>
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+              How x402 Meets Razorpay: <br className="hidden sm:inline" />
+              <span className="text-brand-600">The Autonomous Protocol &amp; Fallback Rails.</span>
             </h2>
-            <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal">
+            <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
               x402 V2 handles the machine-readable HTTP challenge and cryptographic authorization.
               ZapAI Facilitator and Razorpay handle settlement and instant INR bank transfer, with an explicit human approval fallback.
             </p>
@@ -165,37 +165,37 @@ export default function PaymentFlowSection() {
           </div>
 
           {/* Active Step Deep Inspector */}
-          <div className="lg:col-span-7 bg-surface-900 rounded-3xl p-6 text-surface-100 flex flex-col justify-between space-y-6 shadow-xl font-mono">
+          <div className="lg:col-span-7 bg-surface-50/90 rounded-3xl p-6 text-surface-900 border border-black/[0.08] flex flex-col justify-between space-y-6 shadow-xs font-mono">
             <div className="space-y-3">
-              <div className="flex items-center justify-between border-b border-surface-800 pb-3">
+              <div className="flex items-center justify-between border-b border-black/[0.06] pb-3">
                 <div className="flex items-center gap-2">
-                  <FileCode2 className="w-4 h-4 text-brand-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-surface-300">
+                  <FileCode2 className="w-4 h-4 text-brand-600" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-surface-700">
                     Step {flowSteps[activeStep].step} Payload Inspector
                   </span>
                 </div>
-                <span className="text-[11px] px-2.5 py-1 rounded-full bg-surface-800 text-brand-300 font-semibold">
+                <span className="text-[11px] px-2.5 py-1 rounded-full bg-white text-brand-700 font-semibold border border-black/[0.06] shadow-2xs">
                   Actor: {flowSteps[activeStep].actor}
                 </span>
               </div>
 
               <div className="space-y-1">
-                <div className="text-xs font-bold text-white font-sans">
+                <div className="text-xs font-bold text-surface-900 font-sans">
                   {flowSteps[activeStep].title}
                 </div>
-                <p className="text-xs text-surface-400 font-sans leading-relaxed">
+                <p className="text-xs text-surface-600 font-sans leading-relaxed">
                   {flowSteps[activeStep].desc}
                 </p>
               </div>
             </div>
 
             {/* Code / JSON block */}
-            <div className="bg-black/50 rounded-2xl p-4 border border-surface-800 overflow-x-auto text-[11px] leading-relaxed text-emerald-400">
-              <pre className="whitespace-pre-wrap">{flowSteps[activeStep].payload}</pre>
+            <div className="bg-white rounded-2xl p-4 border border-black/[0.08] overflow-x-auto text-[11px] leading-relaxed text-surface-800 shadow-2xs">
+              <pre className="whitespace-pre-wrap font-mono">{flowSteps[activeStep].payload}</pre>
             </div>
 
             {/* Navigation Dots */}
-            <div className="flex items-center justify-between pt-2 border-t border-surface-800 text-xs text-surface-400 font-sans">
+            <div className="flex items-center justify-between pt-2 border-t border-black/[0.06] text-xs text-surface-500 font-sans">
               <span>Step {activeStep + 1} of 6</span>
               <div className="flex items-center gap-1.5">
                 {flowSteps.map((_, i) => (
@@ -204,7 +204,7 @@ export default function PaymentFlowSection() {
                     onClick={() => setActiveStep(i)}
                     className={cn(
                       'w-2 h-2 rounded-full cursor-pointer transition-all',
-                      activeStep === i ? 'w-6 bg-brand-500' : 'bg-surface-700 hover:bg-surface-600'
+                      activeStep === i ? 'w-6 bg-brand-600' : 'bg-surface-200 hover:bg-surface-300'
                     )}
                   />
                 ))}

@@ -36,7 +36,8 @@ import {
 const navLinks = [
   { label: 'A2A Negotiation', href: '#negotiation' },
   { label: 'Margin Engine', href: '#margin-protection' },
-  { label: 'x402 & Razorpay', href: '#payment-flow' },
+  { label: 'x402 & Rails', href: '#payment-flow' },
+  { label: 'Razorpay Suite', href: '#razorpay-services' },
   { label: 'Audit Trail', href: '#audit-trail' },
   { label: 'Integrations', href: '#integrations' },
 ]

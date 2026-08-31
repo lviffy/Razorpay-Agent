@@ -483,6 +483,8 @@ export interface AuditLedgerEntry {
   eventId: string;
   transactionId: string;
   eventType:
+    | "INTENT_RECEIVED"
+    | "MANDATE_CREATED"
     | "NEGOTIATION_STARTED"
     | "OFFER_CREATED"
     | "COUNTER_OFFER"
@@ -500,6 +502,28 @@ export interface AuditLedgerEntry {
   previousHash: string;
   currentHash: string;
   timestamp: string;
+}
+
+export interface SignedAuditCheckpoint {
+  sequenceId: number;
+  lastEventId: string;
+  chainHeadHash: string;
+  totalEvents: number;
+  timestamp: string;
+  signature: string;
+  publicKey?: string;
+  keyId?: string;
+}
+
+export interface CryptographicAuditReceipt {
+  version: "1.0";
+  chainId: string;
+  transactionId: string;
+  genesisHash: string;
+  events: AuditLedgerEntry[];
+  finalHash: string;
+  checkpoint: SignedAuditCheckpoint;
+  verifiedAt: string;
 }
 
 export interface AuditIds {

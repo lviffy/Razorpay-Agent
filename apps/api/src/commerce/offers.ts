@@ -5,6 +5,11 @@ import type {
   A2AOffer,
 } from "@zapai/types";
 import { randomBytes } from "crypto";
+import {
+  calculateBestRazorpayDiscount,
+  type RazorpayOffer,
+  type BestOfferCalculationResult,
+} from "../payments/razorpay/offers";
 
 export interface OfferEvaluationResult {
   decision: "ACCEPT" | "COUNTER" | "REJECT";
@@ -12,6 +17,7 @@ export interface OfferEvaluationResult {
   discount?: number;     // in paise
   shippingFree: boolean;
   bundleItems?: Array<{ skuId: string; title: string; price: number }>;
+  razorpayOffer?: BestOfferCalculationResult;
   reasoning: string;
 }
 
@@ -22,8 +28,9 @@ export function evaluateBuyerOffer(params: {
   product: Product;
   rules: NegotiationRules;
   offer: A2AOffer;
+  availableRazorpayOffers?: RazorpayOffer[];
 }): OfferEvaluationResult {
-  const { product, rules, offer } = params;
+  const { product, rules, offer, availableRazorpayOffers } = params;
   const listedPricePaise = Math.round((product.listedPrice ?? product.price ?? 0) * 100);
   const floorPricePaise = Math.round((product.floorPrice ?? product.minPrice ?? 0) * 100);
   const targetPricePaise = offer.targetPrice;
@@ -67,13 +74,23 @@ export function evaluateBuyerOffer(params: {
     ? [{ skuId: "SKU-SOCK-001", title: "Pro Performance Socks (Pair)", price: 0 }]
     : undefined;
 
+  let rzpOfferCalc: BestOfferCalculationResult | undefined;
+  if (availableRazorpayOffers && availableRazorpayOffers.length > 0) {
+    rzpOfferCalc = calculateBestRazorpayDiscount(counterPricePaise, availableRazorpayOffers);
+  }
+
+  const offerNote = rzpOfferCalc?.offerApplied
+    ? ` + Eligible for ${rzpOfferCalc.offerSummary} at checkout`
+    : "";
+
   return {
     decision: "COUNTER",
     counterPrice: counterPricePaise,
     discount: discountPaise,
     shippingFree: isFreeShipping,
     bundleItems,
-    reasoning: `Offered price ₹${(targetPricePaise / 100).toFixed(2)} is below floor price. Countering with ₹${(counterPricePaise / 100).toFixed(2)} (${maxDiscountPercent}% max discount) + ${isFreeShipping ? "free shipping" : "standard shipping"}${bundleItems ? " + complimentary socks" : ""}.`,
+    razorpayOffer: rzpOfferCalc,
+    reasoning: `Offered price ₹${(targetPricePaise / 100).toFixed(2)} is below floor price. Countering with ₹${(counterPricePaise / 100).toFixed(2)} (${maxDiscountPercent}% max discount) + ${isFreeShipping ? "free shipping" : "standard shipping"}${bundleItems ? " + complimentary socks" : ""}${offerNote}.`,
   };
 }
 

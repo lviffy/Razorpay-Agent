@@ -53,13 +53,12 @@ export default function ComparisonSection() {
       <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
-            Traditional Stores Are Built for Humans. <br />
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+            Traditional Stores Are Built for Humans. <br className="hidden sm:inline" />
             <span className="text-brand-600">AI Agents Need New Primitives.</span>
           </h2>
-          <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal">
-            Shopping agents cannot click buttons, solve CAPTCHAs, or wait for static email recovery.
-            ZapAI gives every online storefront the machine-readable primitives required for autonomous commerce.
+          <p className="text-sm sm:text-base text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
+            Websites rely on visual layouts, CAPTCHAs, and human friction. ZapAI delivers machine-native primitives for agent discovery and settlement.
           </p>
         </div>
 

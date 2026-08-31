@@ -173,9 +173,34 @@ ZapAI does not treat Razorpay as just a checkout button — it relies on Razorpa
 
 ---
 
-## 🔒 5-Field Tamper-Proof Audit Trail
+## 🔒 Tamper-Evident SHA-256 Audit Ledger & Signed Checkpoints
 
-Every transaction processed through ZapAI generates a 5-way linked audit record stored in an append-only Postgres ledger:
+Every transaction processed through ZapAI generates a deterministic, tamper-evident cryptographic hash chain across an 8-stage lifecycle, protected by **RFC 8785 Canonical JSON hashing**, **PostgreSQL concurrency locking**, and **Ed25519 Signed Checkpoints**:
+
+$$H_n = \text{SHA256}(H_{n-1} : \text{eventType} : \text{actor} : \text{payloadHash} : \text{timestamp})$$
+
+Where:
+* $\text{payloadHash} = \text{SHA256}(\text{canonicalize\_rfc8785}(\text{payload}))$ (deterministic key ordering).
+* $H_0 = \text{GENESIS\_HASH} = \text{"0000000000000000000000000000000000000000000000000000000000000000"}$.
+* **Signed Trust Anchor:** Chain head $H_8$ is signed via Ed25519 (`zapai-root-anchor-v1`) to prevent whole-database rewrite attacks.
+* **Concurrency Protection:** PostgreSQL `SELECT ... FOR UPDATE` row locks inside atomic transactions serialize chain progression.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ⚡ 8-STAGE CRYPTOGRAPHIC HASH CHAIN & TRUST ANCHOR                                                     │
+│                                                                                                        │
+│  [#1 INTENT] ──► [#2 MANDATE] ──► [#3 DEAL] ──► [#4 INVENTORY] ──► [#5 X402-REQ] ──► [#6 X402-AUTH]    │
+│      │                │               │                │                 │                 │           │
+│   a81f...          b19a...         c20b...          d31c...           e42d...           f53e...        │
+│                                                                                                        │
+│                           ──► [#7 RZP-CAPTURE] ──► [#8 ORDER-COMMIT] ──► [SIGNED CHECKPOINT]          │
+│                                      │                     │                      │                    │
+│                                   064f...               1750...            Ed25519 Anchor              │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5-Way Linked Cross-System Identifiers
+Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 keys linked in every audit block:
 
 ```
 ┌───────────────────────────────────┐         ┌───────────────────────────────────┐
@@ -196,7 +221,10 @@ Every transaction processed through ZapAI generates a 5-way linked audit record 
 └───────────────────────────────────┘
 ```
 
-Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 keys to retrieve the full immutable trace — including LLM reasoning steps, negotiation history, inventory lock timestamps, and bank settlement status.
+### Interactive UI Features in Web Dashboard
+1. **Live WebCrypto Verification Engine**: Recomputes SHA-256 and canonical hashes for all 8 blocks in `<0.5ms`.
+2. **Simulate Tampering Tool**: Mutates a past block payload (e.g. price change) and visually demonstrates the immediate cryptographic severance and downstream red cascade.
+3. **Exportable Audit Receipt**: Generates a self-contained `zapai-audit-receipt.json` with offline Node.js verification instructions.
 
 ---
 

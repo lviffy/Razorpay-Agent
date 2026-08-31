@@ -62,11 +62,11 @@ export default function MarginPlayground() {
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
           <div className="max-w-2xl space-y-3">
-            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
-              Let agents negotiate. <br />
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
+              Let agents negotiate. <br className="hidden sm:inline" />
               <span className="text-brand-600">Never let them break your margins.</span>
             </h2>
-            <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal">
+            <p className="text-base sm:text-lg text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
               Merchants configure hard boundaries. The Seller Agent is mathematically bounded to never
               breach your profit floor or discount caps — guaranteed zero hallucinations.
             </p>
@@ -240,14 +240,14 @@ export default function MarginPlayground() {
           </div>
 
           {/* Right Column: Live Decision Engine Output (7 cols) */}
-          <div className="lg:col-span-7 bg-[#0c1424] text-white rounded-3xl p-6 sm:p-7 border border-black/[0.1] flex flex-col justify-between h-full space-y-6 shadow-sm">
+          <div className="lg:col-span-7 bg-surface-50/90 text-surface-900 rounded-3xl p-6 sm:p-7 border border-black/[0.08] flex flex-col justify-between h-full space-y-6 shadow-xs">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/[0.06] pb-4">
               <div>
-                <h3 className="font-display font-bold text-sm text-white">
+                <h3 className="font-display font-bold text-sm text-surface-900">
                   Seller Agent Decision Trace
                 </h3>
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-surface-500 font-mono">
                   Deterministic Math Engine • &lt;35ms Latency
                 </span>
               </div>
@@ -256,8 +256,8 @@ export default function MarginPlayground() {
                 className={cn(
                   'text-[11px] font-mono font-bold px-3 py-1 rounded-full border self-start sm:self-auto shadow-2xs',
                   isBelowFloor
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    ? 'bg-amber-50 text-amber-800 border-amber-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 )}
               >
                 {isBelowFloor ? 'Floor Protected — Sweetener Counter' : 'Within Mandate — Auto-Approved'}
@@ -266,75 +266,75 @@ export default function MarginPlayground() {
 
             {/* 3 Prominent Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1">
-                <span className="text-[10.5px] font-mono text-slate-400 block uppercase font-semibold">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+                <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Buyer Bid
                 </span>
-                <p className="font-mono text-xl font-bold text-white">
+                <p className="font-mono text-xl font-bold text-surface-900">
                   ₹{buyerOffer.toLocaleString('en-IN')}
                 </p>
-                <span className="text-[11px] font-mono text-slate-300">
+                <span className="text-[11px] font-mono text-surface-500">
                   {Math.round(((listPrice - buyerOffer) / listPrice) * 100)}% off MSRP
                 </span>
               </div>
 
-              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1">
-                <span className="text-[10.5px] font-mono text-slate-400 block uppercase font-semibold">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+                <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Effective Floor
                 </span>
-                <p className="font-mono text-xl font-bold text-slate-200">
+                <p className="font-mono text-xl font-bold text-surface-800">
                   ₹{effectiveFloor.toLocaleString('en-IN')}
                 </p>
-                <span className="text-[11px] font-mono text-emerald-400 font-medium">
+                <span className="text-[11px] font-mono text-emerald-700 font-semibold">
                   100% Floor Safe
                 </span>
               </div>
 
-              <div className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-1">
-                <span className="text-[10.5px] font-mono text-slate-400 block uppercase font-semibold">
+              <div className="p-4 bg-white border border-black/[0.06] rounded-2xl space-y-1 shadow-2xs">
+                <span className="text-[10.5px] font-mono text-surface-500 block uppercase font-semibold">
                   Agent Offer
                 </span>
-                <p className="font-mono text-xl font-bold text-emerald-400">
+                <p className="font-mono text-xl font-bold text-emerald-700">
                   ₹{counterPrice.toLocaleString('en-IN')}
                 </p>
-                <span className="text-[11px] font-mono text-slate-300">
+                <span className="text-[11px] font-mono text-surface-600 font-medium">
                   {includesFreeShipping ? '+ Free Express Delivery' : 'Standard Delivery'}
                 </span>
               </div>
             </div>
 
             {/* Simulated Agent Response Box */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-black/60 border border-white/10 space-y-3.5">
-              <div className="flex items-center justify-between text-xs font-mono text-slate-400 border-b border-white/10 pb-2.5">
-                <span className="flex items-center gap-1.5 text-slate-200 font-bold">
-                  <Bot className="w-3.5 h-3.5 text-brand-400" />
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-black/[0.08] space-y-3.5 shadow-2xs">
+              <div className="flex items-center justify-between text-xs font-mono text-surface-500 border-b border-black/[0.06] pb-2.5">
+                <span className="flex items-center gap-1.5 text-surface-800 font-bold">
+                  <Bot className="w-3.5 h-3.5 text-brand-600" />
                   Seller Agent Bounded Reply
                 </span>
-                <span className="text-amber-400 flex items-center gap-1 font-bold">
-                  <Clock className="w-3.5 h-3.5" /> 120s Stock Reserved
+                <span className="text-amber-700 flex items-center gap-1 font-bold">
+                  <Clock className="w-3.5 h-3.5 text-amber-600" /> 120s Stock Reserved
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed font-sans font-normal">
+              <p className="text-xs sm:text-sm text-surface-700 leading-relaxed font-sans font-normal">
                 {isBelowFloor ? (
                   <>
                     &ldquo;I cannot do ₹{buyerOffer.toLocaleString('en-IN')} as it violates our merchant margin mandate. However, I can lock 1 unit for you at{' '}
-                    <span className="text-white font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> with Free
+                    <span className="text-surface-900 font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> with Free
                     Express Shipping! Deal?&rdquo;
                   </>
                 ) : (
                   <>
                     &ldquo;Offer of ₹{buyerOffer.toLocaleString('en-IN')} is within merchant discount bounds. I have reserved 1 unit at{' '}
-                    <span className="text-white font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> for the next 120 seconds. Complete instant Razorpay checkout below:&rdquo;
+                    <span className="text-surface-900 font-bold">₹{counterPrice.toLocaleString('en-IN')}</span> for the next 120 seconds. Complete instant Razorpay checkout below:&rdquo;
                   </>
                 )}
               </p>
 
               {/* 1-Tap Razorpay Checkout Bar */}
-              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-surface-50 border border-black/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="min-w-0">
-                  <span className="text-white font-bold block text-sm">Razorpay 1-Tap UPI</span>
-                  <span className="text-[11px] font-mono text-slate-400 truncate block mt-0.5">
+                  <span className="text-surface-900 font-bold block text-sm">Razorpay 1-Tap UPI</span>
+                  <span className="text-[11px] font-mono text-surface-500 truncate block mt-0.5">
                     rzp.io/i/plink_pegasus40_₹{counterPrice}
                   </span>
                 </div>
@@ -346,7 +346,7 @@ export default function MarginPlayground() {
                   className={cn(
                     'px-4 py-2.5 rounded-xl text-xs font-bold font-sans transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shrink-0 shadow-xs',
                     hasPaid
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : 'bg-[#0052ff] hover:bg-[#0045d8] text-white'
                   )}
                 >
@@ -371,9 +371,9 @@ export default function MarginPlayground() {
             </div>
 
             {/* Right Card Footer */}
-            <div className="border-t border-white/10 pt-3 flex items-center justify-between text-xs font-mono text-slate-400">
-              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <Check className="w-3.5 h-3.5" />
+            <div className="border-t border-black/[0.06] pt-3 flex items-center justify-between text-xs font-mono text-surface-500">
+              <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
                 Zero Hallucinations
               </span>
               <span>Guardrails Verified</span>

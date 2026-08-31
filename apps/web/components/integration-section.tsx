@@ -82,12 +82,11 @@ export default function IntegrationSection() {
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
         {/* Section Header */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12]">
+          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-surface-900 leading-[1.12] [text-wrap:balance]">
             Connected Across Six Core Technologies
           </h2>
-          <p className="text-base text-surface-600 leading-relaxed font-normal">
-            ZapAI unifies messaging, inventory, intelligence, and banking rails into a cohesive
-            agentic commerce pipeline.
+          <p className="text-base text-surface-600 leading-relaxed font-normal [text-wrap:pretty]">
+            ZapAI unifies messaging, inventory, intelligence, and banking rails into a cohesive agentic commerce pipeline.
           </p>
         </div>
 
