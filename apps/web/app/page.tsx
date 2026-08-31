@@ -23,26 +23,26 @@ export default function Home() {
       {/* Trust & Architecture Marquee */}
       <TrustMarquee />
 
-      {/* 2. AGENT-TO-AGENT NEGOTIATION: Multi-Store Comparison, Bidding & 5-Stage Settlement */}
-      <AgentNegotiationSection />
+      {/* 2. INTEGRATIONS: Connected Across Six Core Technologies */}
+      <IntegrationSection />
 
-      {/* 3. MERCHANT CONTROL / MARGIN PROTECTION: Let agents negotiate. Never let them break your margins */}
-      <MarginPlayground />
-
-      {/* 4. RAZORPAY PAYMENT FLOW: How x402 Meets Razorpay (Programmable Handshake to Real INR) */}
-      <PaymentFlowSection />
-
-      {/* 4b. RAZORPAY DEEP SERVICES SUITE: AutoPay, Offers Engine, Route Splits, Instant Refunds & Dispute Evidence */}
-      <RazorpayServicesSection />
-
-      {/* 5. AUDIT TRAIL: Every agent action leaves a trail (5-Field Linked Chain) */}
-      <AuditTrailSection />
-
-      {/* 6. WHY AGENTIC COMMERCE: Human Storefronts vs Machine-Native Primitives */}
+      {/* 3. AGENTIC COMMERCE PRIMITIVES: Traditional Stores vs Machine-Native Primitives */}
       <ComparisonSection />
 
-      {/* 7. INTEGRATIONS: WhatsApp, Shopify, Razorpay, AI, Redis, Postgres */}
-      <IntegrationSection />
+      {/* 4. AGENT-TO-AGENT NEGOTIATION: Multi-Store Comparison, Bidding & 5-Stage Settlement */}
+      <AgentNegotiationSection />
+
+      {/* 5. MERCHANT CONTROL / MARGIN PROTECTION: Let agents negotiate. Never let them break your margins */}
+      <MarginPlayground />
+
+      {/* 6. RAZORPAY PAYMENT FLOW: How x402 Meets Razorpay (Programmable Handshake to Real INR) */}
+      <PaymentFlowSection />
+
+      {/* 6b. RAZORPAY DEEP SERVICES SUITE: AutoPay, Offers Engine, Route Splits, Instant Refunds & Dispute Evidence */}
+      <RazorpayServicesSection />
+
+      {/* 7. AUDIT TRAIL: Every agent action leaves a trail (5-Field Linked Chain) */}
+      <AuditTrailSection />
 
       {/* 8. FINAL CTA: Give your store an agent */}
       <CTASection />

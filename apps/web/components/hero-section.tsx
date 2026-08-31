@@ -25,6 +25,7 @@ import {
   Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { GridPattern } from '@/components/ui/grid-pattern'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/context/auth-context'
 
@@ -118,7 +119,17 @@ export default function HeroSection() {
       id="hero"
       className="relative pt-32 sm:pt-40 pb-20 sm:pb-28 bg-[#fbfbfd] border-b border-black/[0.06] overflow-hidden"
     >
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
+      <GridPattern
+        width={30}
+        height={30}
+        x={-1}
+        y={-1}
+        strokeDasharray={"4 2"}
+        className={cn(
+          "fill-transparent stroke-black/[0.07] [mask-image:radial-gradient(600px_circle_at_center,white,transparent)] sm:[mask-image:radial-gradient(850px_circle_at_center,white,transparent)]"
+        )}
+      />
+      <div className="relative z-10 mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-12 items-center">
           {/* Left Column: Positioning & Copy */}
           <div className="lg:col-span-6 space-y-8 text-left">
@@ -155,7 +166,7 @@ export default function HeroSection() {
             </div>
 
             {/* Four Architecture Pillars */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-black/[0.08]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-2">
               <div className="space-y-1">
                 <p className="font-display text-2xl sm:text-3xl font-extrabold text-surface-900 tracking-tight">
                   Dual-AI

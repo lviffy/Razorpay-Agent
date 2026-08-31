@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const navLinks = [
+  { label: 'Primitives', href: '#why-agentic' },
   { label: 'A2A Negotiation', href: '#negotiation' },
   { label: 'Margin Engine', href: '#margin-protection' },
   { label: 'x402 & Rails', href: '#payment-flow' },
