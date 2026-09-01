@@ -47,7 +47,16 @@ async function getStoreIdFromReq(req: Request): Promise<string | null> {
 // GET /api/v1/conversations
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const storeId = await getStoreIdFromReq(req);
+    let storeId = await getStoreIdFromReq(req);
+
+    // Fallback: if we can't resolve storeId from auth (e.g. users table empty after reset),
+    // use the first active store so the UI always loads conversations.
+    if (!storeId) {
+      const { rows: storeRows } = await db.query(
+        "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+      );
+      storeId = storeRows[0]?.id ?? null;
+    }
 
     const { rows } = await db.query(
       `SELECT

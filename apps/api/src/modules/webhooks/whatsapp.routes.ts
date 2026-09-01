@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createHmac } from "crypto";
 import { enqueueJob } from "../../integrations/redis/index.ts";
 import { appendMessage } from "../../services/conversation-memory.ts";
+import { db } from "@zapai/database";
 import type { WhatsAppInboundMessage, WorkerJob } from "@zapai/types";
 import { env } from "../../config/env.ts";
 import { logger } from "../../core/logger/index.ts";
@@ -49,7 +50,18 @@ router.post("/", async (req, res) => {
 
       logger.info({ from: msg.from, text: msg.text }, "📱 WA message received");
 
-      await appendMessage(msg.conversationId, msg.from, "customer", msg.text);
+      // Look up the active store so conversations are tagged with the correct store_id
+      let activeStoreId: string | undefined;
+      try {
+        const { rows: storeRows } = await db.query(
+          "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
+        );
+        activeStoreId = storeRows[0]?.id;
+      } catch { /* ignore — store_id stays null */ }
+
+      await appendMessage(msg.conversationId, msg.from, "customer", msg.text, {
+        storeId: activeStoreId,
+      });
 
       const job: WorkerJob = {
         type: "INBOUND_MESSAGE",

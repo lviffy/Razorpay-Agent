@@ -1,6 +1,5 @@
 import { db } from "@zapai/database";
 import { releaseLock } from "../integrations/redis/index.ts";
-import { setInventoryState } from "./merchant.ts";
 import { logEvent } from "./audit.ts";
 import { sendConfirmation } from "../integrations/whatsapp/index.ts";
 import { createShopifyOrder } from "../integrations/shopify/index.ts";
@@ -49,14 +48,36 @@ export async function processOrderPaymentSuccess(opts: {
     [razorpayPaymentId, order.id]
   );
 
-  // 2. Find product & update inventory to PAID
-  const { rows: productRows } = await db.query(
-    `SELECT id, shopify_variant_id FROM products WHERE store_id = $1 AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING', 'AVAILABLE') LIMIT 1`,
-    [order.store_id]
-  );
+  // 2. Find the purchased product by SKU and permanently deduct inventory
+  const skuFilter = order.sku;
+  const { rows: productRows } = skuFilter
+    ? await db.query(
+        `SELECT id, shopify_variant_id FROM products
+         WHERE store_id = $1
+           AND (sku = $2 OR id::text = $2 OR shopify_variant_id = $2)
+         LIMIT 1`,
+        [order.store_id, skuFilter]
+      )
+    : await db.query(
+        `SELECT id, shopify_variant_id FROM products
+         WHERE store_id = $1
+           AND inventory_state IN ('RESERVED', 'PAYMENT_PENDING')
+         LIMIT 1`,
+        [order.store_id]
+      );
 
   for (const prod of productRows) {
-    await setInventoryState(prod.id, "PAID", { reservedDelta: -1 });
+    // Permanently deduct from inventory_available and clear the reservation
+    await db.query(
+      `UPDATE products
+       SET inventory_available = GREATEST(0, inventory_available - 1),
+           inventory_reserved  = GREATEST(0, inventory_reserved - 1),
+           inventory_state     = CASE WHEN GREATEST(0, inventory_available - 1) <= 0 THEN 'SOLD' ELSE 'AVAILABLE' END,
+           reservation_expires_at = NULL,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [prod.id]
+    );
     if (prod.shopify_variant_id) {
       await releaseLock(order.store_id, prod.shopify_variant_id);
     }

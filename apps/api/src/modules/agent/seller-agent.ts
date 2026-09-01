@@ -138,7 +138,7 @@ You MUST call the selectProduct function with your choice.`;
 
       const validatedPrice = this.applyPricingRules(
         listedPrice,
-        selected.floorPrice || selected.minPrice || 800,
+        selected.floorPrice ?? 0,
         args.offeredPrice,
         rules,
         buyerNegotiated
@@ -155,7 +155,7 @@ You MUST call the selectProduct function with your choice.`;
           title: selected.title,
           sku: selected.sku,
           listedPrice,
-          floorPrice: selected.floorPrice || selected.minPrice || 800,
+          floorPrice: selected.floorPrice ?? 0,
           inventoryAvailable: selected.inventoryAvailable || 10,
           attributes: {},
         },
@@ -200,7 +200,7 @@ You MUST call the selectProduct function with your choice.`;
 
     const maxDiscount = rules.maxDiscountPercentage || 10;
     const listedPrice = match.listedPrice || match.price || 999;
-    const floorPrice = match.floorPrice || match.minPrice || 800;
+    const floorPrice = match.floorPrice ?? 0;
     const targetPrice = query.targetPrice;
 
     let offeredPrice = listedPrice;
@@ -248,11 +248,15 @@ You MUST call the selectProduct function with your choice.`;
     if (!buyerNegotiated) {
       return Math.round(listedPrice);
     }
-    const maxDiscountPrice = Math.round(
-      listedPrice * (1 - (rules.maxDiscountPercentage || 10) / 100)
-    );
-    const absoluteFloor = Math.max(floorPrice, maxDiscountPrice);
-    const clampedPrice = Math.max(absoluteFloor, Math.min(listedPrice, suggestedPrice));
+
+    // The DB floorPrice is the merchant's hard absolute minimum — it must always win.
+    // The max-discount % is a secondary rule: it prevents discounting MORE than allowed,
+    // but can never override the DB floor downwards or upwards.
+    // Correct logic:
+    //   effectiveFloor = floorPrice  (the DB value is sovereign)
+    //   then clamp the offered price to [effectiveFloor, listedPrice]
+    const effectiveFloor = floorPrice; // DB floor wins — not the %-based cap
+    const clampedPrice = Math.max(effectiveFloor, Math.min(listedPrice, suggestedPrice));
     return Math.round(clampedPrice);
   }
 }

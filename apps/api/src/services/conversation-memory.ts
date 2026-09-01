@@ -92,6 +92,7 @@ export async function appendMessage(
   sender: "customer" | "seller_agent",
   content: string,
   meta?: {
+    storeId?: string;
     mediaUrl?: string;
     activeProduct?: any;
     currentOffer?: any;
@@ -136,19 +137,21 @@ export async function appendMessage(
 
     await db.query(
       `INSERT INTO conversations (
-        conversation_id, phone_number, last_message_id, session_state,
+        conversation_id, phone_number, store_id, last_message_id, session_state,
         products_discussed, context, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       ON CONFLICT (conversation_id)
       DO UPDATE SET
-        last_message_id = $3,
-        session_state = $4,
-        products_discussed = $5,
-        context = $6,
+        store_id = COALESCE($3, conversations.store_id),
+        last_message_id = $4,
+        session_state = $5,
+        products_discussed = $6,
+        context = $7,
         updated_at = NOW()`,
       [
         conversationId,
         phoneNumber,
+        meta?.storeId || null,
         msgObj.id,
         sessionState,
         JSON.stringify(updatedProducts),
@@ -164,6 +167,7 @@ export async function updateConversationContext(
   conversationId: string,
   phoneNumber: string,
   patch: {
+    storeId?: string;
     activeProduct?: any;
     currentOffer?: any;
     buyerBudget?: number;
@@ -193,17 +197,19 @@ export async function updateConversationContext(
 
     await db.query(
       `INSERT INTO conversations (
-        conversation_id, phone_number, session_state, deal_amount, context, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, NOW())
+        conversation_id, phone_number, store_id, session_state, deal_amount, context, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
       ON CONFLICT (conversation_id)
       DO UPDATE SET
-        session_state = COALESCE($3, conversations.session_state),
-        deal_amount = COALESCE($4, conversations.deal_amount),
-        context = $5,
+        store_id = COALESCE($3, conversations.store_id),
+        session_state = COALESCE($4, conversations.session_state),
+        deal_amount = COALESCE($5, conversations.deal_amount),
+        context = $6,
         updated_at = NOW()`,
       [
         conversationId,
         phoneNumber,
+        patch.storeId || null,
         sessionState,
         patch.dealAmount || null,
         JSON.stringify(updatedContext),

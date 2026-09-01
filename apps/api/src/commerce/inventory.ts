@@ -43,13 +43,14 @@ export async function reserveInventory(params: {
   try {
     await client.query("BEGIN");
 
-    // Check if matching by SKU or ID
+    // Match by SKU/ID scoped to the store so the same SKU from different stores never collides
     const { rows: products } = await client.query(
       `SELECT id, sku, inventory_available, inventory_reserved
        FROM products
-       WHERE (id::text = $1 OR sku = $1 OR shopify_variant_id = $1)
+       WHERE store_id = $2
+         AND (id::text = $1 OR sku = $1 OR shopify_variant_id = $1)
        FOR UPDATE`,
-      [params.skuOrVariantId]
+      [params.skuOrVariantId, params.storeId]
     );
 
     if (products.length === 0) {
@@ -109,6 +110,7 @@ export async function reserveInventory(params: {
  * Commit inventory to PAID state when payment capture is verified
  */
 export async function commitInventoryPaid(params: {
+  storeId: string;
   skuOrVariantId: string;
   quantity?: number;
   lockKey?: string;
@@ -122,8 +124,9 @@ export async function commitInventoryPaid(params: {
            inventory_state = CASE WHEN inventory_available <= 0 THEN 'SOLD' ELSE 'AVAILABLE' END,
            reservation_expires_at = NULL,
            updated_at = NOW()
-       WHERE id::text = $2 OR sku = $2 OR shopify_variant_id = $2`,
-      [quantity, params.skuOrVariantId]
+       WHERE store_id = $3
+         AND (id::text = $2 OR sku = $2 OR shopify_variant_id = $2)`,
+      [quantity, params.skuOrVariantId, params.storeId]
     );
 
     if (params.lockKey) {
@@ -140,6 +143,7 @@ export async function commitInventoryPaid(params: {
  * Release inventory hold on failure or timeout (reverts RESERVED -> AVAILABLE)
  */
 export async function releaseInventoryReservation(params: {
+  storeId: string;
   skuOrVariantId: string;
   quantity?: number;
   lockKey?: string;
@@ -154,8 +158,9 @@ export async function releaseInventoryReservation(params: {
            inventory_state = 'AVAILABLE',
            reservation_expires_at = NULL,
            updated_at = NOW()
-       WHERE id::text = $2 OR sku = $2 OR shopify_variant_id = $2`,
-      [quantity, params.skuOrVariantId]
+       WHERE store_id = $3
+         AND (id::text = $2 OR sku = $2 OR shopify_variant_id = $2)`,
+      [quantity, params.skuOrVariantId, params.storeId]
     );
 
     if (params.lockKey) {

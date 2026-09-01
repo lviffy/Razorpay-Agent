@@ -132,6 +132,7 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   }
 
   await updateConversationContext(conversationId, phoneNumber, {
+    storeId: activeStoreId,
     activeProduct: nextActiveProduct,
     currentOffer: nextCurrentOffer,
     buyerBudget: state.buyerBudget,

@@ -153,12 +153,15 @@ export async function executeCommerceAction(
     if (targetProduct) {
       const maxDiscountPct = rules.maxDiscountPercentage || rules.maxDiscountPercent || 10;
       const listed = targetProduct.listedPrice || targetProduct.price || 999;
-      const floor = targetProduct.floorPrice || targetProduct.minPrice || Math.round(listed * 0.85);
+      const floor = targetProduct.floorPrice ?? 0;
 
       const minAllowedPrice = Math.max(
         floor,
         Math.round(listed * (1 - maxDiscountPct / 100))
       );
+      // Note: Math.max(floor, %-cap) means whichever is higher becomes the effective minimum.
+      // The DB floor is the hard minimum — if %-cap gives a lower value than floor, floor wins.
+      // If %-cap gives a higher value (stricter), that becomes the effective minimum.
 
       const currentKnownPrice = getProductKnownPrice(targetProduct, state);
 
@@ -422,7 +425,7 @@ export async function executeCommerceAction(
     }
 
     const listed = targetProduct.listedPrice || targetProduct.price || 0;
-    const floor = targetProduct.floorPrice || targetProduct.minPrice || 0;
+    const floor = targetProduct.floorPrice ?? 0;
     const offeredPrice = offer?.offeredPrice || listed;
 
     return {

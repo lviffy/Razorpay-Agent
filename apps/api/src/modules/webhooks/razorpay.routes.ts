@@ -97,18 +97,28 @@ async function handlePaymentCaptured(
   const { rows: productRows } = await db.query(
     `SELECT id, shopify_variant_id, store_id, title
      FROM products
-     WHERE id = $1
-        OR (sku = $2 AND $2 != '')
-        OR (title = $3 AND $3 != '')
+     WHERE store_id = $4
+       AND (
+         id = $1
+         OR (sku = $2 AND $2 != '')
+         OR (title = $3 AND $3 != '')
+       )
      LIMIT 1`,
-    [notesProductId || null, order.sku || null, cleanTitle || null]
+    [notesProductId || null, order.sku || null, cleanTitle || null, order.store_id]
   );
 
   for (const product of productRows) {
-    await setInventoryState(product.id, "PAID", {
-      reservedDelta: -paidQty,
-      clearExpiry: true,
-    });
+    // Permanently deduct inventory_available and clear the reservation
+    await db.query(
+      `UPDATE products
+       SET inventory_available = GREATEST(0, inventory_available - $1),
+           inventory_reserved  = GREATEST(0, inventory_reserved - $1),
+           inventory_state     = CASE WHEN GREATEST(0, inventory_available - $1) <= 0 THEN 'SOLD' ELSE 'AVAILABLE' END,
+           reservation_expires_at = NULL,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [paidQty, product.id]
+    );
 
     if (product.shopify_variant_id) {
       await releaseLock(order.store_id, product.shopify_variant_id);

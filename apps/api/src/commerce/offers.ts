@@ -37,6 +37,9 @@ export function evaluateBuyerOffer(params: {
 
   const maxDiscountPercent = rules.maxDiscountPercentage ?? rules.maxDiscountPercent ?? 10;
   const maxAllowedDiscountPaise = Math.round((listedPricePaise * maxDiscountPercent) / 100);
+  // DB floorPrice is the sovereign hard minimum. The %-based cap is a secondary constraint:
+  // the offered price must not go below EITHER the floor OR what the max-discount allows.
+  // Since a merchant sets floorPrice explicitly, it wins over the %-based calculation.
   const lowestAllowedPricePaise = Math.max(floorPricePaise, listedPricePaise - maxAllowedDiscountPaise);
 
   const freeShippingThresholdPaise = Math.round((rules.freeShippingThreshold ?? rules.freeShippingAbove ?? 3000) * 100);

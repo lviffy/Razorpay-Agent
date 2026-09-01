@@ -180,28 +180,18 @@ export async function getProduct(productId: string): Promise<Product | null> {
 }
 
 export async function getProductBySku(storeId: string, sku: string): Promise<Product | null> {
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(storeId);
-  const { rows } = isUuid
-    ? await db.query(
-        `SELECT
-          id, store_id, shopify_variant_id, title, sku,
-          listed_price, floor_price, image_url,
-          inventory_available, inventory_reserved, reservation_expires_at,
-          inventory_state, agent_schema, updated_at
-        FROM products
-        WHERE store_id = $1 AND (sku = $2 OR id::text = $2 OR shopify_variant_id = $2)`,
-        [storeId, sku]
-      )
-    : await db.query(
-        `SELECT
-          id, store_id, shopify_variant_id, title, sku,
-          listed_price, floor_price, image_url,
-          inventory_available, inventory_reserved, reservation_expires_at,
-          inventory_state, agent_schema, updated_at
-        FROM products
-        WHERE sku = $1 OR id::text = $1 OR shopify_variant_id = $1 LIMIT 1`,
-        [sku]
-      );
+  // Always scope by store_id so identical SKUs on different merchant stores never collide.
+  const { rows } = await db.query(
+    `SELECT
+      id, store_id, shopify_variant_id, title, sku,
+      listed_price, floor_price, image_url,
+      inventory_available, inventory_reserved, reservation_expires_at,
+      inventory_state, agent_schema, updated_at
+    FROM products
+    WHERE store_id = $1 AND (sku = $2 OR id::text = $2 OR shopify_variant_id = $2)
+    LIMIT 1`,
+    [storeId, sku]
+  );
 
   return rows[0] ? mapProductRow(rows[0]) : null;
 }
