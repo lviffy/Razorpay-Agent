@@ -64,8 +64,14 @@ export class SellerAgent {
           buyerMessage: query.buyerQuery,
         });
         const personaHint = getStrategyPersonaHint(tranche.strategyLabel);
+        // IMPORTANT: tell the LLM the EXACT counter price, not just a floor.
+        // Saying "do not go below" lets the LLM pick a number ABOVE the last offer,
+        // which violates the concession-lock (price must never go UP).
+        const ceilingNote = query.lastSellerPrice !== undefined
+          ? `\n- Your last quoted price was ₹${query.lastSellerPrice}. You MUST NOT quote higher than ₹${query.lastSellerPrice} — price can only stay flat or go down.`
+          : "";
         trancheInstruction = `Negotiation round ${currentRound}. Strategy: ${tranche.strategyLabel}.
-- Allowed offer this round: ₹${tranche.counterPrice} (do NOT go below this without explicit instruction).
+- You MUST offer exactly ₹${tranche.counterPrice} for this product. Do not deviate from this price.${ceilingNote}
 - Persona directive: ${personaHint}
 - NEVER jump straight to floor price unless the strategy is FLOOR.`;
       }
@@ -180,7 +186,8 @@ You MUST call the selectProduct function with your choice.`;
         selected.floorPrice ?? 0,
         args.offeredPrice,
         rules,
-        buyerNegotiated
+        buyerNegotiated,
+        query.lastSellerPrice
       );
 
       const freeShipping = Boolean(
@@ -280,7 +287,8 @@ You MUST call the selectProduct function with your choice.`;
     floorPrice: number,
     suggestedPrice: number,
     rules: NegotiationRules,
-    buyerNegotiated: boolean = false
+    buyerNegotiated: boolean = false,
+    lastSellerPrice?: number
   ): number {
     // If the buyer did NOT explicitly negotiate a price, always charge the
     // full listed price. Never apply an unprompted discount.
@@ -296,6 +304,15 @@ You MUST call the selectProduct function with your choice.`;
     //   then clamp the offered price to [effectiveFloor, listedPrice]
     const effectiveFloor = floorPrice; // DB floor wins — not the %-based cap
     const clampedPrice = Math.max(effectiveFloor, Math.min(listedPrice, suggestedPrice));
-    return Math.round(clampedPrice);
+
+    // Concession-lock: the seller must NEVER quote a price higher than what
+    // was already offered in a previous round. If the LLM ignores the system
+    // prompt and returns a higher number, clamp it down here as a safety net.
+    const concessionLocked =
+      lastSellerPrice !== undefined
+        ? Math.min(lastSellerPrice, clampedPrice)
+        : clampedPrice;
+
+    return Math.round(concessionLocked);
   }
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api/client";
 import { ConversationThread } from "@/lib/types";
 import { formatINR } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,16 +13,14 @@ import {
   MessageSquare,
   Search,
   CheckCircle2,
-  Send,
   Zap,
   ShieldCheck,
   CheckCheck,
-  Layers,
   Phone,
   CreditCard,
   User,
   ArrowUpRight,
-  Loader2,
+  Wifi,
 } from "lucide-react";
 
 // Format phone numbers cleanly: e.g. "917077013159" -> "+91 70770 13159"
@@ -127,25 +124,70 @@ export default function ConversationsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileTab, setMobileTab] = useState<"threads" | "chat" | "trace">("chat");
   const [loading, setLoading] = useState<boolean>(true);
+  const [connected, setConnected] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const esRef = useRef<EventSource | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const applyThreads = useCallback((list: ConversationThread[]) => {
+    if (!list || list.length === 0) return;
+    setThreads(list);
+    setSelectedId((curr) => (curr && list.some((t) => t.id === curr) ? curr : list[0].id));
+    setLastUpdated(new Date());
+    setLoading(false);
+  }, []);
+
+  const connect = useCallback(() => {
+    if (esRef.current) {
+      esRef.current.close();
+    }
+
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+    // Pass auth headers via URL param (EventSource doesn't support headers)
+    const token =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("zapai_auth_token") || localStorage.getItem("agentbridge_auth_token") || "")
+        : "";
+    const storeId =
+      typeof window !== "undefined"
+        ? (localStorage.getItem("zapai_selected_store_id") || localStorage.getItem("agentbridge_selected_store_id") || "")
+        : "";
+
+    const params = new URLSearchParams();
+    if (token) params.set("token", token);
+    if (storeId) params.set("storeId", storeId);
+
+    const url = `${API_BASE}/conversations/stream${params.toString() ? "?" + params.toString() : ""}`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.addEventListener("conversations", (e) => {
+      try {
+        const data = JSON.parse((e as MessageEvent).data);
+        applyThreads(data);
+        setConnected(true);
+      } catch {
+        // ignore parse errors
+      }
+    });
+
+    es.onerror = () => {
+      setConnected(false);
+      es.close();
+      esRef.current = null;
+      // Auto-reconnect after 3 seconds
+      reconnectTimer.current = setTimeout(connect, 3000);
+    };
+  }, [applyThreads]);
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const list = await api.conversations.list();
-        if (list && list.length > 0) {
-          setThreads(list);
-          setSelectedId((curr) => (curr && list.some((t) => t.id === curr) ? curr : list[0].id));
-        }
-      } catch (err) {
-        console.error("Failed to load conversations", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+    connect();
+    return () => {
+      esRef.current?.close();
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+    };
+  }, [connect]);
 
   const filteredThreads = threads.filter((t) => {
     const q = searchTerm.toLowerCase().trim();
@@ -177,6 +219,23 @@ export default function ConversationsPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               WhatsApp Engine
             </Badge>
+            {/* SSE live status */}
+            {connected ? (
+              <Badge variant="outline" className="gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                <Wifi className="w-3 h-3" />
+                Live
+                {lastUpdated && (
+                  <span className="text-emerald-500">
+                    · {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </span>
+                )}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="gap-1.5 font-mono text-[11px] bg-amber-50 text-amber-700 border-amber-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Reconnecting…
+              </Badge>
+            )}
           </div>
           <p className="text-xs text-zinc-500 mt-0.5">
             Real-time WhatsApp buyer dialogues paired with transparent AI Seller reasoning traces and floor price mandate checks.
