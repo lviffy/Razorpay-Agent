@@ -1,5 +1,6 @@
 import { getGroqClient } from "../../integrations/llm/index.ts";
 import { getProducts, getNegotiationRules, getStore } from "../../services/merchant.ts";
+import { computeSellerCounterOffer, getStrategyPersonaHint } from "./negotiation-strategy.ts";
 import type { NegotiationRules, SellerOffer, AgentProductSchema } from "@zapai/types";
 import { logger } from "../../core/logger/index.ts";
 
@@ -8,6 +9,10 @@ export interface SellerQuery {
   targetPrice?: number;
   category?: string;
   sessionId: string;
+  /** Current negotiation round for this product (0 = first ask). */
+  negotiationRound?: number;
+  /** Last price the seller quoted — for concession-lock enforcement. */
+  lastSellerPrice?: number;
 }
 
 export class SellerAgent {
@@ -32,7 +37,38 @@ export class SellerAgent {
         throw new Error("GROQ_API_KEY is not configured");
       }
 
-      const catalogJson = JSON.stringify(products.map((p) => p.agentSchema), null, 2);
+          const catalogJson = JSON.stringify(products.map((p) => p.agentSchema), null, 2);
+
+      // Compute what tranche the AI is allowed to offer this round.
+      const currentRound = query.negotiationRound ?? 0;
+      const isBuyerNegotiating = query.targetPrice !== undefined;
+
+      // For A2A / product-search, pick the first matched product to compute tranche.
+      // The LLM will do the actual product selection; we just need a representative tranche.
+      const representativeProduct = products[0];
+      const repListed = representativeProduct?.listedPrice || representativeProduct?.price || 999;
+      const repFloor = representativeProduct?.floorPrice ?? 0;
+      const repMaxDiscount = rules.maxDiscountPercentage || 10;
+
+      let trancheInstruction: string;
+      if (!isBuyerNegotiating) {
+        trancheInstruction = "The buyer is browsing / searching, NOT negotiating price. Offer at the STANDARD LISTED PRICE only.";
+      } else {
+        const tranche = computeSellerCounterOffer({
+          listedPrice: repListed,
+          floorPrice: repFloor,
+          maxDiscountPct: repMaxDiscount,
+          currentRound,
+          lastSellerPrice: query.lastSellerPrice,
+          buyerOfferedPrice: query.targetPrice,
+          buyerMessage: query.buyerQuery,
+        });
+        const personaHint = getStrategyPersonaHint(tranche.strategyLabel);
+        trancheInstruction = `Negotiation round ${currentRound}. Strategy: ${tranche.strategyLabel}.
+- Allowed offer this round: ₹${tranche.counterPrice} (do NOT go below this without explicit instruction).
+- Persona directive: ${personaHint}
+- NEVER jump straight to floor price unless the strategy is FLOOR.`;
+      }
 
       const systemPrompt = `You are an AI Seller Agent for ${store.name} in ${store.city}.
 
@@ -44,14 +80,17 @@ NEGOTIATION RULES & BOUNDS:
 - Minimum order value for discount: ₹${rules.minOrderValueForDiscount}
 - Free shipping threshold: ₹${rules.freeShippingThreshold ?? "N/A"}
 
+MULTI-ROUND NEGOTIATION DIRECTIVE:
+${trancheInstruction}
+
 MATCHING & PRICING MANDATES:
 1. Product Category Match: Match the specific item requested by the buyer.
 2. Pricing Strategy:
-   - If the buyer explicitly asks for a discount, negotiates, or specifies a target price below listed price, offer a fair discounted price down to floorPrice (max discount ${rules.maxDiscountPercentage}%).
-   - If the buyer is simply searching, asking what you have, or expressing initial intent without negotiating, OFFER AT THE STANDARD LISTED PRICE (offeredPrice = listedPrice).
-3. Hard Floor Limit: NEVER offer below the product's floorPrice. NEVER exceed max discount.
-4. Free Shipping: Set shippingFree = true if the offered price >= ${rules.freeShippingThreshold || 999999}.
-5. Currency: Strictly use Indian Rupees (₹). NEVER use dollars ($) or USD.
+   - Follow the MULTI-ROUND NEGOTIATION DIRECTIVE above exactly.
+   - NEVER give the full max discount in round 0. Start at listed price or the allowed tranche.
+   - Hard Floor Limit: NEVER offer below the product's floorPrice.
+3. Free Shipping: Set shippingFree = true if the offered price >= ${rules.freeShippingThreshold || 999999}.
+4. Currency: Strictly use Indian Rupees (₹). NEVER use dollars ($) or USD.
 
 You MUST call the selectProduct function with your choice.`;
 

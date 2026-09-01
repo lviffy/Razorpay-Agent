@@ -6,6 +6,8 @@ import { issueTransactionId } from "../../services/x402.ts";
 import { setInventoryState, getStore, getProducts, getNegotiationRules } from "../../services/merchant.ts";
 import { logEvent } from "../../services/audit.ts";
 import { checkBuyerVelocity } from "../../services/rate-limit.ts";
+import { updateConversationContext } from "../../services/conversation-memory.ts";
+import { computeSellerCounterOffer, getStrategyPersonaHint } from "./negotiation-strategy.ts";
 import { db } from "@zapai/database";
 import type { ConversationContext, ConversationIntent, CommerceResult, ConversationState } from "./types.ts";
 import type { Product, AgentProductSchema } from "@zapai/types";
@@ -151,57 +153,111 @@ export async function executeCommerceAction(
     const targetProduct = resolveTargetProduct(intent, availableProducts, state.activeProduct) || availableProducts[0];
 
     if (targetProduct) {
+      // ── Stock inquiry path (no negotiation math needed) ─────────────────
+      if (isQtyOrStockAsk && intent.intent !== "PRICE_NEGOTIATION") {
+        const currentKnownPrice = getProductKnownPrice(targetProduct, state);
+        const stockReasoning = `Live stock: We have exactly ${targetProduct.inventoryAvailable} unit(s) of ${targetProduct.title} available in stock.`;
+        return {
+          type: "INFO_ONLY",
+          product: {
+            id: targetProduct.id,
+            title: targetProduct.title,
+            variantId: targetProduct.shopifyVariantId || targetProduct.id,
+            listedPrice: targetProduct.listedPrice || targetProduct.price || 0,
+            floorPrice: targetProduct.floorPrice || 0,
+            offeredPrice: currentKnownPrice,
+            inventoryAvailable: targetProduct.inventoryAvailable,
+            imageUrl: targetProduct.imageUrl,
+            sku: targetProduct.sku,
+          },
+          infoDetails: stockReasoning,
+          offer: {
+            status: "COUNTER",
+            product: targetProduct.agentSchema || {
+              variantId: targetProduct.shopifyVariantId || targetProduct.id,
+              title: targetProduct.title,
+              sku: targetProduct.sku,
+              listedPrice: targetProduct.listedPrice || targetProduct.price || 0,
+              floorPrice: targetProduct.floorPrice || 0,
+              inventoryAvailable: targetProduct.inventoryAvailable || 10,
+              attributes: {},
+            },
+            offeredPrice: currentKnownPrice,
+            shippingFree: false,
+            reasoningTrace: stockReasoning,
+            sessionId: conversationId,
+          },
+        };
+      }
+
+      // ── Multi-round negotiation path ─────────────────────────────────────
       const maxDiscountPct = rules.maxDiscountPercentage || rules.maxDiscountPercent || 10;
       const listed = targetProduct.listedPrice || targetProduct.price || 999;
       const floor = targetProduct.floorPrice ?? 0;
 
-      const minAllowedPrice = Math.max(
-        floor,
-        Math.round(listed * (1 - maxDiscountPct / 100))
-      );
-      // Note: Math.max(floor, %-cap) means whichever is higher becomes the effective minimum.
-      // The DB floor is the hard minimum — if %-cap gives a lower value than floor, floor wins.
-      // If %-cap gives a higher value (stricter), that becomes the effective minimum.
+      // Detect if buyer has switched products — if so, reset round counter.
+      const isSameProduct =
+        state.activeProduct &&
+        (
+          state.activeProduct.id === targetProduct.id ||
+          state.activeProduct.variantId === targetProduct.shopifyVariantId ||
+          state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim()
+        );
+      const currentRound = isSameProduct ? (state.negotiationRound ?? 0) : 0;
+      const lastSellerPrice = isSameProduct ? state.lastSellerOfferPrice : undefined;
 
-      const currentKnownPrice = getProductKnownPrice(targetProduct, state);
+      // Run the strategy engine.
+      const strategy = computeSellerCounterOffer({
+        listedPrice: listed,
+        floorPrice: floor,
+        maxDiscountPct,
+        currentRound,
+        lastSellerPrice,
+        buyerOfferedPrice: intent.requestedPrice,
+        buyerMessage: userMessage,
+      });
 
-      let counterPrice: number;
-      let reasoning: string;
-
-      if (intent.requestedPrice) {
-        if (intent.requestedPrice >= minAllowedPrice) {
-          counterPrice = intent.requestedPrice;
-          reasoning = `Accepted customer requested price of ₹${counterPrice}.`;
-        } else {
-          counterPrice = minAllowedPrice;
-          reasoning = `₹${minAllowedPrice} is our rock-bottom floor price for ${targetProduct.title}.`;
-        }
-      } else if (isQtyOrStockAsk) {
-        counterPrice = currentKnownPrice;
-        reasoning = `Live stock: We have exactly ${targetProduct.inventoryAvailable} unit(s) of ${targetProduct.title} available in stock.`;
-      } else {
-        if (currentKnownPrice >= listed) {
-          counterPrice = minAllowedPrice;
-          reasoning = `Special discount of ${maxDiscountPct}% applied: ₹${counterPrice}.`;
-        } else if (currentKnownPrice > minAllowedPrice) {
-          counterPrice = minAllowedPrice;
-          reasoning = `Dropped to our absolute floor price: ₹${counterPrice}.`;
-        } else {
-          counterPrice = currentKnownPrice;
-          reasoning = `₹${currentKnownPrice} is our absolute lowest rock-bottom price. We cannot go below this.`;
-        }
-      }
-
-      if (state.currentOffer?.offeredPrice && counterPrice > state.currentOffer.offeredPrice) {
-        counterPrice = state.currentOffer.offeredPrice;
-      }
+      const counterPrice = strategy.counterPrice;
+      const personaHint = getStrategyPersonaHint(strategy.strategyLabel);
 
       const freeShipping = Boolean(
         rules.freeShippingThreshold && counterPrice >= rules.freeShippingThreshold
       );
 
+      // Persist updated negotiation state.
+      try {
+        await updateConversationContext(conversationId, context.phoneNumber, {
+          negotiationRound: strategy.newRound,
+          lastSellerOfferPrice: counterPrice,
+          sessionState: "NEGOTIATING",
+          activeProduct: {
+            id: targetProduct.id,
+            title: targetProduct.title,
+            listedPrice: listed,
+            floorPrice: floor,
+            offeredPrice: counterPrice,
+            inventoryAvailable: targetProduct.inventoryAvailable,
+            imageUrl: targetProduct.imageUrl,
+            sku: targetProduct.sku,
+            variantId: targetProduct.shopifyVariantId || targetProduct.id,
+          },
+          currentOffer: {
+            productTitle: targetProduct.title,
+            variantId: targetProduct.shopifyVariantId || targetProduct.id,
+            offeredPrice: counterPrice,
+            listedPrice: listed,
+            shippingFree: freeShipping,
+            status: strategy.shouldAccept ? "ACCEPT" : "COUNTER",
+          },
+        });
+      } catch (err) {
+        logger.warn({ err }, "[CommerceExecutor] Failed to persist negotiation round state");
+      }
+
+      const enrichedReasoning = `[Strategy: ${strategy.strategyLabel}] ${strategy.reasoning} | Persona: ${personaHint}`;
+
       return {
-        type: isQtyOrStockAsk ? "INFO_ONLY" : "COUNTER_OFFER",
+        type: strategy.shouldAccept ? "OFFER_ACCEPTED" : "COUNTER_OFFER",
         product: {
           id: targetProduct.id,
           title: targetProduct.title,
@@ -213,9 +269,9 @@ export async function executeCommerceAction(
           imageUrl: targetProduct.imageUrl,
           sku: targetProduct.sku,
         },
-        infoDetails: reasoning,
+        infoDetails: enrichedReasoning,
         offer: {
-          status: "COUNTER",
+          status: strategy.shouldAccept ? "ACCEPT" : "COUNTER",
           product: targetProduct.agentSchema || {
             variantId: targetProduct.shopifyVariantId || targetProduct.id,
             title: targetProduct.title,
@@ -227,7 +283,7 @@ export async function executeCommerceAction(
           },
           offeredPrice: counterPrice,
           shippingFree: freeShipping,
-          reasoningTrace: reasoning,
+          reasoningTrace: enrichedReasoning,
           sessionId: conversationId,
         },
         mediaUrlToSend: targetProduct.imageUrl,
@@ -419,6 +475,8 @@ export async function executeCommerceAction(
         targetPrice: spendingLimit < 999999 ? spendingLimit : undefined,
         category: intent.category,
         sessionId: conversationId,
+        negotiationRound: state.negotiationRound ?? 0,
+        lastSellerPrice: state.lastSellerOfferPrice,
       });
     } catch {
       // ignore

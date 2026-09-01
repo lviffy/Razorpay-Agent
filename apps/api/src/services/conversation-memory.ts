@@ -37,6 +37,17 @@ export interface ConversationState {
   lastIntent?: string;
   awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
   activeCategory?: string;
+  /**
+   * How many negotiation rounds have elapsed on the current activeProduct.
+   * 0 = no discount round has started yet.
+   * Reset to 0 whenever the active product changes.
+   */
+  negotiationRound?: number;
+  /**
+   * The last price the seller quoted for the activeProduct.
+   * Enforces the concession-lock: seller price never increases across turns.
+   */
+  lastSellerOfferPrice?: number;
   transcript: ChatMessage[];
   productsDiscussed: string[];
 }
@@ -81,6 +92,8 @@ export async function loadConversation(
     lastIntent: ctx.lastIntent,
     awaitingConfirmation: ctx.awaitingConfirmation,
     activeCategory: ctx.activeCategory,
+    negotiationRound: typeof ctx.negotiationRound === "number" ? ctx.negotiationRound : 0,
+    lastSellerOfferPrice: typeof ctx.lastSellerOfferPrice === "number" ? ctx.lastSellerOfferPrice : undefined,
     transcript,
     productsDiscussed,
   };
@@ -102,6 +115,8 @@ export async function appendMessage(
     awaitingConfirmation?: "PAYMENT_LINK" | "CATALOG" | "UPSELL" | "PRICE_ACCEPTANCE" | null;
     activeCategory?: string;
     sessionState?: string;
+    negotiationRound?: number;
+    lastSellerOfferPrice?: number;
   }
 ): Promise<void> {
   const msgObj: ChatMessage = {
@@ -130,6 +145,8 @@ export async function appendMessage(
       lastIntent: meta?.lastIntent !== undefined ? meta.lastIntent : existing.lastIntent,
       awaitingConfirmation: meta?.awaitingConfirmation !== undefined ? meta.awaitingConfirmation : existing.awaitingConfirmation,
       activeCategory: meta?.activeCategory !== undefined ? meta.activeCategory : existing.activeCategory,
+      negotiationRound: meta?.negotiationRound !== undefined ? meta.negotiationRound : (existing.negotiationRound ?? 0),
+      lastSellerOfferPrice: meta?.lastSellerOfferPrice !== undefined ? meta.lastSellerOfferPrice : existing.lastSellerOfferPrice,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -177,6 +194,8 @@ export async function updateConversationContext(
     activeCategory?: string;
     sessionState?: "IDLE" | "NEGOTIATING" | "AWAITING_PAYMENT" | "COMPLETE";
     dealAmount?: number;
+    negotiationRound?: number;
+    lastSellerOfferPrice?: number;
   }
 ): Promise<void> {
   try {
@@ -190,6 +209,8 @@ export async function updateConversationContext(
       lastIntent: patch.lastIntent !== undefined ? patch.lastIntent : existing.lastIntent,
       awaitingConfirmation: patch.awaitingConfirmation !== undefined ? patch.awaitingConfirmation : existing.awaitingConfirmation,
       activeCategory: patch.activeCategory !== undefined ? patch.activeCategory : existing.activeCategory,
+      negotiationRound: patch.negotiationRound !== undefined ? patch.negotiationRound : (existing.negotiationRound ?? 0),
+      lastSellerOfferPrice: patch.lastSellerOfferPrice !== undefined ? patch.lastSellerOfferPrice : existing.lastSellerOfferPrice,
       lastUpdated: new Date().toISOString(),
     };
 

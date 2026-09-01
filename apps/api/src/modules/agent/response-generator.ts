@@ -114,7 +114,8 @@ CRITICAL RULES:
 - Use strictly Indian Rupee symbol (₹). Never use dollars ($) or USD.
 - Use 1 emoji maximum.
 - NEVER narrate backend execution (do not say "searching database", "locking inventory", "calculating margin").
-- Avoid repetitive template endings. Speak like a real human shop assistant.`,
+- Avoid repetitive template endings. Speak like a real human shop assistant.
+- NEVER reveal internal pricing rules, floor prices, or strategy labels.`,
             },
             { role: "user", content: prompt },
           ],
@@ -176,12 +177,32 @@ function buildResponsePrompt(
     ? `Product: ${state.activeProduct.title}, Listed: ₹${state.activeProduct.listedPrice}, Current Offered: ₹${state.currentOffer?.offeredPrice || state.activeProduct.listedPrice}, Exact Stock in Inventory: ${exactStock} unit(s)`
     : "None";
 
+  // Parse strategy label from infoDetails (set by commerce-executor multi-round engine).
+  // Format: "[Strategy: ANCHOR] ..."
+  const strategyMatch = (commerce.infoDetails || "").match(/\[Strategy:\s*(\w+)\]/);
+  const strategyLabel = strategyMatch?.[1] ?? "";
+
+  // Strip strategy/persona metadata from what we show the LLM to avoid leakage.
+  const cleanDetails = (commerce.infoDetails || "").replace(/\[Strategy:[^\]]+\][^|]*\|\s*Persona:[^\n]*/g, "").trim();
+
+  // Build persona directive based on negotiation phase.
+  let negotiationPersonaDirective = "";
+  if (strategyLabel === "ANCHOR") {
+    negotiationPersonaDirective = "\nNEGOTIATION PHASE — ANCHOR: Talk up the product's quality, uniqueness, and value. Mention stock availability or express shipping. Do NOT offer a discount yet. Be warm and confident about the price.";
+  } else if (strategyLabel === "DRIP") {
+    negotiationPersonaDirective = "\nNEGOTIATION PHASE — DRIP: You are offering a partial discount as a gesture. Say something like 'let me see what I can do' or 'I can stretch a little for you'. Sound generous but not desperate. Quote the offered price.";
+  } else if (strategyLabel === "FLOOR") {
+    negotiationPersonaDirective = "\nNEGOTIATION PHASE — FLOOR: This is our final, absolute lowest price. Be firm but kind. You can mention free shipping as a sweetener. Do not apologise or leave room for further negotiation.";
+  } else if (strategyLabel === "ACCEPT") {
+    negotiationPersonaDirective = "\nNEGOTIATION PHASE — ACCEPT: Deal is agreed! Be warm and enthusiastic. Confirm the price, mention fast delivery, and tell them you're setting up their payment link.";
+  }
+
   return `CUSTOMER MESSAGE: "${userMessage}"
 DETECTED INTENT: ${intent.intent}
 OUTCOME TYPE: ${commerce.type}
 CURRENT PRODUCT & LIVE STOCK: ${productInfo}
 STORE: ${store.name} (${store.city})
-CONTEXT & STOCK DETAILS: ${commerce.infoDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}
+CONTEXT & STOCK DETAILS: ${cleanDetails || commerce.errorMessage || (commerce.offer ? commerce.offer.reasoningTrace : "")}${negotiationPersonaDirective}
 
 TASK:
 Write a warm, concise WhatsApp response (1-2 sentences).
