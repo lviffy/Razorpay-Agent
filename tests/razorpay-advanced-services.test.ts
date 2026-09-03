@@ -227,7 +227,7 @@ describe("Advanced Razorpay Services Integration Suite", () => {
           mandateId: "mandate_8819",
           buyerId: "user_lviffy",
           spendingLimit: 400000,
-          signature: "sig_ed25519_mock_proof",
+          signature: "sig_ed25519_proof",
           nonce: "n_9912",
         },
       });

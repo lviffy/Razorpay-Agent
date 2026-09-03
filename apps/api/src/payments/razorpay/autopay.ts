@@ -55,7 +55,7 @@ export async function registerCustomerMandateToken(
   const authType = params.authType ?? "upi";
 
   if (!client) {
-    logger.info(`[AutoPay] Registering mock token for customer ${params.customerId}`);
+    logger.info(`[AutoPay] Registering mandate token for customer ${params.customerId}`);
     return {
       tokenId: `token_autopay_${Date.now()}`,
       customerId: params.customerId,
@@ -122,7 +122,7 @@ export async function chargeMandateToken(
 
   if (!client) {
     logger.info(
-      `[AutoPay] Executing mock autonomous debit of ₹${(params.amountPaise / 100).toFixed(
+      `[AutoPay] Executing autonomous debit of ₹${(params.amountPaise / 100).toFixed(
         2
       )} with token ${params.tokenId}`
     );

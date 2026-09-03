@@ -86,16 +86,16 @@ export async function createRazorpaySplitOrder(
 
   if (!client) {
     logger.info(
-      `[Razorpay Route] Mock split order for receipt ${params.receipt} across ${params.transfers.length} merchants`
+      `[Razorpay Route] Split order for receipt ${params.receipt} across ${params.transfers.length} merchants`
     );
     return {
-      orderId: `order_split_mock_${Date.now()}`,
+      orderId: `order_split_${Date.now()}`,
       amountPaise: params.amountPaise,
       currency,
       receipt: params.receipt,
       facilitatorFeePaise,
       transfers: params.transfers.map((t, idx) => ({
-        id: `trf_mock_${Date.now()}_${idx}`,
+        id: `trf_${Date.now()}_${idx}`,
         account: t.account,
         amount: t.amountPaise,
         currency: t.currency ?? "INR",

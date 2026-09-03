@@ -98,11 +98,20 @@ export async function verifyShopifyCredentials(
 }
 
 export async function getShopifyConnection(storeId: string): Promise<ShopifyConnectionRecord | null> {
+  if (!storeId || storeId === "00000000-0000-0000-0000-000000000000") {
+    return null;
+  }
+
   try {
-    const { rows } = await db.query(
+    const queryPromise = db.query(
       `SELECT * FROM shopify_connections WHERE store_id = $1 LIMIT 1`,
       [storeId]
     );
+    const timeoutPromise = new Promise<{ rows: any[] }>((_, reject) =>
+      setTimeout(() => reject(new Error("DB query timeout")), 1500)
+    );
+
+    const { rows } = await Promise.race([queryPromise, timeoutPromise]);
 
     if (rows.length > 0) {
       const r = rows[0];
@@ -123,10 +132,14 @@ export async function getShopifyConnection(storeId: string): Promise<ShopifyConn
     }
 
     // Fallback to stores.agent_settings.credentials for backward compatibility
-    const { rows: storeRows } = await db.query(
+    const storeQueryPromise = db.query(
       `SELECT agent_settings, currency, name FROM stores WHERE id = $1 LIMIT 1`,
       [storeId]
     );
+    const storeTimeoutPromise = new Promise<{ rows: any[] }>((_, reject) =>
+      setTimeout(() => reject(new Error("DB query timeout")), 1500)
+    );
+    const { rows: storeRows } = await Promise.race([storeQueryPromise, storeTimeoutPromise]);
 
     const creds = storeRows[0]?.agent_settings?.credentials || {};
     const shopMeta = storeRows[0]?.agent_settings?.shopify || {};

@@ -13,6 +13,9 @@ import type { ConversationContext, ConversationIntent, CommerceResult, Conversat
 import type { Product, AgentProductSchema } from "@zapai/types";
 import { env } from "../../config/env.ts";
 import { logger } from "../../core/logger/index.ts";
+import { fetchActiveRazorpayOffers, calculateBestRazorpayDiscount } from "../../payments/razorpay/offers.ts";
+import { createRazorpayInvoice } from "../../payments/razorpay/invoices.ts";
+import { createRazorpayQrCode } from "../../payments/razorpay/qr.ts";
 
 export async function executeCommerceAction(
   intent: ConversationIntent,
@@ -203,10 +206,20 @@ export async function executeCommerceAction(
           state.activeProduct.variantId === targetProduct.shopifyVariantId ||
           state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim()
         );
-      const currentRound = isSameProduct ? (state.negotiationRound ?? 0) : 0;
-      const lastSellerPrice = isSameProduct ? state.lastSellerOfferPrice : undefined;
+      const currentRound = isSameProduct ? (state.negotiationRound ?? (state.currentOffer ? 1 : 0)) : 0;
+      const lastSellerPrice = isSameProduct
+        ? (state.lastSellerOfferPrice ?? state.currentOffer?.offeredPrice ?? state.activeProduct?.offeredPrice)
+        : undefined;
 
-      // Run the strategy engine.
+      // Fetch active Razorpay bank/UPI offers
+      let bankOffers: any[] = [];
+      try {
+        bankOffers = await fetchActiveRazorpayOffers({ merchantId: store.id, amountPaise: listed * 100 });
+      } catch {
+        // ignore
+      }
+
+      // Run the strategy engine with bank offers
       const strategy = computeSellerCounterOffer({
         listedPrice: listed,
         floorPrice: floor,
@@ -215,6 +228,7 @@ export async function executeCommerceAction(
         lastSellerPrice,
         buyerOfferedPrice: intent.requestedPrice,
         buyerMessage: userMessage,
+        availableBankOffers: bankOffers,
       });
 
       const counterPrice = strategy.counterPrice;
@@ -443,6 +457,50 @@ export async function executeCommerceAction(
       // ignore
     }
 
+    // ── Generate GST Tax Invoice via Razorpay Invoices ────────────────────
+    let invoiceUrl: string | undefined;
+    let invoiceNumber: string | undefined;
+    try {
+      const invRes = await createRazorpayInvoice({
+        orderRef,
+        customer: {
+          name: state.customerName || "Customer",
+          contact: phoneNumber,
+        },
+        lineItems: [
+          {
+            name: targetProduct.title,
+            description: `${quantity}x ${targetProduct.title} (SKU: ${targetProduct.sku || "N/A"})`,
+            amountPaise: rupeesToPaise(unitPrice),
+            quantity,
+            hsnCode: "640411",
+          },
+        ],
+        description: `Tax Invoice for ${itemTitleWithQty}`,
+      });
+      invoiceUrl = invRes.pdfUrl || invRes.shortUrl;
+      invoiceNumber = invRes.invoiceNumber;
+    } catch (err) {
+      logger.warn({ err }, "[CommerceExecutor] Invoice creation skipped");
+    }
+
+    // ── Generate Dynamic UPI QR & DeepLink via Razorpay QR API ────────────
+    let qrImageUrl: string | undefined;
+    let upiDeepLink: string | undefined;
+    try {
+      const qrRes = await createRazorpayQrCode({
+        orderRef,
+        amountPaise: rupeesToPaise(totalAmount),
+        description: `${itemTitleWithQty} from ${store.name}`,
+        customerName: state.customerName || "Customer",
+        customerPhone: phoneNumber,
+      });
+      qrImageUrl = qrRes.imageUrl;
+      upiDeepLink = qrRes.upiDeepLink;
+    } catch (err) {
+      logger.warn({ err }, "[CommerceExecutor] QR generation skipped");
+    }
+
     return {
       type: "PAYMENT_LINK_CREATED",
       product: {
@@ -459,6 +517,10 @@ export async function executeCommerceAction(
       quantity,
       paymentUrl,
       paymentAmount: totalAmount,
+      invoiceUrl,
+      invoiceNumber,
+      qrImageUrl,
+      upiDeepLink,
       mediaUrlToSend: targetProduct.imageUrl,
     };
   }

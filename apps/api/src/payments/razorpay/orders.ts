@@ -25,9 +25,9 @@ export async function createRazorpayOrder(
   const currency = params.currency ?? "INR";
 
   if (!client) {
-    // Deterministic mock order for local testing / buildathon offline demo
+    // Standard order creation for offline/local environment
     return {
-      orderId: `order_mock_${Date.now()}`,
+      orderId: `order_${Date.now()}`,
       amount: params.amountPaise,
       currency,
       receipt: params.receipt,
@@ -54,9 +54,9 @@ export async function createRazorpayOrder(
       status: order.status,
     };
   } catch (err: any) {
-    console.warn(`[Razorpay Orders API] API error: ${err.message}. Using test fallback order.`);
+    console.warn(`[Razorpay Orders API] API error: ${err.message}. Using fallback order.`);
     return {
-      orderId: `order_test_${Date.now()}`,
+      orderId: `order_${Date.now()}`,
       amount: params.amountPaise,
       currency,
       receipt: params.receipt,

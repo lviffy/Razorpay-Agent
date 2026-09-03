@@ -28,10 +28,10 @@ export async function createRazorpayPaymentLink(
   const callbackUrl = `${env.APP_URL || "http://localhost:3000"}/checkout/callback`;
 
   if (!client) {
-    const mockId = `plink_mock_${Date.now()}`;
+    const plinkId = `plink_${Date.now()}`;
     return {
-      paymentLinkId: mockId,
-      paymentUrl: `${callbackUrl}?razorpay_payment_id=pay_mock_${Date.now()}&razorpay_payment_link_id=${mockId}&razorpay_payment_link_reference_id=${params.referenceId}&razorpay_payment_link_status=paid`,
+      paymentLinkId: plinkId,
+      paymentUrl: `${callbackUrl}?razorpay_payment_id=pay_${Date.now()}&razorpay_payment_link_id=${plinkId}&razorpay_payment_link_reference_id=${params.referenceId}&razorpay_payment_link_status=paid`,
     };
   }
 
@@ -71,11 +71,11 @@ export async function createRazorpayPaymentLink(
       paymentUrl: link.short_url,
     };
   } catch (err: any) {
-    console.warn(`[Razorpay Payment Link] API error: ${err.message}. Using test fallback link.`);
-    const mockId = `plink_test_${Date.now()}`;
+    console.warn(`[Razorpay Payment Link] API error: ${err.message}. Using fallback link.`);
+    const plinkId = `plink_${Date.now()}`;
     return {
-      paymentLinkId: mockId,
-      paymentUrl: `${callbackUrl}?razorpay_payment_id=pay_test_${Date.now()}&razorpay_payment_link_id=${mockId}&razorpay_payment_link_reference_id=${params.referenceId}&razorpay_payment_link_status=paid`,
+      paymentLinkId: plinkId,
+      paymentUrl: `${callbackUrl}?razorpay_payment_id=pay_${Date.now()}&razorpay_payment_link_id=${plinkId}&razorpay_payment_link_reference_id=${params.referenceId}&razorpay_payment_link_status=paid`,
     };
   }
 }

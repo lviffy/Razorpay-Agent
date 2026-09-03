@@ -107,7 +107,7 @@ router.post("/chat", async (req: Request, res: Response) => {
 
     logs.push(`[${timestamp()}] AI Seller Reasoning: ${reasoning}`);
 
-    let paymentUrl = "https://rzp.io/i/mock_checkout_link";
+    let paymentUrl = "https://rzp.io/i/checkout_link";
     let razorpayOrderId = `order_sim_${Date.now()}`;
     let orderRef = generateOrderId();
     const x402TxId = issueTransactionId();

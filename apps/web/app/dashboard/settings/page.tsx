@@ -280,7 +280,7 @@ export default function GeneralSettingsPage() {
             <p className="text-xs font-semibold text-zinc-900">
               {creds.razorpayKeyId && !creds.razorpayKeyId.startsWith("rzp_test_mock")
                 ? "Live Sandbox Mode"
-                : "Simulated Mock Rail"}
+                : "Simulated Mode Rail"}
             </p>
           </div>
           <Badge

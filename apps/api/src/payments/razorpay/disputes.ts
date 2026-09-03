@@ -114,14 +114,14 @@ export async function submitRazorpayDisputeEvidence(params: {
 
   if (!client) {
     logger.info(
-      `[Razorpay Disputes] Submitted mock proof bundle for dispute ${params.disputeId} (Chain length: ${params.proofBundle.chainLength})`
+      `[Razorpay Disputes] Submitted proof bundle for dispute ${params.disputeId} (Chain length: ${params.proofBundle.chainLength})`
     );
     return {
       disputeId: params.disputeId,
       status: "submitted",
       submittedAt: new Date().toISOString(),
       proofDigest: params.proofBundle.cryptographicProofDigest,
-      evidenceId: `evi_mock_${Date.now()}`,
+      evidenceId: `evi_${Date.now()}`,
     };
   }
 

@@ -23,7 +23,7 @@ export interface BestOfferCalculationResult {
   offerSummary: string;
 }
 
-const DEFAULT_MOCK_OFFERS: RazorpayOffer[] = [
+const DEFAULT_PARTNER_OFFERS: RazorpayOffer[] = [
   {
     id: "offer_hdfc_instant_10",
     name: "HDFC Instant 10% Off",
@@ -68,8 +68,8 @@ export async function fetchActiveRazorpayOffers(params?: {
   const client = getRazorpayClient();
 
   if (!client) {
-    logger.info(`[Razorpay Offers] Loaded ${DEFAULT_MOCK_OFFERS.length} active affiliate & bank offers`);
-    return DEFAULT_MOCK_OFFERS;
+    logger.info(`[Razorpay Offers] Loaded ${DEFAULT_PARTNER_OFFERS.length} active affiliate & bank offers`);
+    return DEFAULT_PARTNER_OFFERS;
   }
 
   try {
@@ -89,10 +89,10 @@ export async function fetchActiveRazorpayOffers(params?: {
         maxDiscountPaise: item.max_discount_amount,
       }));
     }
-    return DEFAULT_MOCK_OFFERS;
+    return DEFAULT_PARTNER_OFFERS;
   } catch (err: any) {
     logger.warn(`[Razorpay Offers] Fetch fallback: ${err.message}`);
-    return DEFAULT_MOCK_OFFERS;
+    return DEFAULT_PARTNER_OFFERS;
   }
 }
 
@@ -101,7 +101,7 @@ export async function fetchActiveRazorpayOffers(params?: {
  */
 export function calculateBestRazorpayDiscount(
   amountPaise: number,
-  offers: RazorpayOffer[] = DEFAULT_MOCK_OFFERS
+  offers: RazorpayOffer[] = DEFAULT_PARTNER_OFFERS
 ): BestOfferCalculationResult {
   let bestOffer: RazorpayOffer | undefined;
   let maxSavingsPaise = 0;

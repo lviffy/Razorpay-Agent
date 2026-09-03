@@ -34,6 +34,24 @@ import {
   type DisputeProofBundle,
   type DisputeEvidenceResult,
 } from "./disputes";
+import {
+  createRazorpayInvoice,
+  type CreateInvoiceParams,
+  type RazorpayInvoiceResult,
+} from "./invoices";
+import {
+  createRazorpayQrCode,
+  generateUpiDeepLink,
+  type CreateQrCodeParams,
+  type RazorpayQrCodeResult,
+} from "./qr";
+import {
+  createRazorpaySubscriptionPlan,
+  createRazorpaySubscription,
+  type CreateSubscriptionPlanParams,
+  type CreateSubscriptionParams,
+  type RazorpaySubscriptionResult,
+} from "./subscriptions";
 
 export class RazorpayPaymentAdapter implements PaymentService {
   async createOrder(params: {
@@ -129,6 +147,26 @@ export class RazorpayPaymentAdapter implements PaymentService {
     proofBundle: DisputeProofBundle;
   }): Promise<DisputeEvidenceResult> {
     return submitRazorpayDisputeEvidence(params);
+  }
+
+  async createInvoice(params: CreateInvoiceParams): Promise<RazorpayInvoiceResult> {
+    return createRazorpayInvoice(params);
+  }
+
+  async generateQrCode(params: CreateQrCodeParams): Promise<RazorpayQrCodeResult> {
+    return createRazorpayQrCode(params);
+  }
+
+  generateUpiDeepLink(params: Parameters<typeof generateUpiDeepLink>[0]): string {
+    return generateUpiDeepLink(params);
+  }
+
+  async createSubscriptionPlan(params: CreateSubscriptionPlanParams) {
+    return createRazorpaySubscriptionPlan(params);
+  }
+
+  async createSubscription(params: CreateSubscriptionParams): Promise<RazorpaySubscriptionResult> {
+    return createRazorpaySubscription(params);
   }
 }
 

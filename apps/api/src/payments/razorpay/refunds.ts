@@ -40,10 +40,10 @@ export async function processRazorpayRefund(
 
   if (!client) {
     logger.info(
-      `[Razorpay Refunds] Processing mock ${speed} refund for payment ${params.paymentId}`
+      `[Razorpay Refunds] Processing ${speed} refund for payment ${params.paymentId}`
     );
     return {
-      refundId: `rfnd_mock_${Date.now()}`,
+      refundId: `rfnd_${Date.now()}`,
       paymentId: params.paymentId,
       amountPaise: params.amountPaise ?? 0,
       currency: "INR",

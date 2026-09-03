@@ -85,6 +85,16 @@ export interface CommerceResult {
   mediaUrlToSend?: string;
   mediaCaption?: string;
   mediaList?: Array<{ mediaUrl: string; caption: string }>;
+  invoiceUrl?: string;
+  invoiceNumber?: string;
+  qrImageUrl?: string;
+  upiDeepLink?: string;
+  offerApplied?: {
+    name: string;
+    code?: string;
+    discountAmount: number;
+    summary: string;
+  };
   errorMessage?: string;
   type: CommerceResultType;
 }
@@ -98,4 +108,9 @@ export interface GeneratedCustomerResponse {
   paymentAmount?: number;
   paymentUrl?: string;
   quantity?: number;
+  invoiceUrl?: string;
+  invoiceNumber?: string;
+  qrImageUrl?: string;
+  upiDeepLink?: string;
+  offerSummary?: string;
 }

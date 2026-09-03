@@ -11,11 +11,8 @@
 
 // ─── Concession Curve ─────────────────────────────────────────────────────────
 // What fraction of the maximum allowed discount is revealed per round (0-indexed).
-// Round 0 = buyer is asking for first discount (seller was at listed price)
-// Round 1 = second push → give 40% of max discount
-// Round 2 = third push  → give 70% of max discount
-// Round 3+ = floor      → give 100% of max discount (final position)
-const CONCESSION_CURVE: readonly number[] = [0, 0.4, 0.7, 1.0];
+// Round 0 = buyer asks for discount → provide discount up to max allowed discount
+const CONCESSION_CURVE: readonly number[] = [1.0, 1.0, 1.0, 1.0];
 
 export type StrategyLabel = "ANCHOR" | "DRIP" | "FLOOR" | "ACCEPT" | "HOLD";
 
@@ -30,6 +27,13 @@ export interface SellerCounterResult {
   reasoning: string;
   /** True when the buyer's own offer is already >= the seller's current counter — just accept. */
   shouldAccept: boolean;
+  /** Optional bank/UPI offer recommendation that can sweeten the deal */
+  bankOfferSweetener?: {
+    offerName: string;
+    savingsRupees: number;
+    effectivePriceRupees: number;
+    summary: string;
+  };
 }
 
 // ─── Buyer Pressure Signals ───────────────────────────────────────────────────
@@ -79,6 +83,15 @@ export interface ComputeCounterParams {
   buyerOfferedPrice?: number;
   /** Raw buyer message text — used for pressure-signal detection. */
   buyerMessage: string;
+  /** Optional available Razorpay bank/UPI offers */
+  availableBankOffers?: Array<{
+    name: string;
+    discountType: "percentage" | "flat";
+    percentRate?: number;
+    flatAmountPaise?: number;
+    minOrderAmountPaise: number;
+    maxDiscountPaise?: number;
+  }>;
 }
 
 export function computeSellerCounterOffer(params: ComputeCounterParams): SellerCounterResult {
@@ -164,12 +177,50 @@ export function computeSellerCounterOffer(params: ComputeCounterParams): SellerC
     reasoning = `[Pressure detected] ${reasoning}`;
   }
 
+  // Calculate optional bank offer sweetener if offers available
+  let bankOfferSweetener: SellerCounterResult["bankOfferSweetener"];
+  if (params.availableBankOffers && params.availableBankOffers.length > 0) {
+    const amountPaise = counterPrice * 100;
+    let maxSavings = 0;
+    let bestOffer: (typeof params.availableBankOffers)[0] | undefined;
+
+    for (const off of params.availableBankOffers) {
+      if (amountPaise < off.minOrderAmountPaise) continue;
+      let savings = 0;
+      if (off.discountType === "percentage" && off.percentRate) {
+        savings = Math.round((amountPaise * off.percentRate) / 100);
+        if (off.maxDiscountPaise && savings > off.maxDiscountPaise) {
+          savings = off.maxDiscountPaise;
+        }
+      } else if (off.discountType === "flat" && off.flatAmountPaise) {
+        savings = off.flatAmountPaise;
+      }
+      if (savings > maxSavings) {
+        maxSavings = savings;
+        bestOffer = off;
+      }
+    }
+
+    if (bestOffer && maxSavings > 0) {
+      const savingsRupees = Math.round(maxSavings / 100);
+      const effectivePriceRupees = Math.max(0, counterPrice - savingsRupees);
+      bankOfferSweetener = {
+        offerName: bestOffer.name,
+        savingsRupees,
+        effectivePriceRupees,
+        summary: `Instant ₹${savingsRupees} off with ${bestOffer.name} (Effective: ₹${effectivePriceRupees})`,
+      };
+      reasoning += ` | 🏷️ Sweetener: ${bankOfferSweetener.summary}`;
+    }
+  }
+
   return {
     counterPrice,
     newRound: adjustedRound + 1,
     strategyLabel,
     reasoning,
     shouldAccept: false,
+    bankOfferSweetener,
   };
 }
 

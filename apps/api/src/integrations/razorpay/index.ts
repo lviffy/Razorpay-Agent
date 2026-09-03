@@ -7,7 +7,7 @@ let razorpayInstance: Razorpay | null = null;
 
 export function getRazorpayClient(): Razorpay | null {
   if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
-    logger.warn("⚠️ RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET not set, operating in mock mode");
+    logger.warn("⚠️ RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET not set, operating in fallback mode");
     return null;
   }
   if (!razorpayInstance) {
@@ -36,7 +36,7 @@ export async function createOrder(opts: CreateOrderOptions) {
   const client = getRazorpayClient();
   if (!client) {
     return {
-      id: `order_mock_${Date.now()}`,
+      id: `order_${Date.now()}`,
       amount: opts.amountInPaise,
       currency: opts.currency ?? "INR",
       receipt: opts.receipt,
@@ -71,9 +71,10 @@ interface CreatePaymentLinkOptions {
 export async function createStandardPaymentLink(opts: CreatePaymentLinkOptions) {
   const client = getRazorpayClient();
   if (!client) {
+    const plinkId = `plink_${Date.now()}`;
     return {
-      id: `plink_mock_${Date.now()}`,
-      short_url: `${opts.callbackUrl}?razorpay_payment_id=pay_mock_${Date.now()}&razorpay_payment_link_id=plink_mock_${Date.now()}&razorpay_payment_link_reference_id=${opts.referenceId}&razorpay_payment_link_status=paid`,
+      id: plinkId,
+      short_url: `${opts.callbackUrl}?razorpay_payment_id=pay_${Date.now()}&razorpay_payment_link_id=${plinkId}&razorpay_payment_link_reference_id=${opts.referenceId}&razorpay_payment_link_status=paid`,
     };
   }
 

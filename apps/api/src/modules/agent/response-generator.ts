@@ -53,13 +53,26 @@ export async function generateCustomerResponse(
     const title = commerceResult.product?.title || "your item";
     const itemLabel = qty > 1 ? `${qty}x *${title}*` : `*${title}*`;
     const amount = commerceResult.paymentAmount || (commerceResult.product?.offeredPrice ? commerceResult.product.offeredPrice * qty : 0);
+    
+    let text = `Deal locked for ${itemLabel} at ₹${amount.toLocaleString("en-IN")}! 🚚\n\nTap below to complete payment via Razorpay:\n${commerceResult.paymentUrl}`;
+    if (commerceResult.invoiceUrl) {
+      text += `\n\n🧾 *GST Tax Invoice:* ${commerceResult.invoiceUrl}`;
+    }
+    if (commerceResult.upiDeepLink) {
+      text += `\n⚡ *Instant UPI:* Scan QR or open UPI app`;
+    }
+
     return {
-      text: `Deal locked for ${itemLabel} at ₹${amount.toLocaleString("en-IN")}! 🚚\n\nTap below to complete payment via Razorpay:\n${commerceResult.paymentUrl}`,
+      text,
       isPaymentLink: true,
       paymentAmount: amount,
       paymentUrl: commerceResult.paymentUrl,
       quantity: qty,
       mediaUrl: commerceResult.mediaUrlToSend,
+      invoiceUrl: commerceResult.invoiceUrl,
+      invoiceNumber: commerceResult.invoiceNumber,
+      qrImageUrl: commerceResult.qrImageUrl,
+      upiDeepLink: commerceResult.upiDeepLink,
     };
   }
 

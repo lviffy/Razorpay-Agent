@@ -1,7 +1,7 @@
 import { loadConversation, updateConversationContext } from "../../services/conversation-memory.ts";
 import { db } from "@zapai/database";
 import { getProducts, getAllActiveProducts, getNegotiationRules, getStore } from "../../services/merchant.ts";
-import { sendText, sendImage, sendPaymentLink } from "../../integrations/whatsapp/index.ts";
+import { sendText, sendImage, sendPaymentLink, sendPaymentWithInvoiceAndQr } from "../../integrations/whatsapp/index.ts";
 import { resolveIntent } from "./intent-resolver.ts";
 import { executeCommerceAction } from "./commerce-executor.ts";
 import { generateCustomerResponse } from "./response-generator.ts";
@@ -182,12 +182,16 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
   }
 
   if (customerReply.isPaymentLink && customerReply.paymentUrl && customerReply.paymentAmount) {
-    await sendPaymentLink(
-      phoneNumber,
-      customerReply.paymentAmount,
-      customerReply.paymentUrl,
-      activeStore.name
-    );
+    await sendPaymentWithInvoiceAndQr({
+      to: phoneNumber,
+      amount: customerReply.paymentAmount,
+      paymentUrl: customerReply.paymentUrl,
+      storeName: activeStore.name,
+      invoiceUrl: customerReply.invoiceUrl,
+      qrImageUrl: customerReply.qrImageUrl,
+      upiDeepLink: customerReply.upiDeepLink,
+      offerSummary: customerReply.offerSummary,
+    });
   } else {
     await sendText(phoneNumber, customerReply.text);
   }
