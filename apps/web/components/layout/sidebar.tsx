@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -134,12 +135,18 @@ export function Sidebar() {
       {/* Brand Header */}
       <div className="h-14 flex items-center justify-between px-5 border-b border-zinc-800 flex-shrink-0">
         <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs group-hover:bg-blue-500 transition-colors">
-            Z
+          <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-600 flex items-center justify-center shadow-xs ring-1 ring-white/10 group-hover:scale-105 transition-transform flex-shrink-0">
+            <Image
+              src="/ZAPAI.png"
+              alt="ZapAI Logo"
+              width={28}
+              height={28}
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <span className="font-semibold text-sm tracking-tight text-white block leading-none">
-              ZapAI
+              Zap<span className="text-blue-400">AI</span>
             </span>
             <span className="text-[10px] text-zinc-500 block font-normal tracking-wide mt-1">
               RAZORPAY COMMERCE
@@ -210,14 +217,20 @@ export function MobileSidebarDrawer({
               <Link
                 href="/dashboard"
                 onClick={() => onOpenChange(false)}
-                className="flex items-center gap-2.5"
+                className="flex items-center gap-2.5 group"
               >
-                <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs">
-                  Z
+                <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-600 flex items-center justify-center shadow-xs ring-1 ring-white/10 flex-shrink-0">
+                  <Image
+                    src="/ZAPAI.png"
+                    alt="ZapAI Logo"
+                    width={28}
+                    height={28}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <span className="font-semibold text-sm tracking-tight text-white block leading-none">
-                    ZapAI
+                    Zap<span className="text-blue-400">AI</span>
                   </span>
                   <span className="text-[10px] text-zinc-500 block font-normal tracking-wide mt-1">
                     RAZORPAY COMMERCE

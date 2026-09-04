@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Sheet,
@@ -196,8 +197,14 @@ export function GrowthAICopilotDrawer({
           <SheetHeader className="p-4 sm:p-5 border-b border-zinc-100 bg-gradient-to-r from-slate-900 to-zinc-900 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-400">
-                  <Sparkles className="w-4 h-4" />
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-blue-600 flex items-center justify-center ring-1 ring-white/20 shadow-xs flex-shrink-0">
+                  <Image
+                    src="/ZAPAI.png"
+                    alt="ZapAI Logo"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

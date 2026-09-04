@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { InfiniteSlider } from './ui/infinite-slider'
 import { CheckCircle2, ShieldCheck, Zap, Lock, Database, KeyRound, Banknote } from 'lucide-react'
 import {
@@ -26,8 +27,16 @@ const ECOSYSTEM_PARTNERS = [
     name: 'ZapAI Facilitator',
     category: 'Protocol Coordinator',
     badge: 'zapai-inr',
-    color: '#6366f1',
-    icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />,
+    color: '#195adc',
+    icon: (
+      <Image
+        src="/ZAPAI.png"
+        alt="ZapAI Facilitator"
+        width={20}
+        height={20}
+        className="w-5 h-5 rounded-xs object-cover"
+      />
+    ),
   },
   {
     name: 'Spending Mandates',

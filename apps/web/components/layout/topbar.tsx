@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Menu,
@@ -155,6 +156,19 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           >
             <Menu className="w-5 h-5" />
           </button>
+
+          {/* Mobile ZapAI Logo Icon */}
+          <Link href="/dashboard" className="lg:hidden flex items-center shrink-0">
+            <div className="w-7 h-7 rounded-lg overflow-hidden bg-blue-600 shadow-xs ring-1 ring-black/10">
+              <Image
+                src="/ZAPAI.png"
+                alt="ZapAI Logo"
+                width={28}
+                height={28}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </Link>
 
           {/* Interactive Store Switcher Dropdown */}
           <DropdownMenu>

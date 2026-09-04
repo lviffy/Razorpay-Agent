@@ -2,13 +2,15 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 
 interface LogoProps {
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   showText?: boolean
   uniColor?: boolean
+  href?: string
 }
 
 export function Logo({
@@ -16,43 +18,38 @@ export function Logo({
   size = 'md',
   showText = true,
   uniColor = false,
+  href = '/',
 }: LogoProps) {
-  const iconSizes = {
-    sm: 'w-6 h-6 text-xs',
-    md: 'w-8 h-8 text-sm',
-    lg: 'w-10 h-10 text-base',
+  const iconDimensions = {
+    xs: { px: 20, class: 'w-5 h-5 rounded-md' },
+    sm: { px: 28, class: 'w-7 h-7 rounded-lg' },
+    md: { px: 36, class: 'w-9 h-9 rounded-xl' },
+    lg: { px: 44, class: 'w-11 h-11 rounded-2xl' },
   }
 
   const textSizes = {
-    sm: 'text-sm',
+    xs: 'text-xs',
+    sm: 'text-sm font-bold tracking-tight',
     md: 'text-base font-bold tracking-tight',
     lg: 'text-xl font-bold tracking-tight',
   }
 
-  return (
-    <Link
-      href="/"
-      className={cn('inline-flex items-center gap-2.5 group select-none', className)}
-    >
+  const content = (
+    <>
       <div
         className={cn(
-          'rounded-xl bg-[#195adc] text-white flex items-center justify-center font-black group-hover:bg-[#378ffa] transition-colors',
-          iconSizes[size]
+          'relative overflow-hidden flex-shrink-0 shadow-xs ring-1 ring-black/[0.08] transition-transform duration-200 group-hover:scale-105 bg-[#195adc]',
+          iconDimensions[size].class
         )}
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-4 h-4"
-        >
-          <path d="M12 2L2 7l10 5 10-5-10-5z" />
-          <path d="M2 17l10 5 10-5" />
-          <path d="M2 12l10 5 10-5" />
-        </svg>
+        <Image
+          src="/ZAPAI.png"
+          alt="ZapAI Logo"
+          width={iconDimensions[size].px}
+          height={iconDimensions[size].px}
+          className="w-full h-full object-cover"
+          priority
+        />
       </div>
       {showText && (
         <span
@@ -65,7 +62,24 @@ export function Logo({
           Zap<span className="text-[#195adc]">AI</span>
         </span>
       )}
-    </Link>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn('inline-flex items-center gap-2.5 group select-none', className)}
+      >
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={cn('inline-flex items-center gap-2.5 select-none', className)}>
+      {content}
+    </div>
   )
 }
 

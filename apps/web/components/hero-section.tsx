@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ArrowRight,
   Bot,
@@ -323,8 +324,11 @@ export default function HeroSection() {
                   <div className="flex justify-end">
                     <div className="max-w-[92%] bg-[#d9fdd3] rounded-2xl rounded-tr-xs p-3.5 border border-[#c4eec0] space-y-3">
                       <div className="flex items-center justify-between gap-4">
-                        <span className="text-[10px] font-bold text-[#008069] flex items-center gap-1">
-                          <Bot className="w-3 h-3" /> ZapAI Seller
+                        <span className="text-[10px] font-bold text-[#008069] flex items-center gap-1.5">
+                          <div className="w-3.5 h-3.5 rounded-xs overflow-hidden shrink-0 shadow-2xs">
+                            <Image src="/ZAPAI.png" alt="ZapAI" width={14} height={14} className="w-full h-full object-cover" />
+                          </div>
+                          <span>ZapAI Seller</span>
                         </span>
                         <div className="flex items-center gap-1 text-[9.5px] text-surface-500 font-mono">
                           <span>10:42 AM</span>

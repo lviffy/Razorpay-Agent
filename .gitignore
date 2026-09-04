@@ -15,14 +15,37 @@ out/
 # Testing & Coverage
 coverage/
 .nyc_output/
+test-results/
+playwright-report/
+.playwright/
 
-# Environment variables & secrets
+# Environment Variables & Secrets
 .env
-.env*.local
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env*.example
+*.pem
+*.key
+*.cert
+*.crt
+*credentials*.json
+service-account*.json
+
+# Platform & Deployment CLIs
+.railway/
+.vercel/
+
+# Redis & Local Databases
+dump.rdb
+appendonlydir/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.sqlite-journal
+
+# Docker Local Overrides
+docker-compose.override.yml
 
 # Logs
 npm-debug.log*
@@ -35,10 +58,12 @@ lerna-debug.log*
 # OS & IDE
 .DS_Store
 Thumbs.db
+Desktop.ini
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
 
 # Temporary & Runtime
 *.pid
@@ -46,3 +71,23 @@ Thumbs.db
 *.pid.lock
 tmp/
 temp/
+
+# Media & Pitch Video Recordings
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.avi
+*.wav
+*.mp3
+recordings/
+demos/
+
+# Pitch & Product Documentation
+PITCH_VIDEO_SCRIPT.md
+PRD.md
+*pitch*
+*PITCH*
+*prd*
+*PRD*
+output/

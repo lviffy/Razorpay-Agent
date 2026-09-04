@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, CheckCircle2, Zap, ShieldCheck, Bot, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GridPattern } from '@/components/ui/grid-pattern'
@@ -66,6 +67,15 @@ export default function CTASection() {
       {/* Content */}
       <div className="relative z-10 mx-auto max-w-[1240px] w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center space-y-8">
         <div className="relative flex flex-col items-center gap-6">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg shadow-brand-500/20 ring-4 ring-white border border-brand-100 flex-shrink-0">
+            <Image
+              src="/ZAPAI.png"
+              alt="ZapAI Logo"
+              width={56}
+              height={56}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
           <h2 className="font-display text-4xl sm:text-5xl lg:text-[3.75rem] font-extrabold tracking-tight text-surface-900 leading-[1.08] [text-wrap:balance] max-w-3xl">
             Give your store{' '}

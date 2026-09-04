@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api/client";
 import { OnboardingState, OnboardingStep, StoreProvider, NegotiationRules } from "@/lib/types";
+import Logo from "@/components/logo";
 import { ChatMessage } from "@/components/onboarding/chat-message";
 import { ActionCard } from "@/components/onboarding/action-card";
 import { LiveStorePreview, OnboardingStatusCapsule } from "@/components/onboarding/live-store-preview";
@@ -394,14 +395,7 @@ export default function OnboardingPage() {
       {/* ── Top Floating Navigation Bar ── */}
       <header className="h-16 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-zinc-200/70">
         <div className="flex items-center gap-3.5">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-xs group-hover:bg-brand-600 transition-colors">
-              Z
-            </div>
-            <span className="font-bold text-base tracking-tight text-zinc-900">
-              Zap<span className="text-brand-600">AI</span>
-            </span>
-          </Link>
+          <Logo size="sm" />
           <span className="text-zinc-300">/</span>
           <span className="text-xs font-semibold text-zinc-600 tracking-tight">Store Setup Assistant</span>
         </div>

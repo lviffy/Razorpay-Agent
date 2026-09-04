@@ -1,20 +1,14 @@
 import React from "react";
 import Link from "next/link";
 import { ShieldCheck, Lock } from "lucide-react";
+import Logo from "@/components/logo";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen apple-canvas flex flex-col items-center justify-center p-4 sm:p-6 select-none relative overflow-hidden">
       {/* Brand Header */}
       <div className="mb-6 flex flex-col items-center gap-2 relative z-10">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center font-extrabold text-white text-lg border border-brand-600 group-hover:bg-brand-600 transition-colors">
-            Z
-          </div>
-          <span className="font-display font-extrabold text-2xl text-surface-900 tracking-tight">
-            Zap<span className="text-brand-600">AI</span>
-          </span>
-        </Link>
+        <Logo size="lg" />
       </div>
 
       {/* Main Authentication Card */}

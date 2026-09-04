@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import {
   CheckCircle2,
@@ -170,7 +171,9 @@ export default function ComparisonSection() {
               <span>Legacy Web (Human Store)</span>
             </div>
             <div className="col-span-5 text-brand-800 flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-brand-600" />
+              <div className="w-4 h-4 rounded-xs overflow-hidden shrink-0 shadow-xs">
+                <Image src="/ZAPAI.png" alt="ZapAI" width={16} height={16} className="w-full h-full object-cover" />
+              </div>
               <span>ZapAI Primitive (Machine-Native)</span>
             </div>
           </div>
@@ -231,7 +234,9 @@ export default function ComparisonSection() {
                     <div className="lg:col-span-5 p-3 rounded-xl bg-brand-50/70 border border-brand-200/80 space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-brand-800 font-bold text-[10.5px] uppercase tracking-wider font-mono">
-                          <CheckCircle2 className="w-3 h-3 text-brand-600 shrink-0" />
+                          <div className="w-3.5 h-3.5 rounded-xs overflow-hidden shrink-0 shadow-xs">
+                            <Image src="/ZAPAI.png" alt="ZapAI" width={14} height={14} className="w-full h-full object-cover" />
+                          </div>
                           <span>ZapAI Primitive</span>
                         </div>
                         <span className="text-[9px] font-mono text-brand-700 bg-white/90 px-2 py-0.2 rounded-full border border-brand-200/80 font-semibold">

@@ -38,6 +38,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "ZapAI — Turn WhatsApp Chats into Instant Razorpay Sales",
   description:
     "Autonomous AI seller agents that discover products, negotiate within your strict margin mandates, lock live stock, and collect instant payments on WhatsApp through Razorpay.",
@@ -49,6 +50,22 @@ export const metadata: Metadata = {
     "UPI Payment Links",
     "Margin Guardrails",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/ZAPAI.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+  },
+  openGraph: {
+    title: "ZapAI — Turn WhatsApp Chats into Instant Razorpay Sales",
+    description:
+      "Autonomous AI seller agents that discover products, negotiate within your strict margin mandates, lock live stock, and collect instant payments on WhatsApp through Razorpay.",
+    images: [{ url: "/ZAPAI.jpg", width: 1024, height: 1024, alt: "ZapAI Logo" }],
+  },
 };
 
 export default function RootLayout({
