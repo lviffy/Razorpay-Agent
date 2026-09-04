@@ -3,7 +3,24 @@ import { db } from "@zapai/database";
 
 export async function GET(req: NextRequest) {
   try {
-    const storeId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const rawStoreId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const storeId = rawStoreId && uuidRegex.test(rawStoreId) ? rawStoreId : null;
+
+    if (!storeId) {
+      return NextResponse.json({
+        agentGmv: 0,
+        gmvGrowthPercent: 0,
+        totalConversations: 0,
+        dealsClosed: 0,
+        conversionRate: 0,
+        averageDiscount: 0,
+        averageOrderValue: 0,
+        marginPreserved: 0,
+        topSellingProducts: [],
+        channelBreakdown: [],
+      });
+    }
 
     const { rows: orderStats } = await db.query(
       `SELECT
@@ -14,8 +31,8 @@ export async function GET(req: NextRequest) {
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN discount_applied ELSE 0 END), 0) as total_discount_given,
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN original_price ELSE 0 END), 0) as total_original_value
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
-      [storeId || null]
+       WHERE store_id = $1::uuid`,
+      [storeId]
     );
 
     const { rows: convStats } = await db.query(
@@ -23,8 +40,8 @@ export async function GET(req: NextRequest) {
         COUNT(*) as total_conversations,
         COUNT(CASE WHEN status = 'deal_closed' THEN 1 END) as closed_deals
        FROM conversations
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
-      [storeId || null]
+       WHERE store_id = $1::uuid`,
+      [storeId]
     );
 
     const totalGmv = parseFloat(orderStats[0]?.total_gmv || "0");
@@ -42,8 +59,8 @@ export async function GET(req: NextRequest) {
     const avgDiscount = totalGmv > 0 ? Number(((totalDiscountGiven / (totalGmv + totalDiscountGiven)) * 100).toFixed(1)) : 0;
 
     const { rows: ruleRow } = await db.query(
-      `SELECT max_discount_percentage FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
-      [storeId || null]
+      `SELECT max_discount_percentage FROM negotiation_rules WHERE store_id = $1::uuid LIMIT 1`,
+      [storeId]
     );
     const maxDiscountPct = ruleRow[0]?.max_discount_percentage !== null
       ? parseFloat(ruleRow[0]?.max_discount_percentage || "12")

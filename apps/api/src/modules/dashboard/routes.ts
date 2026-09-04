@@ -49,6 +49,29 @@ router.get("/overview", async (req: Request, res: Response) => {
   try {
     const storeId = await getStoreIdFromReq(req);
 
+    if (!storeId) {
+      return res.json({
+        summary: {
+          agentGmv: 0,
+          gmvGrowthPercent: 0,
+          totalConversations: 0,
+          dealsClosed: 0,
+          conversionRate: 0,
+          averageDiscount: 0,
+          averageOrderValue: 0,
+          marginPreserved: 0,
+          topSellingProducts: [],
+          todayWebhookCount: 0,
+        },
+        activity: [],
+        charts: {
+          gmvData: [],
+          marginData: [],
+          velocityData: [],
+        },
+      });
+    }
+
     const { rows: orderStats } = await db.query(
       `SELECT
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN amount ELSE 0 END), 0) as total_gmv,
@@ -58,7 +81,7 @@ router.get("/overview", async (req: Request, res: Response) => {
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN discount_applied ELSE 0 END), 0) as total_discount_given,
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN original_price ELSE 0 END), 0) as total_original_value
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
+       WHERE store_id = $1::uuid`,
       [storeId]
     );
 
@@ -68,12 +91,12 @@ router.get("/overview", async (req: Request, res: Response) => {
         COUNT(CASE WHEN status = 'deal_closed' THEN 1 END) as closed_deals,
         COALESCE(SUM(deal_amount), 0) as total_deal_volume
        FROM conversations
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
+       WHERE store_id = $1::uuid`,
       [storeId]
     );
 
     const { rows: ruleRow } = await db.query(
-      `SELECT max_discount_percentage, min_order_value_for_discount, free_shipping_threshold FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
+      `SELECT max_discount_percentage, min_order_value_for_discount, free_shipping_threshold FROM negotiation_rules WHERE store_id = $1::uuid LIMIT 1`,
       [storeId]
     );
     const maxDiscountPct = ruleRow[0] && ruleRow[0].max_discount_percentage !== null
@@ -98,7 +121,7 @@ router.get("/overview", async (req: Request, res: Response) => {
     const { rows: priorWeekStats } = await db.query(
       `SELECT COALESCE(SUM(amount), 0) as prior_gmv
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+       WHERE store_id = $1::uuid
          AND status = 'CAPTURED'
          AND created_at >= CURRENT_TIMESTAMP - INTERVAL '14 days'
          AND created_at < CURRENT_TIMESTAMP - INTERVAL '7 days'`,
@@ -116,7 +139,7 @@ router.get("/overview", async (req: Request, res: Response) => {
         COALESCE(SUM(o.amount), 0) as revenue
        FROM products p
        LEFT JOIN orders o ON (o.sku = p.sku OR o.product_title = p.title) AND o.status = 'CAPTURED'
-       WHERE ($1::uuid IS NULL OR p.store_id = $1::uuid)
+       WHERE p.store_id = $1::uuid
        GROUP BY p.id, p.title
        ORDER BY sales_count DESC, revenue DESC
        LIMIT 5`,
@@ -134,7 +157,7 @@ router.get("/overview", async (req: Request, res: Response) => {
     const { rows: activityRows } = await db.query(
       `SELECT id, event_type, payload, timestamp
        FROM audit_ledger
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+       WHERE store_id = $1::uuid
        ORDER BY id DESC
        LIMIT 15`,
       [storeId]
@@ -193,7 +216,7 @@ router.get("/overview", async (req: Request, res: Response) => {
          CURRENT_DATE,
          '1 day'::interval
        ) d(day)
-       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND ($1::uuid IS NULL OR o.store_id = $1::uuid) AND o.status = 'CAPTURED'
+       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND o.store_id = $1::uuid AND o.status = 'CAPTURED'
        GROUP BY d.day
        ORDER BY d.day ASC;`,
       [storeId]
@@ -216,7 +239,7 @@ router.get("/overview", async (req: Request, res: Response) => {
          CURRENT_DATE,
          '1 day'::interval
        ) d(day)
-       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND ($1::uuid IS NULL OR o.store_id = $1::uuid) AND o.status = 'CAPTURED'
+       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND o.store_id = $1::uuid AND o.status = 'CAPTURED'
        GROUP BY d.day
        ORDER BY d.day ASC;`,
       [storeId, maxDiscountPct]
@@ -242,7 +265,7 @@ router.get("/overview", async (req: Request, res: Response) => {
            ('20:00', 18, 21),
            ('23:00', 21, 24)
        ) AS b(time_label, start_hr, end_hr)
-       LEFT JOIN conversations c ON EXTRACT(HOUR FROM c.created_at) >= b.start_hr AND EXTRACT(HOUR FROM c.created_at) < b.end_hr AND ($1::uuid IS NULL OR c.store_id = $1::uuid)
+       LEFT JOIN conversations c ON EXTRACT(HOUR FROM c.created_at) >= b.start_hr AND EXTRACT(HOUR FROM c.created_at) < b.end_hr AND c.store_id = $1::uuid
        GROUP BY b.time_label, b.start_hr
        ORDER BY b.start_hr ASC;`,
       [storeId]
@@ -255,7 +278,7 @@ router.get("/overview", async (req: Request, res: Response) => {
     }));
 
     const { rows: webhookRows } = await db.query(
-      `SELECT COUNT(*) as count FROM processed_webhook_events WHERE processed_at >= CURRENT_DATE AND ($1::uuid IS NULL OR store_id = $1::uuid)`,
+      `SELECT COUNT(*) as count FROM processed_webhook_events WHERE processed_at >= CURRENT_DATE AND store_id = $1::uuid`,
       [storeId]
     );
     const todayWebhookCount = parseInt(webhookRows[0]?.count || "0", 10) || capturedOrders;

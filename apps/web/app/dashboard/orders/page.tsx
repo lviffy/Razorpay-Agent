@@ -20,8 +20,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { EditOrderModal } from "@/components/orders/edit-order-modal";
+import { useStore } from "@/lib/context/store-context";
 
 export default function OrdersPage() {
+  const { currentStore, refreshTrigger } = useStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function OrdersPage() {
   useEffect(() => {
     loadOrders();
     loadEscalations();
-  }, []);
+  }, [currentStore?.id, refreshTrigger]);
 
   const loadOrders = async () => {
     try {

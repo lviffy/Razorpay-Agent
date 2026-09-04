@@ -11,6 +11,8 @@ const JWT_SECRET = env.JWT_SECRET || "zapai_jwt_secret_neon_auth_2026";
 
 // ── Shared helper: build thread objects from DB rows ──────────────────────────
 async function buildThreads(storeId: string | null) {
+  if (!storeId) return [];
+
   const { rows } = await db.query(
     `SELECT
       id,
@@ -28,7 +30,7 @@ async function buildThreads(storeId: string | null) {
       created_at,
       updated_at
     FROM conversations
-    WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+    WHERE store_id = $1::uuid
     ORDER BY updated_at DESC`,
     [storeId]
   );
@@ -117,15 +119,9 @@ async function getStoreIdFromReq(req: Request): Promise<string | null> {
 // GET /api/v1/conversations
 router.get("/", async (req: Request, res: Response) => {
   try {
-    let storeId = await getStoreIdFromReq(req);
-
-    // Fallback: if we can't resolve storeId from auth (e.g. users table empty after reset),
-    // use the first active store so the UI always loads conversations.
+    const storeId = await getStoreIdFromReq(req);
     if (!storeId) {
-      const { rows: storeRows } = await db.query(
-        "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
-      );
-      storeId = storeRows[0]?.id ?? null;
+      return res.json([]);
     }
 
     const threads = await buildThreads(storeId);
@@ -138,14 +134,7 @@ router.get("/", async (req: Request, res: Response) => {
 
 // GET /api/v1/conversations/stream  — SSE real-time feed
 router.get("/stream", async (req: Request, res: Response) => {
-  // Resolve storeId the same way as the list route
-  let storeId = await getStoreIdFromReq(req);
-  if (!storeId) {
-    const { rows: storeRows } = await db.query(
-      "SELECT id FROM stores WHERE is_active = true ORDER BY created_at DESC LIMIT 1"
-    );
-    storeId = storeRows[0]?.id ?? null;
-  }
+  const storeId = await getStoreIdFromReq(req);
 
   // SSE headers
   res.setHeader("Content-Type", "text/event-stream");

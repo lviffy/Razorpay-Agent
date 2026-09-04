@@ -49,6 +49,9 @@ async function getStoreIdFromReq(req: Request): Promise<string | null> {
 router.get("/", async (req: Request, res: Response) => {
   try {
     const storeId = await getStoreIdFromReq(req);
+    if (!storeId) {
+      return res.json([]);
+    }
     const status = req.query.status as string | undefined;
 
     let query = `

@@ -39,6 +39,7 @@ import {
   Cpu,
   Zap,
 } from "lucide-react";
+import { useStore } from "@/lib/context/store-context";
 
 interface AuditRecord {
   id: string;
@@ -55,6 +56,7 @@ interface AuditRecord {
 }
 
 export default function AuditExplorerPage() {
+  const { currentStore, refreshTrigger } = useStore();
   const [records, setRecords] = useState<AuditRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<AuditRecord | null>(null);
@@ -62,10 +64,6 @@ export default function AuditExplorerPage() {
   const [loading, setLoading] = useState(false);
   const [filterType, setFilterType] = useState<string>("ALL");
   const [viewMode, setViewMode] = useState<"split" | "table">("split");
-
-  useEffect(() => {
-    loadAuditLedger();
-  }, []);
 
   const loadAuditLedger = async () => {
     setLoading(true);
@@ -75,6 +73,8 @@ export default function AuditExplorerPage() {
         setRecords(data as any);
         if (data.length > 0) {
           setSelectedRecord((curr) => curr || (data[0] as any));
+        } else {
+          setSelectedRecord(null);
         }
       }
     } catch (err) {
@@ -84,17 +84,37 @@ export default function AuditExplorerPage() {
     }
   };
 
+  useEffect(() => {
+    loadAuditLedger();
+  }, [currentStore?.id, refreshTrigger]);
+
   // Live SSE stream
   useEffect(() => {
+    const storeId =
+      currentStore?.id && currentStore.id !== "store_default" ? currentStore.id : null;
+    const mountTime = Date.now();
     const backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL || "https://razorpay-agent-production.up.railway.app";
-    const es = new EventSource(`${backendUrl}/demo/events`);
+    const es = new EventSource(`${backendUrl}/demo/events${storeId ? `?storeId=${storeId}` : ""}`);
 
     es.onmessage = (e) => {
       try {
         if (!e.data || e.data.startsWith(":")) return;
         const ev = JSON.parse(e.data);
         const ids = ev.ids || {};
+
+        // Verify event belongs to this store
+        const evStoreId = ev.storeId || ids.storeId || ev.payload?.storeId || ev.payload?.store_id;
+        if (storeId && evStoreId && evStoreId !== storeId) {
+          return;
+        }
+
+        // Discard historical events replayed on connect
+        const evTime = ev.timestamp ? new Date(ev.timestamp).getTime() : 0;
+        if (evTime && evTime < mountTime - 3000) {
+          return;
+        }
+
         const newRecord: AuditRecord = {
           id: ev.id || `sse_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
           eventType: ev.type || "SYSTEM_EVENT",
@@ -123,7 +143,7 @@ export default function AuditExplorerPage() {
     };
 
     return () => es.close();
-  }, []);
+  }, [currentStore?.id]);
 
   const handleCopy = (text: string, keyName: string) => {
     navigator.clipboard.writeText(text);

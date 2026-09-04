@@ -191,6 +191,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("Logout API call error:", err);
     } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("zapai_selected_store_id");
+        localStorage.removeItem("agentbridge_selected_store_id");
+      }
       saveToken(null);
       setUser(null);
     }

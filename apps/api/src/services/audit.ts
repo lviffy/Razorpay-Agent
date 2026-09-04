@@ -50,6 +50,7 @@ export async function logEvent(
       type: eventType,
       ids,
       payload,
+      storeId,
       checksum: eventChecksum,
       timestamp: new Date().toISOString(),
     });

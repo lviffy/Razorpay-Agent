@@ -49,6 +49,21 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const storeId = await getStoreIdFromReq(req);
 
+    if (!storeId) {
+      return res.json({
+        agentGmv: 0,
+        gmvGrowthPercent: 0,
+        totalConversations: 0,
+        dealsClosed: 0,
+        conversionRate: 0,
+        averageDiscount: 0,
+        averageOrderValue: 0,
+        marginPreserved: 0,
+        topSellingProducts: [],
+        channelBreakdown: [],
+      });
+    }
+
     const { rows: orderStats } = await db.query(
       `SELECT
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN amount ELSE 0 END), 0) as total_gmv,
@@ -58,7 +73,7 @@ router.get("/", async (req: Request, res: Response) => {
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN discount_applied ELSE 0 END), 0) as total_discount_given,
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN original_price ELSE 0 END), 0) as total_original_value
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
+       WHERE store_id = $1::uuid`,
       [storeId]
     );
 
@@ -67,7 +82,7 @@ router.get("/", async (req: Request, res: Response) => {
         COUNT(*) as total_conversations,
         COUNT(CASE WHEN status = 'deal_closed' THEN 1 END) as closed_deals
        FROM conversations
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
+       WHERE store_id = $1::uuid`,
       [storeId]
     );
 
@@ -78,7 +93,7 @@ router.get("/", async (req: Request, res: Response) => {
         COALESCE(SUM(o.amount), 0) as revenue
        FROM products p
        LEFT JOIN orders o ON (o.sku = p.sku OR o.product_title = p.title) AND o.status = 'CAPTURED'
-       WHERE ($1::uuid IS NULL OR p.store_id = $1::uuid)
+       WHERE p.store_id = $1::uuid
        GROUP BY p.id, p.title
        ORDER BY sales_count DESC, revenue DESC
        LIMIT 5`,
@@ -92,7 +107,7 @@ router.get("/", async (req: Request, res: Response) => {
         COALESCE(SUM(o.amount), 0) as gmv
        FROM orders o
        LEFT JOIN products p ON (o.sku = p.sku OR o.product_title = p.title)
-       WHERE ($1::uuid IS NULL OR o.store_id = $1::uuid) AND o.status = 'CAPTURED'
+       WHERE o.store_id = $1::uuid AND o.status = 'CAPTURED'
        GROUP BY channel`,
       [storeId]
     );
@@ -110,7 +125,7 @@ router.get("/", async (req: Request, res: Response) => {
     const avgDiscount = totalGmv > 0 ? Number(((totalDiscountGiven / (totalGmv + totalDiscountGiven)) * 100).toFixed(1)) : 0;
 
     const { rows: ruleRow } = await db.query(
-      `SELECT max_discount_percentage FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
+      `SELECT max_discount_percentage FROM negotiation_rules WHERE store_id = $1::uuid LIMIT 1`,
       [storeId]
     );
     const maxDiscountPct = ruleRow[0] && ruleRow[0].max_discount_percentage !== null
@@ -122,7 +137,7 @@ router.get("/", async (req: Request, res: Response) => {
     const { rows: priorWeekStats } = await db.query(
       `SELECT COALESCE(SUM(amount), 0) as prior_gmv
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+       WHERE store_id = $1::uuid
          AND status = 'CAPTURED'
          AND created_at >= CURRENT_TIMESTAMP - INTERVAL '14 days'
          AND created_at < CURRENT_TIMESTAMP - INTERVAL '7 days'`,

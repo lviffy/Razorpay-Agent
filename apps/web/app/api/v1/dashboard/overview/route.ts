@@ -3,7 +3,32 @@ import { db } from "@zapai/database";
 
 export async function GET(req: NextRequest) {
   try {
-    const storeId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const rawStoreId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const storeId = rawStoreId && uuidRegex.test(rawStoreId) ? rawStoreId : null;
+
+    if (!storeId) {
+      return NextResponse.json({
+        summary: {
+          agentGmv: 0,
+          gmvGrowthPercent: 0,
+          totalConversations: 0,
+          dealsClosed: 0,
+          conversionRate: 0,
+          averageDiscount: 0,
+          averageOrderValue: 0,
+          marginPreserved: 0,
+          topSellingProducts: [],
+          todayWebhookCount: 0,
+        },
+        activity: [],
+        charts: {
+          gmvData: [],
+          marginData: [],
+          velocityData: [],
+        },
+      });
+    }
 
     // Strictly count ONLY CAPTURED orders for Settled GMV and completed metrics
     const { rows: orderStats } = await db.query(
@@ -15,8 +40,8 @@ export async function GET(req: NextRequest) {
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN discount_applied ELSE 0 END), 0) as total_discount_given,
         COALESCE(SUM(CASE WHEN status = 'CAPTURED' THEN original_price ELSE 0 END), 0) as total_original_value
        FROM orders
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
-      [storeId || null]
+       WHERE store_id = $1::uuid`,
+      [storeId]
     );
 
     const { rows: convStats } = await db.query(
@@ -25,13 +50,13 @@ export async function GET(req: NextRequest) {
         COUNT(CASE WHEN status = 'deal_closed' THEN 1 END) as closed_deals,
         COALESCE(SUM(deal_amount), 0) as total_deal_volume
        FROM conversations
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)`,
-      [storeId || null]
+       WHERE store_id = $1::uuid`,
+      [storeId]
     );
 
     const { rows: ruleRow } = await db.query(
-      `SELECT max_discount_percentage FROM negotiation_rules WHERE ($1::uuid IS NULL OR store_id = $1::uuid) LIMIT 1`,
-      [storeId || null]
+      `SELECT max_discount_percentage FROM negotiation_rules WHERE store_id = $1::uuid LIMIT 1`,
+      [storeId]
     );
     const maxDiscountPct = ruleRow[0]?.max_discount_percentage !== null
       ? parseFloat(ruleRow[0]?.max_discount_percentage || "12")
@@ -65,10 +90,10 @@ export async function GET(req: NextRequest) {
          CURRENT_DATE,
          '1 day'::interval
        ) d(day)
-       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND ($1::uuid IS NULL OR o.store_id = $1::uuid) AND o.status = 'CAPTURED'
+       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND o.store_id = $1::uuid AND o.status = 'CAPTURED'
        GROUP BY d.day
        ORDER BY d.day ASC;`,
-      [storeId || null]
+      [storeId]
     );
 
     const gmvData = gmvRows.map((r) => ({
@@ -88,10 +113,10 @@ export async function GET(req: NextRequest) {
          CURRENT_DATE,
          '1 day'::interval
        ) d(day)
-       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND ($1::uuid IS NULL OR o.store_id = $1::uuid) AND o.status = 'CAPTURED'
+       LEFT JOIN orders o ON DATE(o.created_at) = DATE(d.day) AND o.store_id = $1::uuid AND o.status = 'CAPTURED'
        GROUP BY d.day
        ORDER BY d.day ASC;`,
-      [storeId || null, maxDiscountPct]
+      [storeId, maxDiscountPct]
     );
 
     const marginData = marginRows.map((r) => ({
@@ -114,10 +139,10 @@ export async function GET(req: NextRequest) {
            ('20:00', 18, 21),
            ('23:00', 21, 24)
        ) AS b(time_label, start_hr, end_hr)
-       LEFT JOIN conversations c ON EXTRACT(HOUR FROM c.created_at) >= b.start_hr AND EXTRACT(HOUR FROM c.created_at) < b.end_hr AND ($1::uuid IS NULL OR c.store_id = $1::uuid)
+       LEFT JOIN conversations c ON EXTRACT(HOUR FROM c.created_at) >= b.start_hr AND EXTRACT(HOUR FROM c.created_at) < b.end_hr AND c.store_id = $1::uuid
        GROUP BY b.time_label, b.start_hr
        ORDER BY b.start_hr ASC;`,
-      [storeId || null]
+      [storeId]
     );
 
     const velocityData = velocityRows.map((r) => ({

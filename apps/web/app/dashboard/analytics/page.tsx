@@ -16,8 +16,10 @@ import {
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
+import { useStore } from "@/lib/context/store-context";
 
 export default function AnalyticsPage() {
+  const { currentStore, refreshTrigger } = useStore();
   const [data, setData] = useState<AnalyticsSummary>(emptyAnalytics);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function AnalyticsPage() {
       }
     }
     load();
-  }, []);
+  }, [currentStore?.id, refreshTrigger]);
 
   const totalMarginSaved = data.marginPreserved || 0;
   const totalDiscountConceded = (data as any).totalDiscountGiven || Math.round(data.agentGmv * (data.averageDiscount / 100));

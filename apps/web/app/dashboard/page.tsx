@@ -27,8 +27,10 @@ import {
 
 import { DashboardCharts } from "@/components/dashboard/dashboard-charts";
 import { useAnimatedCounter } from "@/hooks/use-animated-counter";
+import { useStore } from "@/lib/context/store-context";
 
 export default function DashboardOverviewPage() {
+  const { currentStore, refreshTrigger } = useStore();
   const [analytics, setAnalytics] = useState<AnalyticsSummary>(emptyAnalytics);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [rules, setRules] = useState<NegotiationRules>(defaultNegotiationRules);
@@ -48,6 +50,10 @@ export default function DashboardOverviewPage() {
   const animatedGmv = useAnimatedCounter(analytics.agentGmv);
 
   useEffect(() => {
+    const storeId =
+      currentStore?.id && currentStore.id !== "store_default" ? currentStore.id : null;
+    const mountTime = Date.now();
+
     async function load() {
       try {
         const [overview, ruleData] = await Promise.all([
@@ -68,7 +74,7 @@ export default function DashboardOverviewPage() {
 
     // Live Server-Sent Events (SSE) stream listener for real-time order & payment capture
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "https://razorpay-agent-production.up.railway.app";
-    const sseUrl = `${backendUrl}/demo/events`;
+    const sseUrl = `${backendUrl}/demo/events${storeId ? `?storeId=${storeId}` : ""}`;
     let eventSource: EventSource | null = null;
 
     try {
@@ -84,6 +90,18 @@ export default function DashboardOverviewPage() {
           const ev = JSON.parse(e.data);
           const p = ev.payload || {};
           const ids = ev.ids || {};
+
+          // Verify event belongs to this store if storeId is resolved
+          const evStoreId = ev.storeId || ids.storeId || p.storeId || p.store_id;
+          if (storeId && evStoreId && evStoreId !== storeId) {
+            return;
+          }
+
+          // Discard historical events replayed on connect
+          const evTime = ev.timestamp ? new Date(ev.timestamp).getTime() : 0;
+          if (evTime && evTime < mountTime - 3000) {
+            return;
+          }
 
           let title = ev.type?.replace(/_/g, " ") || "System Event";
           let description = "Cryptographic audit event verified.";
@@ -157,7 +175,7 @@ export default function DashboardOverviewPage() {
         eventSource.close();
       }
     };
-  }, []);
+  }, [currentStore?.id, refreshTrigger]);
 
   const filteredActivity = activity.filter((item) => {
     if (selectedActivityFilter === "ALL") return true;

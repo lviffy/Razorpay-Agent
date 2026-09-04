@@ -3,7 +3,13 @@ import { db } from "@zapai/database";
 
 export async function GET(req: NextRequest) {
   try {
-    const storeId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const rawStoreId = req.headers.get("x-store-id") || req.nextUrl.searchParams.get("storeId");
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const storeId = rawStoreId && uuidRegex.test(rawStoreId) ? rawStoreId : null;
+
+    if (!storeId) {
+      return NextResponse.json([]);
+    }
 
     const { rows } = await db.query(
       `SELECT
@@ -22,9 +28,9 @@ export async function GET(req: NextRequest) {
         created_at,
         updated_at
       FROM conversations
-      WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+      WHERE store_id = $1::uuid
       ORDER BY updated_at DESC`,
-      [storeId || null]
+      [storeId]
     );
 
     const threads = rows.map((r) => {

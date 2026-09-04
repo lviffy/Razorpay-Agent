@@ -20,29 +20,60 @@ router.get("/events", (req: Request, res: Response) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.flushHeaders();
 
-  db.query(
-    "SELECT * FROM audit_ledger ORDER BY id DESC LIMIT 20"
-  ).then(({ rows }) => {
-    for (const row of rows.reverse()) {
-      const data = JSON.stringify({
-        type: row.event_type,
-        ids: {
-          whatsappMessageId: row.whatsapp_message_id,
-          conversationId: row.conversation_id,
-          x402TransactionId: row.x402_transaction_id,
-          razorpayPaymentId: row.razorpay_payment_id,
-          orderId: row.order_id,
-        },
-        payload: row.payload,
-        checksum: row.event_checksum,
-        timestamp: row.timestamp,
-      });
-      res.write(`data: ${data}\n\n`);
-    }
-  }).catch((err) => logger.error({ err }, "Demo SSE history fetch error"));
+  const replay = req.query.replay === "true";
+  const rawStoreId = (req.query.storeId as string) || (req.headers["x-store-id"] as string);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const storeId = rawStoreId && uuidRegex.test(rawStoreId) ? rawStoreId : null;
 
-  const send = (data: string) => {
-    res.write(`data: ${data}\n\n`);
+  // Only replay historical events if explicitly requested (e.g. standalone demo page)
+  if (replay) {
+    const query = storeId
+      ? "SELECT * FROM audit_ledger WHERE store_id = $1 ORDER BY id DESC LIMIT 20"
+      : "SELECT * FROM audit_ledger ORDER BY id DESC LIMIT 20";
+    const params = storeId ? [storeId] : [];
+
+    db.query(query, params)
+      .then(({ rows }) => {
+        for (const row of rows.reverse()) {
+          const data = JSON.stringify({
+            type: row.event_type,
+            ids: {
+              whatsappMessageId: row.whatsapp_message_id,
+              conversationId: row.conversation_id,
+              x402TransactionId: row.x402_transaction_id,
+              razorpayPaymentId: row.razorpay_payment_id,
+              orderId: row.order_id,
+              storeId: row.store_id,
+            },
+            payload: row.payload,
+            storeId: row.store_id,
+            checksum: row.event_checksum,
+            timestamp: row.timestamp,
+          });
+          res.write(`data: ${data}\n\n`);
+        }
+      })
+      .catch((err) => logger.error({ err }, "Demo SSE history fetch error"));
+  }
+
+  const send = (dataStr: string) => {
+    if (storeId) {
+      try {
+        const parsed = JSON.parse(dataStr);
+        const evStoreId =
+          parsed.storeId ||
+          parsed.ids?.storeId ||
+          parsed.payload?.storeId ||
+          parsed.payload?.store_id;
+        // If event belongs to another store, skip broadcasting to this client
+        if (evStoreId && evStoreId !== storeId) {
+          return;
+        }
+      } catch {
+        // write as fallback
+      }
+    }
+    res.write(`data: ${dataStr}\n\n`);
   };
   sseClients.add(send);
 
@@ -150,7 +181,7 @@ function getDashboardHtml(): string {
     const empty = document.getElementById('empty');
     const statusEl = document.getElementById('status');
 
-    const es = new EventSource('/demo/events');
+    const es = new EventSource('/demo/events?replay=true');
 
     es.onopen = () => {
       statusEl.innerHTML = '<span class="dot"></span> Live';

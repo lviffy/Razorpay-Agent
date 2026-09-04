@@ -60,11 +60,15 @@ router.get("/", async (req: Request, res: Response) => {
     const limit = parseInt((req.query.limit as string) || "20", 10);
     const storeId = await getStoreIdFromReq(req);
 
+    if (!storeId) {
+      return res.json([]);
+    }
+
     const search = req.query.search as string | undefined;
     let query = `
       SELECT id, event_type, whatsapp_message_id, conversation_id, x402_transaction_id, razorpay_payment_id, order_id, payload, event_checksum, timestamp
       FROM audit_ledger
-      WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+      WHERE store_id = $1::uuid
     `;
     const params: any[] = [storeId];
 
@@ -143,10 +147,14 @@ router.get("/notifications", async (req: Request, res: Response) => {
   try {
     const storeId = await getStoreIdFromReq(req);
 
+    if (!storeId) {
+      return res.json([]);
+    }
+
     const { rows } = await db.query(
       `SELECT id, event_type, payload, timestamp
        FROM audit_ledger
-       WHERE ($1::uuid IS NULL OR store_id = $1::uuid)
+       WHERE store_id = $1::uuid
        ORDER BY id DESC
        LIMIT 5`,
       [storeId]
