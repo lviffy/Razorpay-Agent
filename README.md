@@ -1,56 +1,56 @@
 # ZapAI — AI-Native Agentic Commerce Middleware
 
 > **Track:** Razorpay AI Buildathon 2026 — AI Growth & Agentic Commerce  
-> **Status:** Final Submission Draft  
-> **Core Stack:** Bun • TypeScript • AI Engine • Razorpay • Neon Postgres • Redis • WhatsApp Cloud API • x402 Protocol  
+> **Status:** Production-Ready Submission  
+> **Core Stack:** Bun • TypeScript • Next.js 15 • Express • Gemini 2.5 Flash • Razorpay Deep Suite • Neon Postgres • Redis • WhatsApp Cloud API • x402 Protocol  
 > **Documentation:** [PRD.md](PRD.md) • [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
-## ⚡ One-Liner
+## Executive Summary
 
-**ZapAI turns any Shopify store into an AI-native commerce endpoint — where AI Buyer Agents discover, negotiate, reserve inventory, and pay Seller Agents autonomously in real time, with every rupee settled in INR through Razorpay's payment infrastructure.**
-
----
-
-## 📋 Table of Contents
-
-- [The Problem](#-the-problem)
-- [Solution Overview](#-solution-overview)
-- [System Architecture](#-system-architecture)
-- [Dual AI Agent System](#-dual-ai-agent-system)
-- [How ZapAI Uses Razorpay](#-how-zapai-uses-razorpay)
-- [5-Field Tamper-Proof Audit Trail](#-5-field-tamper-proof-audit-trail)
-- [Tech Stack & Infrastructure](#-tech-stack--infrastructure)
-- [Environment Variables](#-environment-variables)
-- [Quick Start & Local Setup](#-quick-start--local-setup)
-- [Demo Execution & Test Scripts](#-demo-execution--test-scripts)
-- [API Reference](#-api-reference)
-- [Project Directory Structure](#-project-directory-structure)
-- [Failure Recovery & Resiliency](#-failure-recovery--resiliency)
-- [License & Acknowledgments](#-license--acknowledgments)
+**ZapAI turns any e-commerce catalog or Shopify store into an AI-native commerce endpoint — where AI Buyer Agents discover, negotiate, reserve inventory, and settle transactions autonomously, with every rupee settled in INR through Razorpay's multi-product financial infrastructure.**
 
 ---
 
-## 🚨 The Problem
+## Table of Contents
 
-It is 2:00 AM. A Buyer Agent is executing a task: *"Buy the best running shoes you can find under ₹4,000."* The consumer set their budget, pre-authorized a spending limit, and went to sleep.
+- [The Problem](#the-problem)
+- [Solution Overview](#solution-overview)
+- [System Architecture](#solution-overview)
+- [Dual AI Agent System](#dual-ai-agent-system)
+- [Razorpay Deep Financial Suite Integration](#razorpay-deep-financial-suite-integration)
+- [8-Stage Tamper-Evident Audit Ledger](#8-stage-tamper-evident-audit-ledger)
+- [Monorepo Architecture & Directory Structure](#monorepo-architecture--directory-structure)
+- [Tech Stack & Infrastructure](#tech-stack--infrastructure)
+- [Environment Variables](#environment-variables)
+- [Quick Start & Local Setup](#quick-start--local-setup)
+- [Test Suite & Automated Verification](#test-suite--automated-verification)
+- [API Reference](#api-reference)
+- [Failure Recovery & Resiliency](#failure-recovery--resiliency)
+- [License & Acknowledgments](#license--acknowledgments)
 
-Here is what the agent actually encounters on existing e-commerce systems:
+---
 
-1. **Unstructured Storefronts:** Shopify storefronts are HTML rendered for human eyes. Product attributes are buried in unstructured text, and real-time inventory counts are inaccessible without custom integrations.
+## The Problem
+
+It is 2:00 AM. A Buyer Agent is executing a task: *"Buy the best running shoes you can find under ₹4,000."* The consumer set their budget, pre-authorized a spending mandate, and went to sleep.
+
+Here is what agentic commerce encounters on existing e-commerce systems:
+
+1. **Unstructured Storefronts:** Storefronts are HTML rendered for human eyes. Product attributes are buried in unstructured text, and real-time inventory counts are inaccessible without custom integrations.
 2. **Fixed Prices & No Negotiation Surface:** Prices are static. There is no machine-readable API endpoint to ask *"Will you accept ₹3,700 with free shipping for instant checkout?"*
-3. **No Reservation Mechanism:** Even if the agent finds the right item, nothing prevents another buyer from purchasing it during the 30-second decision window.
-4. **No Programmable Payment Path:** Checkout requires human interaction (e.g., clicking a UPI deep-link or entering OTPs). The agent cannot programmatically pay within a pre-authorized mandate and receive a cryptographic receipt.
-5. **Settlement & Fiat Gap:** Global protocols like x402 are often tied to web3 or non-fiat tokens. Indian Shopify merchants require **instant bank settlement in INR** compliant with Indian banking regulations.
+3. **No Reservation Mechanism:** Even if the agent finds the right item, nothing prevents another buyer from purchasing it during the decision window.
+4. **No Programmable Payment Path:** Traditional checkout requires human intervention (clicking links, entering OTPs). Agents cannot programmatically settle within a pre-authorized mandate and receive a cryptographic receipt.
+5. **Settlement & Fiat Gap:** Global agent protocols like x402 are often tied to non-fiat tokens. Indian merchants require **instant bank settlement in INR** compliant with RBI banking regulations.
 
-**Result:** The merchant loses a high-intent sale. The agent fails its mandate. The consumer wakes up empty-handed. **ZapAI bridges all five failures in a single integration layer.**
+**ZapAI bridges all five failures in a single unified middleware layer.**
 
 ---
 
-## 💡 Solution Overview
+## Solution Overview
 
-ZapAI operates as a three-layer intelligent middleware connecting e-commerce platforms to the agentic economy, backed by Razorpay as the financial and trust engine.ay as the financial and trust engine.
+ZapAI operates as a three-layer intelligent middleware connecting e-commerce platforms to the agentic economy, backed by Razorpay as the financial and trust engine.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -64,7 +64,7 @@ ZapAI operates as a three-layer intelligent middleware connecting e-commerce pla
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │                             ZAPAI GATEWAY & ROUTER                               │
 │       • API Gateway (Express/Bun)        • HMAC Webhook Verification             │
-│       • Async Job Queue (Redis)          • Dual-Agent Orchestration Engine       │
+│       • Conversation State Machine       • Dual-Agent Orchestration Engine       │
 └──────────────────────────────────────┬───────────────────────────────────────────┘
                                        │
 ┌──────────────────────────────────────▼───────────────────────────────────────────┐
@@ -76,43 +76,47 @@ ZapAI operates as a three-layer intelligent middleware connecting e-commerce pla
 │   └───────────┬────────────┘   └───────────┬────────────┘   └────────┬────────┘  │
 │               │                            │                         │           │
 │   ┌───────────▼────────────┐   ┌───────────▼────────────┐   ┌────────▼────────┐  │
-│   │   Razorpay Payment     │   │  Postgres DB (Neon)    │   │ 5-Field Audit   │  │
-│   │   State Machine        │   │  Catalog & Inventory   │   │ Immutable Log   │  │
+│   │   Razorpay Adapter     │   │  Postgres DB (Neon)    │   │ 8-Stage Audit   │  │
+│   │   Deep Services Engine │   │  Catalog & Inventory   │   │ SHA-256 Ledger  │  │
 │   └────────────────────────┘   └────────────────────────┘   └─────────────────┘  │
 └───────────────────┬─────────────────────────────────────────────┬────────────────┘
                     │                                             │
                     ▼                                             ▼
 ┌──────────────────────────────────────┐     ┌─────────────────────────────────────┐
 │          RAZORPAY FINANCIAL BUS      │     │           SHOPIFY MERCHANTS         │
-│   • Orders API & Optimizer           │     │   • Structured Catalog JSON         │
-│   • Instant Settlements (IMPS/UPI)   │     │   • Real-Time Inventory Updates     │
-│   • Smart Collect & Virtual Accounts │     │   • Merchant Guardrail Rules        │
-│   • Vulcan AI & Fraud Risk Signals   │     │   • Order Write-Back                │
+│   • Orders & Payment Links           │     │   • Structured Catalog JSON         │
+│   • Dynamic UPI QR & DeepLinks       │     │   • Real-Time Inventory Updates     │
+│   • GST Tax Invoicing Engine         │     │   • Merchant Guardrail Rules        │
+│   • UPI AutoPay & TokenHQ (RBI <15k) │     │   • Webhook Product Synchronization │
+│   • Dynamic Offers Engine            │     │   • Order Write-Back                │
+│   • Route Multi-Vendor Splits        │     │                                     │
+│   • Instant Refunds & Disputes       │     │                                     │
 └──────────────────────────────────────┘     └─────────────────────────────────────┘
 ```
 
 ### Layer 1 — Merchant Catalog & Inventory Engine
-- Serves agent-readable structured JSON schemas (variant IDs, listed price, floor price, live stock counts).
-- Configurable merchant negotiation guardrails stored in Postgres (e.g., max discount percentage, free shipping triggers, bundle rules).
+- Serves agent-readable structured JSON schemas (SKUs, listed price, floor price, live stock counts).
+- Configurable merchant negotiation guardrails stored in Postgres (max discount %, free shipping threshold, bundle rules).
 - State-machine driven inventory: `AVAILABLE → RESERVED → PAYMENT_PENDING → PAID/SOLD`.
 - Atomic Redis TTL lock (`120s`) prevents race conditions and double-selling.
 
 ### Layer 2 — Dual AI Agent System (A2A Engine)
 - **Seller Agent:** Operates per store. Evaluates incoming buyer requests against merchant guardrails, performs multi-turn counter-offers, and locks inventory atomically upon agreement.
-- **Buyer Agent:** Acts on behalf of the consumer. Receives a natural-language mandate + pre-authorized spending limit, searches multiple store catalogs in parallel, conducts negotiations, and triggers payment when terms are met.
+- **Buyer Agent:** Acts on behalf of the consumer. Receives a natural-language mandate + pre-authorized spending limit, searches multiple store catalogs, conducts negotiations, and triggers payment when terms are met.
 - **A2A Protocol:** Structured, signed HTTP exchange (`X-402-*` headers) ensuring auditable offer history.
 
-### Layer 3 — Payment & Settlement Stack (Razorpay Core)
-- Converts x402 payment challenges directly into Razorpay Orders.
-- Leverages Razorpay Optimizer for smart routing (UPI-first with fallback to Card/Netbanking).
-- Gates order creation and inventory deduction strictly on verified `payment.captured` webhooks.
-- Triggers **Razorpay Instant Settlement** for 10–15 second INR bank transfer to merchants.
+### Layer 3 — Deep Payment & Settlement Stack (Razorpay Core)
+- Converts x402 payment challenges directly into Razorpay Orders or Dynamic UPI QR Codes.
+- Supports zero-touch tokenized debits via **UPI AutoPay** under RBI limits (≤ ₹15,000).
+- Applies dynamic affiliate & bank discounts via **Razorpay Offers Engine** during negotiations.
+- Deducts platform facilitator fees and distributes merchant payouts via **Razorpay Route**.
+- Generates GST-compliant tax invoices with automatic CGST + SGST tax breakdown.
 
 ---
 
-## 🤖 Dual AI Agent System
+## Dual AI Agent System
 
-ZapAI implements two specialized LLM agents built on **Autonomous AI Reasoning** with function calling:
+ZapAI implements two specialized LLM agents built on **Autonomous AI Reasoning** with tool calling:
 
 ```
 [Buyer Agent] ──── (1) Search & Request Offer ────► [Store A Seller Agent]
@@ -121,31 +125,33 @@ ZapAI implements two specialized LLM agents built on **Autonomous AI Reasoning**
       │                                                     │
       ◄────────── (3) Counter-Offer (₹3,799) ──────────────┘ (Within 8% Discount Guardrail)
       │
-[Verifies AP2 Spending Mandate: Max ₹4,000] ✅
+[Verifies AP2 Spending Mandate: Max ₹4,000] [Verified]
       │
       └────────── (4) Accept & Request Payment Challenge ──► [Seller Agent]
                                                                   │
                                                      [Locks Inventory in Redis]
                                                                   │
                                                      [Issues x402 Challenge]
+                                                                  │
+                                                     [Generates Razorpay QR / Order / Link]
 ```
 
-### 1. The Seller Agent (`src/agents/seller-agent.ts`)
+### 1. The Seller Agent (`apps/api/src/modules/agent/`)
 - Configured per merchant with business rules:
-  - *Max discount percentage* (e.g., up to 8% off for orders above ₹2,000).
+  - *Max discount percentage* (e.g., up to 10% off for orders above ₹2,000).
   - *Free shipping threshold* (e.g., free shipping on orders above ₹3,000).
-  - *Floor price protection* (never accepts an offer below item cost).
+  - *Floor price protection* (strictly blocks offers below item cost).
 - Performs atomic inventory locks (`Redis SET NX EX 120`) when an offer is accepted.
 
-### 2. The Buyer Agent (`src/agents/buyer-agent.ts`)
+### 2. The Buyer Agent (`apps/api/src/modules/agent/`)
 - Bounded by an **AP2 Spending Mandate**:
   ```json
   {
-    "mandate_id": "man_982347102938",
-    "spending_limit": 4000,
+    "mandateId": "man_982347102938",
+    "spendingLimit": 400000,
     "currency": "INR",
     "purpose": "Buy running shoes",
-    "expires_at": "2026-08-21T00:00:00Z"
+    "expiresAt": "2026-09-05T00:00:00Z"
   }
   ```
 - Evaluates multiple merchants simultaneously and automatically selects the optimal deal within budget.
@@ -153,41 +159,34 @@ ZapAI implements two specialized LLM agents built on **Autonomous AI Reasoning**
 
 ---
 
-## 💳 How ZapAI Uses Razorpay
+## Razorpay Deep Financial Suite Integration
 
-ZapAI does not treat Razorpay as just a checkout button — it relies on Razorpay as the foundational trust, payment routing, and settlement infrastructure for autonomous agents.
+ZapAI implements a comprehensive adapter across **8 distinct Razorpay API capabilities**:
 
-| Razorpay API / Feature | Purpose in ZapAI | Architectural Impact |
+| Razorpay Module | File / Location | Purpose & Implementation |
 |---|---|---|
-| **Orders API** | Idempotent order creation for agent payments | Prevents double-charging during agent retries; provides the immutable anchor for the 5-field audit trail. |
-| **Razorpay Optimizer** | Dynamic payment method routing | Analyzes method success rates in real time; routes UPI-first for small transactions and auto-falls back to Card/Netbanking on declines. |
-| **`payment.captured` Webhooks** | Anti-oversell payment confirmation | Inventory is permanently deducted and order confirmed *only* on cryptographic webhook confirmation — never client-side. |
-| **`payment.failed` Webhooks** | Rapid lock release & failure recovery | Instantly releases the Redis inventory lock (within <2s) and instructs the Buyer Agent to retry via fallback options. |
-| **HMAC-SHA256 Signatures** | Webhook tamper prevention | Ensures all incoming payment events originate from Razorpay, eliminating replay or spoof attacks. |
-| **Payment Links API** | Human-in-the-loop fallback flow | Generates interactive payment links delivered via WhatsApp when manual merchant or buyer approval is required. |
-| **Vulcan AI Scoring** | Autonomous fraud detection | Evaluates risk vectors on high-value agent transactions before order finalization. |
-| **Instant Settlements** | Real-time merchant bank payout | Settles INR directly into merchant bank accounts in 10–15 seconds via IMPS/UPI rails. |
-| **Smart Collect 2.0** | Agent virtual accounts & VPAs | Generates dynamic VPAs for multi-store bundle payments and bank transfer reconciliations. |
-| **Route API** | Platform commission splits | Enables ZapAI to collect automated platform fees on agent-driven GMV. |
-| **Refunds API** | Race condition mitigation | Automatically issues instant refunds if physical store inventory collapses during payment transit. |
+| **Orders API** | [`orders.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/orders.ts) | Idempotent order creation for agent payments, anchoring the immutable 8-stage audit trail. |
+| **Payment Links API** | [`payment-links.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/payment-links.ts) | Generates instant interactive payment links with customer contact prefill for human-in-the-loop fallback. |
+| **Dynamic UPI QR Codes** | [`qr.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/qr.ts) | Generates dynamic single-use UPI QR codes + RFC-compliant UPI DeepLinks (`upi://pay?...`) for 1-tap mobile checkout. |
+| **GST Tax Invoices** | [`invoices.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/invoices.ts) | Programmatically creates GST-compliant tax invoices with automated CGST (9%) + SGST (9%) breakdown, HSN coding, and PDF download links. |
+| **UPI AutoPay & Mandates** | [`autopay.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/autopay.ts) | Customer token registration and zero-touch autonomous debits compliant with the RBI ₹15,000 threshold exemption. |
+| **Dynamic Offers Engine** | [`offers.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/offers.ts) | Real-time discount optimization (e.g. HDFC 10%, UPI AutoPay flat ₹200) injected directly into AI agent counter-offer reasoning. |
+| **Route (Split Settlements)** | [`route.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/route.ts) | Multi-vendor cart settlement with automated platform commission take-rate deduction and linked merchant payouts. |
+| **Instant Refunds** | [`refunds.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/refunds.ts) | Automated programmatic refund issuance with structured dispute reasoning (`inventory_unavailable`, `price_mismatch`). |
+| **Dispute Evidence Adapter** | [`disputes.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/disputes.ts) | Compiles the cryptographic SHA-256 hash-chained audit ledger into a proof bundle and submits it to Razorpay Dispute Evidence API. |
+| **Webhook HMAC Verification** | [`webhooks.ts`](file:///home/lviffy/Projects/Razorpay-Agent/apps/api/src/payments/razorpay/webhooks.ts) | Constant-time HMAC-SHA256 signature verification preventing webhook spoofing or replay attacks. |
 
 ---
 
-## 🔒 Tamper-Evident SHA-256 Audit Ledger & Signed Checkpoints
+## 8-Stage Tamper-Evident Audit Ledger
 
 Every transaction processed through ZapAI generates a deterministic, tamper-evident cryptographic hash chain across an 8-stage lifecycle, protected by **RFC 8785 Canonical JSON hashing**, **PostgreSQL concurrency locking**, and **Ed25519 Signed Checkpoints**:
 
 $$H_n = \text{SHA256}(H_{n-1} : \text{eventType} : \text{actor} : \text{payloadHash} : \text{timestamp})$$
 
-Where:
-* $\text{payloadHash} = \text{SHA256}(\text{canonicalize\_rfc8785}(\text{payload}))$ (deterministic key ordering).
-* $H_0 = \text{GENESIS\_HASH} = \text{"0000000000000000000000000000000000000000000000000000000000000000"}$.
-* **Signed Trust Anchor:** Chain head $H_8$ is signed via Ed25519 (`zapai-root-anchor-v1`) to prevent whole-database rewrite attacks.
-* **Concurrency Protection:** PostgreSQL `SELECT ... FOR UPDATE` row locks inside atomic transactions serialize chain progression.
-
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ ⚡ 8-STAGE CRYPTOGRAPHIC HASH CHAIN & TRUST ANCHOR                                                     │
+│ 8-STAGE CRYPTOGRAPHIC HASH CHAIN & TRUST ANCHOR                                                        │
 │                                                                                                        │
 │  [#1 INTENT] ──► [#2 MANDATE] ──► [#3 DEAL] ──► [#4 INVENTORY] ──► [#5 X402-REQ] ──► [#6 X402-AUTH]    │
 │      │                │               │                │                 │                 │           │
@@ -200,7 +199,7 @@ Where:
 ```
 
 ### 5-Way Linked Cross-System Identifiers
-Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 keys linked in every audit block:
+Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 cross-referenced keys:
 
 ```
 ┌───────────────────────────────────┐         ┌───────────────────────────────────┐
@@ -221,30 +220,98 @@ Any entity (merchant, buyer, auditor, or regulator) can query any of the 5 keys 
 └───────────────────────────────────┘
 ```
 
-### Interactive UI Features in Web Dashboard
-1. **Live WebCrypto Verification Engine**: Recomputes SHA-256 and canonical hashes for all 8 blocks in `<0.5ms`.
-2. **Simulate Tampering Tool**: Mutates a past block payload (e.g. price change) and visually demonstrates the immediate cryptographic severance and downstream red cascade.
-3. **Exportable Audit Receipt**: Generates a self-contained `zapai-audit-receipt.json` with offline Node.js verification instructions.
+---
+
+## Monorepo Architecture & Directory Structure
+
+```
+Razorpay-Agent/
+├── apps/
+│   ├── api/                               # Express + Bun API Gateway
+│   │   ├── src/
+│   │   │   ├── index.ts                   # Main server bootstrap
+│   │   │   ├── audit/                     # SHA-256 Hash Chain & RFC 8785 Canonicalizer
+│   │   │   ├── commerce/                  # Offer evaluation & pricing engine
+│   │   │   ├── integrations/
+│   │   │   │   ├── razorpay/              # Razorpay client & webhook verifier
+│   │   │   │   ├── shopify/               # Shopify OAuth & webhook HMAC sync
+│   │   │   │   └── whatsapp/              # Meta Cloud API message sender
+│   │   │   ├── modules/
+│   │   │   │   ├── agent/                 # LangChain / Gemini AI reasoning engine
+│   │   │   │   ├── analytics/             # Revenue, GMV, & conversion metrics
+│   │   │   │   ├── onboarding/            # Store onboarding & API key provisioning
+│   │   │   │   ├── orders/                # Order lifecycle & settlement tracker
+│   │   │   │   ├── products/              # Product catalog & CSV bulk import
+│   │   │   │   ├── settings/              # Store rules & credential management
+│   │   │   │   └── simulator/             # Interactive web A2A chat simulation
+│   │   │   └── payments/
+│   │   │       └── razorpay/              # Deep Razorpay capabilities:
+│   │   │           ├── adapter.ts         # Unified PaymentService adapter
+│   │   │           ├── autopay.ts         # UPI AutoPay & RBI limit enforcement
+│   │   │           ├── disputes.ts        # Audit proof compiler for disputes
+│   │   │           ├── invoices.ts        # GST tax invoice calculation & PDF
+│   │   │           ├── offers.ts          # Bank/UPI offer optimization
+│   │   │           ├── orders.ts          # Order creation
+│   │   │           ├── payment-links.ts   # Interactive human approval links
+│   │   │           ├── qr.ts              # Dynamic UPI QR & DeepLinks
+│   │   │           ├── refunds.ts         # Instant programmatic refunds
+│   │   │           ├── route.ts           # Multi-merchant split settlements
+│   │   │           └── webhooks.ts        # HMAC signature verification
+│   │   └── package.json
+│   │
+│   └── web/                               # Next.js 15 App Router Frontend
+│       ├── app/
+│       │   ├── dashboard/                 # Analytics, catalog, orders, audit explorer, settings
+│       │   ├── onboarding/                # Step-by-step merchant onboarding wizard
+│       │   └── layout.tsx                 # Root layout & providers
+│       ├── components/                    # Radix UI, dashboard panels, topbar, charts
+│       └── package.json
+│
+├── packages/
+│   ├── database/                          # Neon Postgres Client, Migrations & Schema
+│   │   ├── src/
+│   │   │   ├── schema.sql                 # Complete Postgres database schema
+│   │   │   ├── seed.sql                   # Database seed template
+│   │   │   ├── migrate.ts                 # Database migration runner
+│   │   │   └── index.ts                   # Postgres pool connection
+│   │   └── package.json
+│   │
+│   └── types/                             # Shared TypeScript definitions
+│       └── src/
+│           └── index.ts                   # Product, Store, Rules, A2A, Audit types
+│
+├── tests/                                 # Bun Automated Test Suites (43 Passing Tests)
+│   ├── agentic-commerce-modules.test.ts   # Mandate guards, x402 V2, hash chain
+│   ├── conversation-intelligence.test.ts  # 13 Conversational AI scenarios
+│   ├── razorpay-advanced.test.ts          # Invoices, QR, AutoPay, Offers
+│   ├── razorpay-advanced-services.test.ts # Deep Razorpay adapter tests
+│   └── shopify-integration.test.ts        # Shopify webhooks & HMAC verification
+│
+├── package.json                           # Turborepo root configuration
+├── turbo.json                             # Turborepo task pipeline
+└── tsconfig.json                          # Base TypeScript configuration
+```
 
 ---
 
-## 🛠 Tech Stack & Infrastructure
+## Tech Stack & Infrastructure
 
-- **Runtime Engine:** [Bun](https://bun.sh/) (v1.1+) — native TypeScript execution with built-in test runner.
-- **Language:** TypeScript 100% (Strict Mode).
-- **AI / LLM Orchestration:** Advanced Autonomous LLM Reasoning with Function Calling.
-- **Database:** Serverless Postgres via [Neon DB](https://neon.tech/).
-- **In-Memory Cache & Locking:** Redis 7 (`ioredis`) for atomic inventory reservation (`SET NX EX`).
-- **Payment Processing:** Official `razorpay` Node SDK.
-- **Messaging Interface:** WhatsApp Business Cloud API (via Express async worker queue).
+- **Runtime:** [Bun](https://bun.sh/) (v1.4+) — ultra-fast TypeScript engine with built-in test runner.
+- **Monorepo Manager:** [Turborepo](https://turbo.build/) — cached builds and parallel pipeline execution.
+- **Frontend App:** [Next.js 15](https://nextjs.org/) (App Router), React 19, TailwindCSS, Radix UI, Framer Motion.
+- **Backend API:** [Express](https://expressjs.com/) with TypeScript strict mode on Bun runtime.
+- **AI / LLM Engine:** [Google Gemini 2.5 Flash](https://ai.google.dev/) via `@google/generative-ai` with structured tool calling.
+- **Database:** [Neon Serverless Postgres](https://neon.tech/) with connection pooling.
+- **Caching & Lock Engine:** [Redis 7](https://redis.io/) (`ioredis`) with atomic Redlock pattern (`SET NX EX`).
+- **Payment Infrastructure:** Official `razorpay` Node SDK.
+- **Messaging Interface:** WhatsApp Business Cloud API.
 - **Protocol:** Fiat-Native HTTP 402 (`x402`).
-- **Deployment & Hosting:** [Railway](https://railway.app/) with Nixpacks builder.
 
 ---
 
-## 🔑 Environment Variables
+## Environment Variables
 
-Copy `.env.example` to `.env` and fill in your credentials:
+Copy `.env.example` to `.env` in the root directory:
 
 ```bash
 cp .env.example .env
@@ -256,25 +323,17 @@ cp .env.example .env
 | `RAZORPAY_KEY_ID` | Razorpay Test Key ID | `rzp_test_...` |
 | `RAZORPAY_KEY_SECRET` | Razorpay Test Key Secret | `xxxxxxxxxxxxxxxx` |
 | `RAZORPAY_WEBHOOK_SECRET` | Secret configured in Razorpay Webhooks | `xxxxxxxxxxxxxxxx` |
+| `DATABASE_URL` | Neon Postgres pooled connection string | `postgresql://user:pass@ep-xxx.neon.tech/zapai?sslmode=require` |
+| `REDIS_URL` | Redis instance connection string | `redis://localhost:6379` |
 | `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Business Phone Number ID | `1006...` |
 | `WHATSAPP_ACCESS_TOKEN` | Meta Graph API Permanent Token | `EAAG...` |
-| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Custom verification token for Meta webhook | `random_verify_token` |
-| `DATABASE_URL` | Neon Postgres Connection String (pooled) | `postgresql://user:pass@ep-xxx.neon.tech/zapai?sslmode=require` |
-| `REDIS_URL` | Redis instance connection string | `redis://localhost:6379` |
-| `APP_URL` | Public server URL (Railway / ngrok) | `https://your-app.up.railway.app` |
-| `PORT` | Local HTTP server port | `3000` |
-| `X402_SIGNING_SECRET` | Secret key for signing x402 challenge tokens | `super_secret_x402_key` |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Verification token for Meta webhook | `random_verify_token` |
+| `APP_URL` | Frontend URL | `http://localhost:3000` |
+| `PORT` | API Server port | `8000` |
 
 ---
 
-## 🚀 Quick Start & Local Setup
-
-### Prerequisites
-
-Ensure you have the following installed locally:
-- [Bun](https://bun.sh/) (`>= v1.1.0`)
-- [Docker](https://www.docker.com/) & Docker Compose (for running Redis locally)
-- A managed [Neon DB](https://neon.tech/) instance (or local PostgreSQL 15+)
+## Quick Start & Local Setup
 
 ### 1. Clone & Install Dependencies
 
@@ -284,159 +343,79 @@ cd Razorpay-Agent
 bun install
 ```
 
-### 2. Start Local Redis Container
-
-```bash
-docker-compose up -d redis
-```
-
-### 3. Setup Environment Variables
+### 2. Configure Environment
 
 ```bash
 cp .env.example .env
 # Edit .env and supply your GEMINI_API_KEY, RAZORPAY_KEY_ID, DATABASE_URL, etc.
 ```
 
-### 4. Run Database Migration & Seeding
-
-This initializes the Postgres database schema and seeds the two mock merchants (**RunFast Sports** and **SpeedGear**) along with product catalogs and negotiation rules:
+### 3. Run Database Migrations
 
 ```bash
 bun run migrate
 ```
 
-### 5. Start Development Server
+### 4. Start Development Servers
 
 ```bash
+# Starts both Next.js Web Dashboard (Port 3000) and API Gateway (Port 8000) in parallel:
 bun run dev
 ```
 
-The server will start at `http://localhost:3000`. You can verify server health at:
-```bash
-curl http://localhost:3000/health
-```
+- **Web Dashboard:** [http://localhost:3000](http://localhost:3000)
+- **API Server:** [http://localhost:8000](http://localhost:8000)
+- **API Health Check:** `curl http://localhost:8000/health`
 
 ---
 
-## 🧪 Demo Execution & Test Scripts
+## Test Suite & Automated Verification
 
-ZapAI includes automated demo scripts to execute complete end-to-end purchasing flows without manual UI input.
-
-### 1. Happy Path Demo Execution
-
-Executes the full agentic commerce journey: parallel catalog search, multi-turn negotiation, inventory locking, x402 payment challenge issuance, Razorpay order creation, mock payment capture, and 5-field audit assertion.
+ZapAI includes comprehensive end-to-end automated unit, integration, and intelligence tests:
 
 ```bash
-bun scripts/run-happy-path.ts
+bun test
 ```
 
-**Expected Workflow Steps:**
-1. Buyer Agent initialized with task: *"Find me running shoes under ₹4,000. Best deal wins."*
-2. Queries both **RunFast Sports** (₹3,999) and **SpeedGear** (₹4,199) in parallel.
-3. Negotiates with RunFast Sports Seller Agent → Agrees on **₹3,799 with free shipping**.
-4. Seller Agent acquires Redis lock on SKU stock (`TTL = 120s`).
-5. Generates HTTP 402 challenge & converts to Razorpay Order.
-6. Simulates `payment.captured` webhook → Verifies signature.
-7. Inventory transitions `PAYMENT_PENDING → PAID`.
-8. Order `#1042` created and 5-field audit trail logged.
+### Test Suites Included:
+1. **`tests/razorpay-advanced.test.ts`**: Verifies dynamic GST tax invoice calculation, Dynamic UPI QR code generation, Razorpay offers discount evaluation, and recurring AutoPay subscription plans.
+2. **`tests/razorpay-advanced-services.test.ts`**: Verifies UPI AutoPay token registration, RBI ₹15,000 threshold safety limits, Razorpay Route multi-vendor split distribution, Instant Refunds, and Cryptographic Dispute Evidence compilation.
+3. **`tests/agentic-commerce-modules.test.ts`**: Verifies cryptographic AP2 spending mandates, zero-trust server validation, nonce replay attack prevention, and x402 challenge-response settlement.
+4. **`tests/conversation-intelligence.test.ts`**: Evaluates 13 distinct multi-turn conversational commerce scenarios (e.g. price negotiation, quantity adjustments, floor price constraints, catalog switching).
+5. **`tests/shopify-integration.test.ts`**: Tests domain normalization, Shopify webhook HMAC SHA-256 signature verification, and graceful unauthenticated store handling.
 
-### 2. Failure Recovery & Lock Release Demo
-
-Demonstrates resilience when a payment fails or times out:
-
-```bash
-bun scripts/run-failure-path.ts
-```
-
-**Expected Workflow Steps:**
-1. Buyer Agent agrees on item deal & locks inventory.
-2. Simulates `payment.failed` webhook (e.g., UPI timeout).
-3. System captures failure and **releases Redis lock within < 2 seconds**.
-4. Seller Agent issues retry prompt via Razorpay Payment Link fallback.
-5. Secondary payment attempt succeeds → State updates to `PAID` with full audit trace of both failure and recovery.
-
-### 3. Live Judges Dashboard
-
-Open your browser to:
-```
-http://localhost:3000/demo
-```
-This dashboard streams real-time Server-Sent Events (SSE) showing live LLM reasoning, A2A negotiation payloads, inventory state transitions, and Razorpay webhook events as they happen.
+**Current Test Status:** `43 passing tests` across 5 suites (0 failures).
 
 ---
 
-## 📡 API Reference
+## API Reference
 
-### Core Endpoints
+### Core Backend Routes (`apps/api/src/`)
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/health` | `GET` | Health check endpoint returning system status and DB connection. |
-| `/api/catalog` | `GET` | Returns structured, agent-readable JSON catalog for connected stores. |
-| `/api/a2a/negotiate` | `POST` | Agent-to-Agent negotiation endpoint for submitting structured offers. |
-| `/api/checkout` | `POST` | Converts an agreed A2A deal into an x402 challenge & Razorpay Order. |
-| `/api/webhook/razorpay` | `POST` | Validates HMAC-SHA256 signature and processes Razorpay payment events. |
-| `/api/webhook/whatsapp` | `POST` | Inbound WhatsApp webhook; queues tasks to Redis worker. |
-| `/demo` | `GET` | Live judge visual dashboard interface. |
-| `/demo/stream` | `GET` | Server-Sent Events (SSE) feed for live transaction logs. |
+| `/health` | `GET` | Health check endpoint returning database connectivity and server uptime. |
+| `/api/chat` | `POST` | AI conversational commerce endpoint with streaming reasoning and tool execution. |
+| `/api/products` | `GET`, `POST`, `PUT` | Product catalog retrieval, bulk upload, CSV parsing, and Shopify sync. |
+| `/api/onboarding` | `POST` | Merchant onboarding, store creation, and credentials validation. |
+| `/api/orders` | `GET` | Order lifecycle, status tracking, and payment link lookup. |
+| `/api/settings` | `GET`, `POST` | Store negotiation rules, discount thresholds, and Razorpay/Shopify credentials. |
+| `/api/analytics` | `GET` | GMV, total orders, discount protection metrics, and channel distribution. |
+| `/api/webhooks/razorpay` | `POST` | Validates HMAC-SHA256 signature and processes payment capture/failure webhooks. |
+| `/api/webhooks/shopify` | `POST` | Synchronizes Shopify catalog and order changes via webhook HMAC. |
+| `/api/simulator/chat` | `POST` | Interactive A2A commerce simulator for testing agent negotiations. |
 
 ---
 
-## 📁 Project Directory Structure
+## Failure Recovery & Resiliency
 
-```
-Razorpay-Agent/
-├── PRD.md                         # Product Requirements Document
-├── ARCHITECTURE.md                # Detailed System & Microservice Architecture
-├── README.md                      # Comprehensive Technical Readme
-├── package.json                   # Dependencies and Bun scripts
-├── tsconfig.json                  # TypeScript compiler settings
-├── docker-compose.yml             # Local Redis service configuration
-├── railway.toml                   # Deployment configuration for Railway
-├── scripts/
-│   ├── run-happy-path.ts          # E2E Happy Path test & demo script
-│   └── run-failure-path.ts        # E2E Failure recovery test script
-└── src/
-    ├── index.ts                   # Main Express application entrypoint
-    ├── agents/
-    │   ├── buyer-agent.ts         # Buyer Agent LLM logic & AP2 spending mandate parser
-    │   └── seller-agent.ts        # Seller Agent LLM logic & merchant guardrails evaluator
-    ├── api/
-    │   ├── a2a.ts                 # A2A negotiation HTTP endpoints
-    │   ├── catalog.ts             # Agent catalog endpoints
-    │   ├── checkout.ts            # x402 → Razorpay Order conversion engine
-    │   ├── demo.ts                # SSE event broadcast endpoint & judge UI
-    │   ├── razorpay-webhook.ts    # Razorpay webhook listener & HMAC validator
-    │   └── whatsapp.ts            # WhatsApp webhook ingress
-    ├── db/
-    │   ├── schema.sql             # Postgres database schema definition
-    │   ├── seed.sql               # Seed data for mock merchants & catalogs
-    │   └── migrate.ts             # Migration and database boot script
-    ├── services/
-    │   ├── audit.ts               # 5-field linked audit ledger service
-    │   ├── merchant.ts            # Postgres merchant data & inventory service
-    │   ├── razorpay.ts            # Razorpay SDK initialization & order helpers
-    │   ├── redis.ts               # Redis connection & atomic lock manager
-    │   ├── whatsapp.ts            # Outbound WhatsApp Cloud API service
-    │   └── x402.ts                # x402 challenge generator & verification
-    ├── types/                     # TypeScript interface definitions
-    └── workers/
-        └── whatsapp-worker.ts     # Redis queue worker for async message processing
-```
+1. **UPI & Payment Timeout Handling:** When a payment fails or times out, the Redis inventory lock (`lock:inventory:{store_id}:{variant_id}`) is released immediately (<2s), making inventory available for other shoppers.
+2. **Idempotent Webhooks:** Razorpay webhooks are tracked by unique event ID in `processed_webhook_events` to ensure strict exactly-once execution.
+3. **Zero-Trust Mandate Boundary:** Server-side payment settlement strictly validates payment amount against the cryptographically signed buyer mandate limit before communicating with Razorpay.
+4. **Network Fallback Safety:** All Razorpay API integrations include resilient timeouts and fallbacks to ensure uninterrupted operation during network fluctuations.
 
 ---
 
-## 🛡 Failure Recovery & Resiliency
+## License & Acknowledgments
 
-ZapAI is architected for zero-downtime inventory integrity and fault-tolerant financial execution:
-
-1. **UPI Timeout Handling:** If a UPI payment times out or drops, `payment.failed` immediately clears the Redis lock key (`lock:inventory:{store_id}:{variant_id}`), making stock available to other buyers in under 2 seconds.
-2. **Idempotent Webhooks:** Razorpay webhooks are tracked in the `processed_webhook_events` table by event ID to guarantee exactly-once processing regardless of network retries.
-3. **Webhook HMAC Validation:** Unauthenticated or improperly signed webhook requests are rejected with `401 Unauthorized` before reaching any service logic.
-4. **Mandate Enforcement:** Even if an LLM generates a hallucinated high-value checkout command, the server-side payment engine validates the order total against the signed mandate spending limit before invoking Razorpay.
-
----
-
-## 🏆 License & Acknowledgments
-
-Developed specifically for the **Razorpay AI Buildathon 2026** under the **AI Growth & Agentic Commerce** track. Built with gratitude for the developer tools provided by **Razorpay**, **Google Cloud / AI Studio**, **Neon**, and **Railway**.
+Developed for the **Razorpay AI Buildathon 2026** under the **AI Growth & Agentic Commerce** track. Built with gratitude for the developer tools and APIs provided by **Razorpay**, **Google Cloud / AI Studio**, **Neon**, and **Bun**.
