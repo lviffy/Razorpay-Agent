@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "bun@1.4.0",
   "description": "ZapAI — Autonomous AI-Native Commerce Monorepo",
+  "license": "MIT",
   "workspaces": [
     "apps/*",
     "packages/*"
