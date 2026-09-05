@@ -177,10 +177,10 @@ describe("Conversational Intelligence Test Suite", () => {
 
     const comm3 = await executeCommerceAction(intent3, ctx3, "any discounts?");
     expect(comm3.type).toBe("COUNTER_OFFER");
-    expect(comm3.offer?.offeredPrice).toBe(1080);
+    expect(comm3.offer?.offeredPrice).toBe(1152);
 
     const resp3 = await generateCustomerResponse("any discounts?", intent3, comm3, ctx3);
-    const hasDiscount = resp3.text.includes("1080") || resp3.text.includes("1,080");
+    const hasDiscount = resp3.text.includes("1152") || resp3.text.includes("1,152");
     expect(hasDiscount).toBe(true);
   }, 45000);
 
@@ -337,10 +337,10 @@ describe("Conversational Intelligence Test Suite", () => {
     const comm10 = await executeCommerceAction(intent10, ctx10, "i would like some discount");
     expect(comm10.type).toBe("COUNTER_OFFER");
     expect(comm10.product?.title.toLowerCase()).toContain("rohan");
-    expect(comm10.product?.offeredPrice).toBe(1080);
+    expect(comm10.product?.offeredPrice).toBe(1152);
 
     const resp10 = await generateCustomerResponse("i would like some discount", intent10, comm10, ctx10);
-    const mentionsDiscount = resp10.text.includes("1080") || resp10.text.includes("1,080") || resp10.text.includes("1100");
+    const mentionsDiscount = resp10.text.includes("1152") || resp10.text.includes("1,152");
     expect(mentionsDiscount).toBe(true);
   }, 45000);
 
@@ -452,5 +452,97 @@ describe("Conversational Intelligence Test Suite", () => {
     const resp13 = await generateCustomerResponse("OKAY CHECKOUT", intent13, comm13, ctx13);
     expect(resp13.text.toLowerCase()).not.toContain("what type of product are you looking for");
     expect(resp13.isPaymentLink).toBe(true);
+  }, 45000);
+
+  test("Scenario 14: Step-by-Step Multi-Round Concession Progression without Jumping to Floor", async () => {
+    // Round 0: First discount ask on Rohan Shirt (listed: 1200, floor: 1080, maxDiscount: 10% = 120)
+    const ctxRound0 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1200,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      sessionState: "IDLE",
+      negotiationRound: 0,
+    });
+
+    const intentRound0 = await resolveIntent("can you give me a discount?", ctxRound0);
+    const commRound0 = await executeCommerceAction(intentRound0, ctxRound0, "can you give me a discount?");
+    expect(commRound0.type).toBe("COUNTER_OFFER");
+    // Step 1: 40% concession of ₹120 = ₹48 off → ₹1,152 (MUST NOT jump straight to floor ₹1080)
+    expect(commRound0.product?.offeredPrice).toBe(1152);
+    expect(commRound0.negotiationRound).toBe(1);
+
+    // Round 1: Buyer pushes for more discount
+    const ctxRound1 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1152,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      lastSellerOfferPrice: 1152,
+      sessionState: "NEGOTIATING",
+      negotiationRound: 1,
+    });
+
+    const intentRound1 = await resolveIntent("can you do better than 1152?", ctxRound1);
+    const commRound1 = await executeCommerceAction(intentRound1, ctxRound1, "can you do better than 1152?");
+    expect(commRound1.type).toBe("COUNTER_OFFER");
+    // Step 2: 70% concession of ₹120 = ₹84 off → ₹1,116
+    expect(commRound1.product?.offeredPrice).toBe(1116);
+    expect(commRound1.negotiationRound).toBe(2);
+
+    // Round 2: Buyer pushes for third time
+    const ctxRound2 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1116,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      lastSellerOfferPrice: 1116,
+      sessionState: "NEGOTIATING",
+      negotiationRound: 2,
+    });
+
+    const intentRound2 = await resolveIntent("make it cheaper please", ctxRound2);
+    const commRound2 = await executeCommerceAction(intentRound2, ctxRound2, "make it cheaper please");
+    expect(commRound2.type).toBe("COUNTER_OFFER");
+    // Step 3: 100% concession reached → ₹1,080 (Floor price reached)
+    expect(commRound2.product?.offeredPrice).toBe(1080);
+    expect(commRound2.negotiationRound).toBe(3);
+
+    // Round 3: Buyer asks for even lower (below floor)
+    const ctxRound3 = createMockContext({
+      activeProduct: {
+        id: "prod_rohan_shirt",
+        title: "Rohan Shirt",
+        listedPrice: 1200,
+        floorPrice: 1080,
+        offeredPrice: 1080,
+        inventoryAvailable: 10,
+        variantId: "var_rohan_001",
+      },
+      lastSellerOfferPrice: 1080,
+      sessionState: "NEGOTIATING",
+      negotiationRound: 3,
+    });
+
+    const intentRound3 = await resolveIntent("can you do 1000?", ctxRound3);
+    const commRound3 = await executeCommerceAction(intentRound3, ctxRound3, "can you do 1000?");
+    expect(commRound3.type).toBe("COUNTER_OFFER");
+    // Concession lock / hard floor: holds strictly at ₹1,080
+    expect(commRound3.product?.offeredPrice).toBe(1080);
   }, 45000);
 });

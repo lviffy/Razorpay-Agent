@@ -96,6 +96,8 @@ export interface CommerceResult {
     summary: string;
   };
   errorMessage?: string;
+  negotiationRound?: number;
+  lastSellerOfferPrice?: number;
   type: CommerceResultType;
 }
 

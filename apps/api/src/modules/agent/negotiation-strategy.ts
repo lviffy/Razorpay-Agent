@@ -11,8 +11,11 @@
 
 // ─── Concession Curve ─────────────────────────────────────────────────────────
 // What fraction of the maximum allowed discount is revealed per round (0-indexed).
-// Round 0 = buyer asks for discount → provide discount up to max allowed discount
-const CONCESSION_CURVE: readonly number[] = [1.0, 1.0, 1.0, 1.0];
+// Multi-round step-by-step concession discipline:
+// Round 0 = first discount request → reveal 40% of max discount (initial drip concession)
+// Round 1 = second push            → reveal 70% of max discount (intermediate drip)
+// Round 2+ = floor position        → reveal 100% of max discount (absolute floor position)
+const CONCESSION_CURVE: readonly number[] = [0.4, 0.7, 1.0];
 
 export type StrategyLabel = "ANCHOR" | "DRIP" | "FLOOR" | "ACCEPT" | "HOLD";
 
@@ -113,8 +116,15 @@ export function computeSellerCounterOffer(params: ComputeCounterParams): SellerC
 
   // If the buyer's explicit offer already meets our current (or last) offer,
   // accept immediately without further haggling.
+  // Note: if the buyer message is asking for lower/better/less than a price,
+  // do not treat that reference as an affirmative acceptance of our previous quote.
+  const isAskingLowerThanLast = /(?:better|lower|less|cheaper|down|reduce|discount)\s*(?:than|from)?/i.test(buyerMessage);
   const referencePrice = lastSellerPrice ?? listedPrice;
-  if (buyerOfferedPrice !== undefined && buyerOfferedPrice >= referencePrice) {
+  if (
+    buyerOfferedPrice !== undefined &&
+    !isAskingLowerThanLast &&
+    (lastSellerPrice !== undefined ? buyerOfferedPrice > lastSellerPrice : buyerOfferedPrice >= referencePrice)
+  ) {
     return {
       counterPrice: Math.round(buyerOfferedPrice),
       newRound: currentRound,
@@ -144,7 +154,11 @@ export function computeSellerCounterOffer(params: ComputeCounterParams): SellerC
       : clampedOffer;
 
   // If the buyer's offer is above our computed counter, accept theirs.
-  if (buyerOfferedPrice !== undefined && buyerOfferedPrice >= counterPrice) {
+  if (
+    buyerOfferedPrice !== undefined &&
+    !isAskingLowerThanLast &&
+    buyerOfferedPrice >= counterPrice
+  ) {
     const acceptedAt = Math.min(buyerOfferedPrice, referencePrice);
     return {
       counterPrice: Math.round(acceptedAt),
@@ -162,7 +176,10 @@ export function computeSellerCounterOffer(params: ComputeCounterParams): SellerC
   const discountPct =
     listedPrice > 0 ? Math.round((savedVsListed / listedPrice) * 100) : 0;
 
-  if (curveFraction === 0) {
+  if (counterPrice <= effectiveFloor) {
+    strategyLabel = "FLOOR";
+    reasoning = `Floor price reached (round ${adjustedRound}): ₹${counterPrice} is our absolute minimum. Cannot go lower.`;
+  } else if (curveFraction === 0) {
     strategyLabel = "ANCHOR";
     reasoning = `Anchoring at listed price ₹${counterPrice}. No discount offered yet (round ${adjustedRound}).`;
   } else if (curveFraction < 1.0) {

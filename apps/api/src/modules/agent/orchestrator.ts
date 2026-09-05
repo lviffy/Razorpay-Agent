@@ -131,6 +131,17 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     state.buyerBudget = intent.extractedBudget;
   }
 
+  const isProductSwitched =
+    commerceResult.product &&
+    state.activeProduct &&
+    commerceResult.product.id !== state.activeProduct.id;
+  const nextNegotiationRound = isProductSwitched
+    ? 0
+    : (commerceResult.negotiationRound !== undefined ? commerceResult.negotiationRound : state.negotiationRound);
+  const nextLastSellerPrice = isProductSwitched
+    ? undefined
+    : (commerceResult.lastSellerOfferPrice !== undefined ? commerceResult.lastSellerOfferPrice : state.lastSellerOfferPrice);
+
   await updateConversationContext(conversationId, phoneNumber, {
     storeId: activeStoreId,
     activeProduct: nextActiveProduct,
@@ -141,6 +152,8 @@ export async function processInboundMessage(job: WorkerJob): Promise<void> {
     awaitingConfirmation: nextAwaitingConfirmation,
     activeCategory: intent.category,
     sessionState: nextSessionState,
+    negotiationRound: nextNegotiationRound,
+    lastSellerOfferPrice: nextLastSellerPrice,
     dealAmount: commerceResult.paymentAmount || (nextActiveProduct?.offeredPrice ? nextActiveProduct.offeredPrice * nextRequestedQuantity : undefined),
   });
 

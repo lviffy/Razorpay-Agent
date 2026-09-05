@@ -206,7 +206,7 @@ export async function executeCommerceAction(
           state.activeProduct.variantId === targetProduct.shopifyVariantId ||
           state.activeProduct.title.toLowerCase().trim() === targetProduct.title.toLowerCase().trim()
         );
-      const currentRound = isSameProduct ? (state.negotiationRound ?? (state.currentOffer ? 1 : 0)) : 0;
+      const currentRound = isSameProduct ? (state.negotiationRound ?? 0) : 0;
       const lastSellerPrice = isSameProduct
         ? (state.lastSellerOfferPrice ?? state.currentOffer?.offeredPrice ?? state.activeProduct?.offeredPrice)
         : undefined;
@@ -301,6 +301,8 @@ export async function executeCommerceAction(
           sessionId: conversationId,
         },
         mediaUrlToSend: targetProduct.imageUrl,
+        negotiationRound: strategy.newRound,
+        lastSellerOfferPrice: counterPrice,
       };
     }
   }

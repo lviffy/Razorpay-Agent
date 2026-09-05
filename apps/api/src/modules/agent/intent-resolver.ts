@@ -59,10 +59,12 @@ export async function resolveIntent(
   const isDiscountAsk = /any discounts?|anything less|any deal|cheaper|less|discount|discounts|lower|best price|counter|can you do|reduce|margin|rock bottom|offers?|special price/i.test(rawLower);
   if (isDiscountAsk && (state.activeProduct || state.currentOffer)) {
     const prod = state.activeProduct || (availableProducts.find(p => p.title.toLowerCase().trim() === state.currentOffer?.productTitle.toLowerCase().trim()));
+    const targetPrice = extractBudgetFromText(userMessage);
     return {
       intent: "PRICE_NEGOTIATION",
       referencedProductTitle: prod?.title,
       referencedVariantId: (prod as any)?.variantId || (prod as any)?.shopifyVariantId,
+      requestedPrice: targetPrice || undefined,
       confidence: 0.96,
     };
   }
